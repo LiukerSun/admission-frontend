@@ -13,7 +13,7 @@ export default function GlobalSpin() {
         zIndex: 9999,
       }}
     >
-      <Spin size="large" tip="加载中..." />
+      <Spin size="large" description="加载中..." />
     </div>
   )
 }

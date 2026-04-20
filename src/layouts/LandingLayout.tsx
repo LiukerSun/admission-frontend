@@ -1,4 +1,4 @@
-import { Outlet, Link } from 'react-router-dom'
+import { Outlet, Link, useNavigate } from 'react-router-dom'
 import { Layout, Menu, Button } from 'antd'
 import { useAuthStore } from '@/stores/authStore'
 
@@ -6,6 +6,12 @@ const { Header, Content, Footer } = Layout
 
 export default function LandingLayout() {
   const { isAuthenticated, logout } = useAuthStore()
+  const navigate = useNavigate()
+
+  const handleLogout = () => {
+    logout()
+    navigate('/login')
+  }
 
   return (
     <Layout style={{ minHeight: '100vh' }}>
@@ -21,7 +27,7 @@ export default function LandingLayout() {
                 <Link to="/profile">个人中心</Link>
               </Menu.Item>
               <Menu.Item key="logout">
-                <Button type="link" onClick={logout}>退出</Button>
+                <Button type="link" onClick={handleLogout}>退出</Button>
               </Menu.Item>
             </>
           ) : (

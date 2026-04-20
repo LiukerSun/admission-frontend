@@ -11,7 +11,7 @@ import type { MenuProps } from 'antd'
 const { Header, Sider, Content } = Layout
 
 export default function BasicLayout() {
-  const { user, logout } = useAuthStore()
+  const { user, logout, isRestoring } = useAuthStore()
   const location = useLocation()
   const navigate = useNavigate()
 
@@ -39,11 +39,14 @@ export default function BasicLayout() {
       key: 'logout',
       icon: <LogoutOutlined />,
       label: '退出登录',
-      onClick: logout,
+      onClick: () => {
+        logout()
+        navigate('/login')
+      },
     },
   ]
 
-  if (!user) {
+  if (isRestoring) {
     return (
       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
         <Spin size="large" />
@@ -54,7 +57,7 @@ export default function BasicLayout() {
   return (
     <Layout style={{ minHeight: '100vh' }}>
       <Sider theme="light">
-        <div style={{ height: 64, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 700 }}>
+        <div style={{ height: 64, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 700, cursor: 'pointer' }} onClick={() => navigate('/')}>
           志愿报考
         </div>
         <Menu mode="inline" selectedKeys={[location.pathname]} items={menuItems} />
@@ -64,7 +67,7 @@ export default function BasicLayout() {
           <Dropdown menu={{ items: dropdownItems }} placement="bottomRight">
             <span style={{ cursor: 'pointer' }}>
               <Avatar icon={<UserOutlined />} />
-              <span style={{ marginLeft: 8 }}>{user.email}</span>
+              <span style={{ marginLeft: 8 }}>{user?.email}</span>
             </span>
           </Dropdown>
         </Header>
