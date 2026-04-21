@@ -1,0 +1,6 @@
+#!/usr/bin/env sh
+
+set -e
+
+echo "Validating commit message..."
+npm run commitlint -- "$1"

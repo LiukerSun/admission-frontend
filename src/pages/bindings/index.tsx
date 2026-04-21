@@ -26,7 +26,11 @@ export default function BindingsPage() {
   }
 
   useEffect(() => {
-    fetchBindings()
+    const timer = window.setTimeout(() => {
+      void fetchBindings()
+    }, 0)
+
+    return () => window.clearTimeout(timer)
   }, [])
 
   const onFinish = async (values: { studentEmail: string }) => {
@@ -35,7 +39,7 @@ export default function BindingsPage() {
       await bindingsApi.create({ student_email: values.studentEmail })
       message.success('绑定成功')
       form.resetFields()
-      fetchBindings()
+      await fetchBindings()
     } catch (err: unknown) {
       const axiosErr = err as { response?: { data?: { message?: string } } }
       const msg = axiosErr.response?.data?.message
