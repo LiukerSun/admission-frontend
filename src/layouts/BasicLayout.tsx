@@ -5,6 +5,9 @@ import {
   UserOutlined,
   LogoutOutlined,
   LinkOutlined,
+  SettingOutlined,
+  BarChartOutlined,
+  TeamOutlined,
 } from '@ant-design/icons'
 import { useAuthStore } from '@/stores/authStore'
 import type { MenuProps } from 'antd'
@@ -32,6 +35,32 @@ export default function BasicLayout() {
       icon: <UserOutlined />,
       label: <Link to="/profile">个人中心</Link>,
     },
+    ...(user?.role === 'admin'
+      ? [
+          {
+            key: '/admin',
+            icon: <SettingOutlined />,
+            label: '系统管理',
+            children: [
+              {
+                key: '/admin/dashboard',
+                icon: <BarChartOutlined />,
+                label: <Link to="/admin/dashboard">统计看板</Link>,
+              },
+              {
+                key: '/admin/users',
+                icon: <TeamOutlined />,
+                label: <Link to="/admin/users">用户管理</Link>,
+              },
+              {
+                key: '/admin/bindings',
+                icon: <LinkOutlined />,
+                label: <Link to="/admin/bindings">绑定管理</Link>,
+              },
+            ],
+          },
+        ]
+      : []),
   ]
 
   const dropdownItems: MenuProps['items'] = [

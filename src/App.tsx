@@ -11,7 +11,11 @@ import RegisterPage from '@/pages/auth/RegisterPage'
 import DashboardPage from '@/pages/dashboard'
 import ProfilePage from '@/pages/profile'
 import BindingsPage from '@/pages/bindings'
+import AdminDashboardPage from '@/pages/admin/AdminDashboardPage'
+import AdminUsersPage from '@/pages/admin/AdminUsersPage'
+import AdminBindingsPage from '@/pages/admin/AdminBindingsPage'
 import RequireAuth from '@/components/RequireAuth'
+import RequireAdmin from '@/components/RequireAdmin'
 import NoAuth from '@/components/NoAuth'
 import GlobalSpin from '@/components/GlobalSpin'
 
@@ -69,6 +73,30 @@ const router = createBrowserRouter([
           <RequireAuth>
             <BindingsPage />
           </RequireAuth>
+        ),
+      },
+      {
+        path: 'admin/dashboard',
+        element: (
+          <RequireAdmin>
+            <AdminDashboardPage />
+          </RequireAdmin>
+        ),
+      },
+      {
+        path: 'admin/users',
+        element: (
+          <RequireAdmin>
+            <AdminUsersPage />
+          </RequireAdmin>
+        ),
+      },
+      {
+        path: 'admin/bindings',
+        element: (
+          <RequireAdmin>
+            <AdminBindingsPage />
+          </RequireAdmin>
         ),
       },
     ],

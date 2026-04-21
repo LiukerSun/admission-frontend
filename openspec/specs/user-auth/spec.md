@@ -26,4 +26,19 @@ The system SHALL display the current user's profile information.
 
 #### Scenario: Viewing profile as authenticated user
 - **WHEN** an authenticated user navigates to the profile page
-- **THEN** the system displays the user's email, role, user_type, and account creation time
+- **THEN** the system displays the user's email, username, role, user_type, status, and account creation time
+
+### Requirement: Admin routes are protected by role
+The system SHALL restrict access to admin routes to users whose role is "admin".
+
+#### Scenario: Admin accesses admin route
+- **WHEN** an authenticated admin navigates to an admin route (e.g., `/admin/dashboard`)
+- **THEN** the system allows access and renders the admin page
+
+#### Scenario: Non-admin accesses admin route
+- **WHEN** an authenticated non-admin user navigates to an admin route
+- **THEN** the system redirects the user to `/dashboard`
+
+#### Scenario: Unauthenticated user accesses admin route
+- **WHEN** an unauthenticated user navigates to an admin route
+- **THEN** the system redirects the user to `/login`
