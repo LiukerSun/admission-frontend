@@ -11,6 +11,7 @@
 - **状态管理**: Zustand
 - **HTTP 客户端**: Axios
 - **API 类型**: openapi-typescript（从后端 Swagger 自动生成）
+- **API 规范**: OpenSpec（spec-driven 开发流程）
 
 ## 快速开始
 
@@ -32,6 +33,14 @@ npm run dev
 
 复制 `.env.example` 为 `.env` 并根据需要修改。
 
+## 功能特性
+
+- **用户认证** — 邮箱密码登录、注册、Token 自动刷新、登出
+- **身份类型** — 注册时支持选择"家长"或"学生"身份
+- **家长-学生绑定** — 家长可发起绑定，查看已绑定的学生（反之亦然）
+- **响应式导航** — 控制台侧边栏导航，支持 Logo 点击返回首页
+- **路由守卫** — 认证状态自动重定向（未登录用户访问受保护路由跳转登录页）
+
 ## 项目结构
 
 ```
@@ -42,12 +51,23 @@ src/
 │   ├── landing/         # 首页
 │   ├── auth/            # 登录/注册
 │   ├── dashboard/       # 控制台
-│   └── profile/         # 个人中心
+│   ├── profile/         # 个人中心
+│   └── bindings/        # 家长-学生绑定管理
 ├── services/            # API 客户端
-├── stores/              # Zustand 状态
+├── stores/              # Zustand 状态管理
 ├── types/               # 自动生成 API 类型
 └── utils/               # 工具函数
 ```
+
+## 开发规范
+
+本项目使用 [OpenSpec](openspec/) 进行 spec-driven 开发，每个功能变更通过以下流程管理：
+
+1. **Propose** — 创建变更提案，明确问题与范围
+2. **Design** — 技术设计，确定实现方案
+3. **Specs** — 编写功能规格（需求 + 场景）
+4. **Tasks** — 拆分为可执行任务
+5. **Apply** — 实施并验证
 
 ## API 类型同步
 
