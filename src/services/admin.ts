@@ -8,6 +8,10 @@ export type BindingListResponse = components['schemas']['admin.BindingListRespon
 export type BindingListItem = components['schemas']['admin.BindingListItem']
 export type UpdateRoleRequest = components['schemas']['admin.UpdateRoleRequest']
 
+export interface ResetPasswordRequest {
+  new_password: string
+}
+
 export interface AdminUserDetail {
   id: number
   email: string
@@ -53,6 +57,9 @@ export const adminApi = {
 
   updateUser: (id: number, data: UpdateUserRequest) =>
     api.put<{ data: AdminUserDetail }>(`/api/v1/admin/users/${id}`, data),
+
+  resetPassword: (id: number, data: ResetPasswordRequest) =>
+    api.put<{ data: { message: string } }>(`/api/v1/admin/users/${id}/password`, data),
 
   disableUser: (id: number) =>
     api.post(`/api/v1/admin/users/${id}/disable`),

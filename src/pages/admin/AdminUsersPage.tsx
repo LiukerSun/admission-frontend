@@ -14,18 +14,27 @@ interface EditUserFormValues {
   status: 'active' | 'banned'
 }
 
+interface ResetPasswordFormValues {
+  newPassword: string
+  confirmPassword: string
+}
+
 export default function AdminUsersPage() {
   const { user: currentUser, setUser } = useAuthStore()
   const [form] = Form.useForm<EditUserFormValues>()
+  const [passwordForm] = Form.useForm<ResetPasswordFormValues>()
   const [users, setUsers] = useState<UserListItem[]>([])
   const [loading, setLoading] = useState(false)
   const [total, setTotal] = useState(0)
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(20)
   const [editingUser, setEditingUser] = useState<AdminUserDetail | null>(null)
+  const [passwordTarget, setPasswordTarget] = useState<UserListItem | null>(null)
   const [editModalOpen, setEditModalOpen] = useState(false)
+  const [passwordModalOpen, setPasswordModalOpen] = useState(false)
   const [editLoading, setEditLoading] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [passwordSaving, setPasswordSaving] = useState(false)
   const [filters, setFilters] = useState({
     email: '',
     username: '',
@@ -79,15 +88,6 @@ export default function AdminUsersPage() {
       .catch(() => message.error('操作失败'))
   }
 
-  const handleRoleChange = (id: number, role: string) => {
-    adminApi.updateUserRole(id, { role: role as 'user' | 'premium' | 'admin' })
-      .then(() => {
-        message.success('角色已更新')
-        fetchUsers()
-      })
-      .catch(() => message.error('操作失败'))
-  }
-
   const openEditModal = async (id: number) => {
     setEditModalOpen(true)
     setEditLoading(true)
@@ -118,6 +118,19 @@ export default function AdminUsersPage() {
     setEditLoading(false)
     setSaving(false)
     form.resetFields()
+  }
+
+  const openPasswordModal = (user: UserListItem) => {
+    setPasswordTarget(user)
+    setPasswordModalOpen(true)
+    passwordForm.resetFields()
+  }
+
+  const closePasswordModal = () => {
+    setPasswordTarget(null)
+    setPasswordModalOpen(false)
+    setPasswordSaving(false)
+    passwordForm.resetFields()
   }
 
   const buildUpdatePayload = (values: EditUserFormValues): UpdateUserRequest => {
@@ -194,6 +207,31 @@ export default function AdminUsersPage() {
     }
   }
 
+  const handleResetPassword = async () => {
+    if (!passwordTarget) {
+      return
+    }
+
+    try {
+      const values = await passwordForm.validateFields()
+      setPasswordSaving(true)
+      await adminApi.resetPassword(passwordTarget.id!, {
+        new_password: values.newPassword,
+      })
+      message.success('密码已重置，用户需重新登录')
+      closePasswordModal()
+    } catch (err: unknown) {
+      const axiosErr = err as { response?: { status?: number } }
+      if (axiosErr.response?.status === 400) {
+        message.error('新密码至少 8 位，且只能包含字母和数字')
+      } else if (!('errorFields' in (err as object))) {
+        message.error('重置密码失败')
+      }
+    } finally {
+      setPasswordSaving(false)
+    }
+  }
+
   const isEditingSelf = editingUser?.id === currentUser?.id
 
   const columns = [
@@ -226,16 +264,9 @@ export default function AdminUsersPage() {
           <Button type="link" onClick={() => openEditModal(record.id!)}>
             编辑
           </Button>
-          <Select
-            value={record.role}
-            style={{ width: 100 }}
-            onChange={(value) => handleRoleChange(record.id!, value)}
-            disabled={record.id === currentUser?.id}
-          >
-            <Option value="user">user</Option>
-            <Option value="premium">premium</Option>
-            <Option value="admin">admin</Option>
-          </Select>
+          <Button type="link" onClick={() => openPasswordModal(record)}>
+            重置密码
+          </Button>
           {record.id !== currentUser?.id && (
             record.status === 'banned' ? (
               <Button type="link" onClick={() => handleEnable(record.id!)}>
@@ -376,6 +407,52 @@ export default function AdminUsersPage() {
               <Option value="active">active</Option>
               <Option value="banned">banned</Option>
             </Select>
+          </Form.Item>
+        </Form>
+      </Modal>
+      <Modal
+        title={passwordTarget ? `重置密码 #${passwordTarget.id}` : '重置密码'}
+        open={passwordModalOpen}
+        onCancel={closePasswordModal}
+        onOk={handleResetPassword}
+        confirmLoading={passwordSaving}
+        destroyOnHidden
+      >
+        <Form form={passwordForm} layout="vertical" autoComplete="off">
+          <Form.Item label="用户邮箱">
+            <Input value={passwordTarget?.email} disabled />
+          </Form.Item>
+          <Form.Item
+            label="新密码"
+            name="newPassword"
+            rules={[
+              { required: true, message: '请输入新密码' },
+              { min: 8, message: '密码至少 8 位' },
+              {
+                pattern: /^[A-Za-z0-9]+$/,
+                message: '密码只能包含字母和数字',
+              },
+            ]}
+          >
+            <Input.Password placeholder="请输入新密码" />
+          </Form.Item>
+          <Form.Item
+            label="确认新密码"
+            name="confirmPassword"
+            dependencies={['newPassword']}
+            rules={[
+              { required: true, message: '请再次输入新密码' },
+              ({ getFieldValue }) => ({
+                validator(_, value) {
+                  if (!value || getFieldValue('newPassword') === value) {
+                    return Promise.resolve()
+                  }
+                  return Promise.reject(new Error('两次输入的密码不一致'))
+                },
+              }),
+            ]}
+          >
+            <Input.Password placeholder="请再次输入新密码" />
           </Form.Item>
         </Form>
       </Modal>

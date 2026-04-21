@@ -17,6 +17,11 @@ interface RefreshRequest {
   refresh_token: string
 }
 
+export interface ChangePasswordRequest {
+  current_password: string
+  new_password: string
+}
+
 const publicClient = axios.create({
   baseURL: API_BASE_URL,
   headers: {
@@ -34,6 +39,9 @@ export const authApi = {
 
   refresh: (data: RefreshRequest) =>
     publicClient.post('/api/v1/auth/refresh', data),
+
+  changePassword: (data: ChangePasswordRequest) =>
+    api.put<{ data: { message: string } }>('/api/v1/me/password', data),
 }
 
 export { api }
