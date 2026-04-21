@@ -4,6 +4,7 @@ import {
   DashboardOutlined,
   UserOutlined,
   LogoutOutlined,
+  LinkOutlined,
 } from '@ant-design/icons'
 import { useAuthStore } from '@/stores/authStore'
 import type { MenuProps } from 'antd'
@@ -20,6 +21,11 @@ export default function BasicLayout() {
       key: '/dashboard',
       icon: <DashboardOutlined />,
       label: <Link to="/dashboard">控制台</Link>,
+    },
+    {
+      key: '/bindings',
+      icon: <LinkOutlined />,
+      label: <Link to="/bindings">绑定管理</Link>,
     },
     {
       key: '/profile',

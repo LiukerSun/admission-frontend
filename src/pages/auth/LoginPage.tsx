@@ -57,6 +57,10 @@ export default function LoginPage() {
         <div style={{ textAlign: 'center' }}>
           还没有账号？<Link to="/register">立即注册</Link>
         </div>
+
+        <div style={{ textAlign: 'center', marginTop: 12 }}>
+          <Link to="/">返回首页</Link>
+        </div>
       </Form>
     </Card>
   )

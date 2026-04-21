@@ -1,10 +1,12 @@
 import { Button, Card, Row, Col, Typography } from 'antd'
 import { useNavigate } from 'react-router-dom'
+import { useAuthStore } from '@/stores/authStore'
 
 const { Title, Paragraph } = Typography
 
 export default function LandingPage() {
   const navigate = useNavigate()
+  const { isAuthenticated } = useAuthStore()
 
   return (
     <div>
@@ -20,8 +22,12 @@ export default function LandingPage() {
         <Paragraph style={{ color: 'rgba(255,255,255,0.9)', fontSize: 18 }}>
           智能推荐、分数预测、院校对比，助力精准填报
         </Paragraph>
-        <Button type="primary" size="large" onClick={() => navigate('/register')}>
-          立即注册
+        <Button
+          type="primary"
+          size="large"
+          onClick={() => navigate(isAuthenticated ? '/dashboard' : '/register')}
+        >
+          {isAuthenticated ? '进入工作台' : '立即注册'}
         </Button>
       </div>
 

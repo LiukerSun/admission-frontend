@@ -5,6 +5,7 @@ interface User {
   id: number
   email: string
   role: string
+  user_type: 'parent' | 'student'
   created_at: string
 }
 
@@ -15,7 +16,7 @@ interface AuthState {
   isRestoring: boolean
 
   login: (email: string, password: string) => Promise<void>
-  register: (email: string, password: string) => Promise<void>
+  register: (email: string, password: string, userType: 'parent' | 'student') => Promise<void>
   logout: () => void
   restore: () => Promise<void>
   setAccessToken: (token: string) => void
@@ -46,8 +47,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     set({ user })
   },
 
-  register: async (email: string, password: string) => {
-    await authApi.register({ email, password })
+  register: async (email: string, password: string, userType: 'parent' | 'student') => {
+    await authApi.register({ email, password, user_type: userType })
     await get().login(email, password)
   },
 

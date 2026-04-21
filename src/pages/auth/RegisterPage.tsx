@@ -1,12 +1,13 @@
 import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
-import { Form, Input, Button, Card, message } from 'antd'
+import { Form, Input, Button, Card, message, Radio } from 'antd'
 import { useAuthStore } from '@/stores/authStore'
 
 interface RegisterForm {
   email: string
   password: string
   confirmPassword: string
+  userType: 'parent' | 'student'
 }
 
 export default function RegisterPage() {
@@ -17,7 +18,7 @@ export default function RegisterPage() {
   const onFinish = async (values: RegisterForm) => {
     setLoading(true)
     try {
-      await register(values.email, values.password)
+      await register(values.email, values.password, values.userType)
       message.success('注册成功，已自动登录')
       navigate('/dashboard')
     } catch {
@@ -67,6 +68,17 @@ export default function RegisterPage() {
           <Input.Password placeholder="请再次输入密码" />
         </Form.Item>
 
+        <Form.Item
+          label="身份类型"
+          name="userType"
+          rules={[{ required: true, message: '请选择身份类型' }]}
+        >
+          <Radio.Group>
+            <Radio value="parent">我是家长</Radio>
+            <Radio value="student">我是学生</Radio>
+          </Radio.Group>
+        </Form.Item>
+
         <Form.Item>
           <Button type="primary" htmlType="submit" loading={loading} block>
             注册
@@ -75,6 +87,10 @@ export default function RegisterPage() {
 
         <div style={{ textAlign: 'center' }}>
           已有账号？<Link to="/login">立即登录</Link>
+        </div>
+
+        <div style={{ textAlign: 'center', marginTop: 12 }}>
+          <Link to="/">返回首页</Link>
         </div>
       </Form>
     </Card>

@@ -16,6 +16,7 @@ export default function ProfilePage() {
           <Descriptions.Item label="用户 ID">{user.id}</Descriptions.Item>
           <Descriptions.Item label="邮箱">{user.email}</Descriptions.Item>
           <Descriptions.Item label="角色">{user.role === 'admin' ? '管理员' : '普通用户'}</Descriptions.Item>
+          <Descriptions.Item label="身份类型">{user.user_type === 'parent' ? '家长' : '学生'}</Descriptions.Item>
           <Descriptions.Item label="注册时间">{new Date(user.created_at).toLocaleString()}</Descriptions.Item>
         </Descriptions>
       </Card>

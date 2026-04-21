@@ -10,6 +10,7 @@ import LoginPage from '@/pages/auth/LoginPage'
 import RegisterPage from '@/pages/auth/RegisterPage'
 import DashboardPage from '@/pages/dashboard'
 import ProfilePage from '@/pages/profile'
+import BindingsPage from '@/pages/bindings'
 import RequireAuth from '@/components/RequireAuth'
 import NoAuth from '@/components/NoAuth'
 import GlobalSpin from '@/components/GlobalSpin'
@@ -59,6 +60,14 @@ const router = createBrowserRouter([
         element: (
           <RequireAuth>
             <ProfilePage />
+          </RequireAuth>
+        ),
+      },
+      {
+        path: 'bindings',
+        element: (
+          <RequireAuth>
+            <BindingsPage />
           </RequireAuth>
         ),
       },
