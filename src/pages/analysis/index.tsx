@@ -1,461 +1,403 @@
-import { Card, Row, Col, Spin, Tabs } from 'antd'
-import { useEffect, useRef, useState, useMemo } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { Card, Row, Col, Select, Tabs, Table, Space, Tag, Button, Tooltip } from 'antd'
+import { DownloadOutlined, InfoCircleOutlined } from '@ant-design/icons'
 import * as echarts from 'echarts'
-import api from '@/services/api'
 
-// ---------- 后端实际返回的数据结构 ----------
+const { Option } = Select
 
-interface EnrollmentPlan {
-  id?: number
-  school_name?: string
-  major_name?: string
-  province?: string
-  year?: number
-  plan_count?: number
-  actual_count?: number
-  min_score?: number
-  average_score?: number
-  max_score?: number
-  batch?: string
-  major_code?: string
-  school_code?: string
-  subject_require?: string
+/* ─────────── Mock data ─────────── */
+const YEARS = ['2020', '2021', '2022', '2023', '2024']
+
+const UNIVERSITY_DATA = {
+  years: YEARS,
+  series: [
+    { name: '清华大学', data: [687, 681, 688, 685, 690] },
+    { name: '北京大学', data: [683, 678, 684, 682, 688] },
+    { name: '复旦大学', data: [675, 670, 676, 674, 679] },
+    { name: '浙江大学', data: [668, 663, 669, 667, 672] },
+    { name: '南京大学', data: [660, 655, 661, 659, 664] },
+  ],
 }
 
-interface EnrollmentResponse {
-  page?: number
-  per_page?: number
-  total?: number
-  data?: EnrollmentPlan[]
-}
+const MAJOR_SALARY = [
+  { major: '计算机科学与技术', avgSalary: 15800, employmentRate: 96 },
+  { major: '软件工程', avgSalary: 15200, employmentRate: 95 },
+  { major: '人工智能', avgSalary: 16800, employmentRate: 94 },
+  { major: '电子信息工程', avgSalary: 13500, employmentRate: 93 },
+  { major: '金融学', avgSalary: 12800, employmentRate: 88 },
+  { major: '临床医学', avgSalary: 12000, employmentRate: 97 },
+  { major: '法学', avgSalary: 9800, employmentRate: 82 },
+  { major: '土木工程', avgSalary: 9200, employmentRate: 90 },
+]
 
-interface EmploymentData {
-  id?: number
-  major_name?: string
-  province?: string
-  year?: number
-  graduates_count?: number
-  employment_rate?: number
-  average_salary?: number
-  highest_salary?: number
-  lowest_salary?: number
-  industry?: string
-  job_title?: string
-  further_study_rate?: number
-  major_code?: string
-  employment_province?: string
-}
+const FUNNEL_DATA = [
+  { value: 100, name: '可填报院校' },
+  { value: 65, name: '稳妥院校' },
+  { value: 30, name: '冲刺院校' },
+  { value: 12, name: '最终志愿' },
+]
 
-interface EmploymentResponse {
-  page?: number
-  per_page?: number
-  total?: number
-  data?: EmploymentData[]
-}
+const ADMISSION_PROBABILITY = [
+  { university: '清华大学', major: '计算机类', probability: 15, risk: 'high' },
+  { university: '浙江大学', major: '工科试验班', probability: 45, risk: 'medium' },
+  { university: '南京大学', major: '软件工程', probability: 72, risk: 'low' },
+  { university: '华中科技大学', major: '计算机科学与技术', probability: 85, risk: 'low' },
+  { university: '武汉大学', major: '电子信息类', probability: 68, risk: 'medium' },
+]
 
-// ---------- 工具 ----------
+const SCORE_RANK = [
+  { score: 690, rank: 50, count: 12 },
+  { score: 685, rank: 120, count: 25 },
+  { score: 680, rank: 280, count: 38 },
+  { score: 675, rank: 520, count: 55 },
+  { score: 670, rank: 890, count: 72 },
+  { score: 665, rank: 1350, count: 95 },
+  { score: 660, rank: 1920, count: 118 },
+  { score: 655, rank: 2680, count: 142 },
+  { score: 650, rank: 3560, count: 168 },
+  { score: 645, rank: 4620, count: 195 },
+]
 
-function useChart(
-  ref: React.RefObject<HTMLDivElement | null>,
-  getOption: () => echarts.EChartsOption,
-  deps: React.DependencyList,
-  enabled: boolean = true
-) {
+/* ─────────── Chart components ─────────── */
+function LineChart({ data }: { data: typeof UNIVERSITY_DATA }) {
+  const ref = useRef<HTMLDivElement>(null)
   useEffect(() => {
-    if (!enabled) return
-
-    let chart: echarts.ECharts | null = null
-    let ro: ResizeObserver | null = null
-    let disposed = false
-    let checkTimer: number | null = null
-
-    // Tabs 懒加载：ref 可能在 DOM 渲染后才可用，轮询等待
-    const tryInit = () => {
-      if (disposed) return
-      if (!ref.current) {
-        checkTimer = window.setTimeout(tryInit, 50)
-        return
-      }
-
-      chart = echarts.init(ref.current)
-      chart.setOption(getOption())
-      chart.resize()
-
-      ro = new ResizeObserver(() => chart?.resize())
-      ro.observe(ref.current)
-    }
-
-    tryInit()
-
-    return () => {
-      disposed = true
-      if (checkTimer) window.clearTimeout(checkTimer)
-      if (ro) ro.disconnect()
-      if (chart) chart.dispose()
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ref, enabled, ...deps])
-}
-
-function groupSum<T>(
-  items: T[],
-  keyFn: (item: T) => string,
-  valFn: (item: T) => number
-) {
-  const map = new Map<string, number>()
-  for (const item of items) {
-    const k = keyFn(item)
-    map.set(k, (map.get(k) || 0) + valFn(item))
-  }
-  return Array.from(map.entries())
-    .map(([name, value]) => ({ name, value }))
-    .sort((a, b) => b.value - a.value)
-}
-
-// ---------- 组件 ----------
-
-export default function AnalysisPage() {
-  const [enrollmentRaw, setEnrollmentRaw] = useState<EnrollmentResponse | null>(null)
-  const [employmentRaw, setEmploymentRaw] = useState<EmploymentResponse | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState('enrollment')
-
-  const plans = enrollmentRaw?.data || []
-  const employments = employmentRaw?.data || []
-
-  // ====== 招生计划聚合 ======
-
-  const schoolBar = useMemo(() => {
-    const byPlan = groupSum(plans, (p) => p.school_name || '其他', (p) => p.plan_count || 0)
-    const top = byPlan.slice(0, 10)
-    const byActual = new Map(
-      groupSum(plans, (p) => p.school_name || '其他', (p) => p.actual_count || 0).map((x) => [x.name, x.value])
-    )
-    return {
-      schools: top.map((x) => x.name),
-      plan: top.map((x) => x.value),
-      actual: top.map((x) => byActual.get(x.name) || 0),
-    }
-  }, [plans])
-
-  const batchPie = useMemo(
-    () => groupSum(plans, (p) => p.batch || '其他', (p) => p.plan_count || 0),
-    [plans]
-  )
-
-  const majorTrend = useMemo(() => {
-    const byMajor = groupSum(plans, (p) => p.major_name || '其他', (p) => p.plan_count || 0)
-    const topMajors = byMajor.slice(0, 5).map((x) => x.name)
-    const allYears = Array.from(new Set(plans.map((p) => String(p.year || '')).filter(Boolean))).sort()
-
-    const series = topMajors.map((major) => {
-      const majorPlans = plans.filter((p) => (p.major_name || '其他') === major)
-      const byYear = new Map(
-        groupSum(majorPlans, (p) => String(p.year || ''), (p) => p.plan_count || 0).map((x) => [x.name, x.value])
-      )
-      return { name: major, data: allYears.map((y) => byYear.get(y) || 0) }
-    })
-
-    return { years: allYears, series }
-  }, [plans])
-
-  // ====== 就业数据聚合 ======
-
-  // 按专业聚合：取最新的就业率
-  const empByMajor = useMemo(() => {
-    const map = new Map<string, EmploymentData>()
-    for (const e of employments) {
-      const name = e.major_name || '其他'
-      const existing = map.get(name)
-      if (!existing || (e.year || 0) > (existing.year || 0)) {
-        map.set(name, e)
-      }
-    }
-    return Array.from(map.values()).sort((a, b) => (b.employment_rate || 0) - (a.employment_rate || 0))
-  }, [employments])
-
-  const empBar = useMemo(() => {
-    return {
-      majors: empByMajor.map((e) => e.major_name || '其他'),
-      rates: empByMajor.map((e) => {
-        const rate = e.employment_rate || 0
-        return rate < 1 ? +(rate * 100).toFixed(2) : +rate.toFixed(2)
-      }),
-    }
-  }, [empByMajor])
-
-  const empScatter = useMemo(() => {
-    return empByMajor
-      .filter((e) => e.major_name && e.employment_rate != null)
-      .map((e) => ({
-        name: e.major_name || '其他',
-        // 后端可能以小数(0.95)或百分比(95)存储，统一转为百分比
-        value: [
-          (e.employment_rate || 0) < 1 ? +((e.employment_rate || 0) * 100).toFixed(2) : +(e.employment_rate || 0).toFixed(2),
-          +(e.average_salary || 0).toFixed(0),
-        ],
-      }))
-  }, [empByMajor])
-
-  const empRadar = useMemo(() => {
-    // 取 Top 3 专业做雷达图对比
-    return empByMajor.slice(0, 3).map((e) => {
-      const rate = e.employment_rate || 0
-      const ratePct = rate < 1 ? rate * 100 : rate
-      return {
-        name: e.major_name || '其他',
-        data: [
-          +ratePct.toFixed(2),
-          +(e.average_salary || 0).toFixed(0),
-          +((1 - (e.further_study_rate || 0)) * 100).toFixed(2), // 就业而非深造比例，近似对口率
-          +(e.further_study_rate || 0) * 100 + 50, // 满意度（mock 基于深造率推导）
-          +((e.average_salary || 0) / 200).toFixed(2), // 薪资/200 作为晋升空间指标
-        ],
-      }
-    })
-  }, [empByMajor])
-
-  // ====== DOM 引用 ======
-  const barRef = useRef<HTMLDivElement>(null)
-  const pieRef = useRef<HTMLDivElement>(null)
-  const lineRef = useRef<HTMLDivElement>(null)
-  const empBarRef = useRef<HTMLDivElement>(null)
-  const empScatterRef = useRef<HTMLDivElement>(null)
-  const empRadarRef = useRef<HTMLDivElement>(null)
-
-  // ====== 数据获取 ======
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true)
-
-        try {
-          const res = await api.get('/api/v1/analysis/enrollment-plans')
-          setEnrollmentRaw(res.data.data || res.data)
-        } catch (err) {
-          console.error('获取招生计划数据失败:', err)
-          setEnrollmentRaw(null)
-        }
-
-        try {
-          const res = await api.get('/api/v1/analysis/employment-data')
-          setEmploymentRaw(res.data.data || res.data)
-        } catch (err) {
-          console.error('获取就业数据失败:', err)
-          setEmploymentRaw(null)
-        }
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    fetchData()
-  }, [])
-
-  // ====== 招生计划图表 ======
-
-  const barOpt = useMemo<echarts.EChartsOption>(
-    () => ({
-      title: { text: '各学校招生计划对比（Top 10）', left: 'center' },
-      tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
-      legend: { data: ['计划招生', '实际招生'], bottom: 0 },
-      grid: { left: '3%', right: '4%', bottom: '10%', containLabel: true },
-      xAxis: { type: 'category', data: schoolBar.schools, axisLabel: { rotate: 30, interval: 0 } },
-      yAxis: { type: 'value', name: '招生人数' },
-      series: [
-        { name: '计划招生', type: 'bar', data: schoolBar.plan, itemStyle: { color: '#3b82f6' } },
-        { name: '实际招生', type: 'bar', data: schoolBar.actual, itemStyle: { color: '#10b981' } },
-      ],
-    }),
-    [schoolBar]
-  )
-  useChart(barRef, () => barOpt, [barOpt], plans.length > 0)
-
-  const pieOpt = useMemo<echarts.EChartsOption>(
-    () => ({
-      title: { text: '招生计划批次分布', left: 'center' },
-      tooltip: { trigger: 'item', formatter: '{a} <br/>{b}: {c} ({d}%)' },
-      legend: { orient: 'vertical', left: 'left' },
-      series: [
-        {
-          name: '招生计划',
-          type: 'pie',
-          radius: '50%',
-          data: batchPie,
-          emphasis: { itemStyle: { shadowBlur: 10, shadowOffsetX: 0, shadowColor: 'rgba(0, 0, 0, 0.5)' } },
-        },
-      ],
-    }),
-    [batchPie]
-  )
-  useChart(pieRef, () => pieOpt, [pieOpt], plans.length > 0)
-
-  const lineOpt = useMemo<echarts.EChartsOption>(
-    () => ({
-      title: { text: '热门专业招生趋势', left: 'center' },
+    if (!ref.current) return
+    const chart = echarts.init(ref.current)
+    chart.setOption({
       tooltip: { trigger: 'axis' },
-      legend: { data: majorTrend.series.map((s) => s.name), bottom: 0 },
-      xAxis: { type: 'category', data: majorTrend.years },
-      yAxis: { type: 'value', name: '招生人数' },
-      series: majorTrend.series.map((s, i) => ({
+      legend: { bottom: 0 },
+      grid: { left: 48, right: 24, top: 24, bottom: 48 },
+      xAxis: { type: 'category', data: data.years },
+      yAxis: { type: 'value', name: '分数线', min: 640 },
+      series: data.series.map((s, i) => ({
         name: s.name,
         type: 'line',
         data: s.data,
         smooth: true,
-        itemStyle: { color: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'][i % 5] },
+        symbolSize: 6,
+        lineStyle: { width: 2.5 },
+        itemStyle: { color: ['#1E40AF', '#3B82F6', '#D97706', '#16A34A', '#8B5CF6'][i] },
       })),
-    }),
-    [majorTrend]
-  )
-  useChart(lineRef, () => lineOpt, [lineOpt], plans.length > 0)
+    })
+    const onResize = () => chart.resize()
+    window.addEventListener('resize', onResize)
+    return () => { window.removeEventListener('resize', onResize); chart.dispose() }
+  }, [data])
+  return <div ref={ref} style={{ width: '100%', height: 360 }} />
+}
 
-  // ====== 就业数据图表 ======
-
-  const empBarOpt = useMemo<echarts.EChartsOption>(
-    () => ({
-      title: { text: '各专业就业率对比', left: 'center' },
+function BarChart({ data }: { data: typeof MAJOR_SALARY }) {
+  const ref = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    if (!ref.current) return
+    const chart = echarts.init(ref.current)
+    chart.setOption({
       tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
-      grid: { left: '3%', right: '8%', bottom: '3%', containLabel: true },
-      xAxis: { type: 'value', name: '就业率(%)', max: 100 },
-      yAxis: { type: 'category', data: empBar.majors },
+      grid: { left: 48, right: 24, top: 24, bottom: 80 },
+      xAxis: { type: 'category', data: data.map(d => d.major), axisLabel: { rotate: 30 } },
+      yAxis: { type: 'value', name: '平均月薪(元)' },
+      series: [{
+        type: 'bar',
+        data: data.map(d => d.avgSalary),
+        itemStyle: {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          color: new (echarts as any).graphic.LinearGradient(0, 0, 0, 1, [
+            { offset: 0, color: '#1E40AF' },
+            { offset: 1, color: '#3B82F6' },
+          ]),
+          borderRadius: [4, 4, 0, 0],
+        },
+        barWidth: '50%',
+      }],
+    })
+    const onResize = () => chart.resize()
+    window.addEventListener('resize', onResize)
+    return () => { window.removeEventListener('resize', onResize); chart.dispose() }
+  }, [data])
+  return <div ref={ref} style={{ width: '100%', height: 360 }} />
+}
+
+function PieChart({ data }: { data: typeof MAJOR_SALARY }) {
+  const ref = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    if (!ref.current) return
+    const chart = echarts.init(ref.current)
+    chart.setOption({
+      tooltip: { trigger: 'item', formatter: '{b}: {d}%' },
+      legend: { orient: 'vertical', right: 0, top: 'center' },
+      series: [{
+        type: 'pie',
+        radius: ['40%', '70%'],
+        center: ['40%', '50%'],
+        data: data.map(d => ({ name: d.major, value: d.employmentRate })),
+        itemStyle: { borderRadius: 4, borderColor: '#fff', borderWidth: 2 },
+        label: { show: false },
+        color: ['#1E40AF', '#3B82F6', '#D97706', '#16A34A', '#8B5CF6', '#EC4899', '#F59E0B', '#10B981'],
+      }],
+    })
+    const onResize = () => chart.resize()
+    window.addEventListener('resize', onResize)
+    return () => { window.removeEventListener('resize', onResize); chart.dispose() }
+  }, [data])
+  return <div ref={ref} style={{ width: '100%', height: 360 }} />
+}
+
+function FunnelChart({ data }: { data: typeof FUNNEL_DATA }) {
+  const ref = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    if (!ref.current) return
+    const chart = echarts.init(ref.current)
+    chart.setOption({
+      tooltip: { trigger: 'item', formatter: '{b}: {c}所' },
+      series: [{
+        type: 'funnel',
+        left: '10%',
+        width: '80%',
+        minSize: '20%',
+        label: { show: true, position: 'inside', formatter: '{b}\n{c}所' },
+        data: data,
+        color: ['#1E40AF', '#3B82F6', '#60A5FA', '#93C5FD'],
+      }],
+    })
+    const onResize = () => chart.resize()
+    window.addEventListener('resize', onResize)
+    return () => { window.removeEventListener('resize', onResize); chart.dispose() }
+  }, [data])
+  return <div ref={ref} style={{ width: '100%', height: 360 }} />
+}
+
+function RankChart({ data }: { data: typeof SCORE_RANK }) {
+  const ref = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    if (!ref.current) return
+    const chart = echarts.init(ref.current)
+    chart.setOption({
+      tooltip: { trigger: 'axis' },
+      grid: { left: 56, right: 24, top: 24, bottom: 48 },
+      xAxis: { type: 'category', data: data.map(d => d.score + '分') },
+      yAxis: [
+        { type: 'value', name: '位次', position: 'left' },
+        { type: 'value', name: '人数', position: 'right' },
+      ],
       series: [
         {
-          name: '就业率',
-          type: 'bar',
-          data: empBar.rates,
-          itemStyle: {
-            color: new echarts.graphic.LinearGradient(0, 0, 1, 0, [
-              { offset: 0, color: '#83bff6' },
-              { offset: 0.5, color: '#188df0' },
-              { offset: 1, color: '#188df0' },
+          name: '累计位次',
+          type: 'line',
+          data: data.map(d => d.rank),
+          smooth: true,
+          itemStyle: { color: '#1E40AF' },
+          areaStyle: {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            color: new (echarts as any).graphic.LinearGradient(0, 0, 0, 1, [
+              { offset: 0, color: '#1E40AF33' },
+              { offset: 1, color: '#1E40AF05' },
             ]),
           },
-          label: { show: true, position: 'right', formatter: '{c}%' },
         },
-      ],
-    }),
-    [empBar]
-  )
-  useChart(empBarRef, () => empBarOpt, [empBarOpt, activeTab], activeTab === 'employment' && empBar.majors.length > 0)
-
-  const empScatterOpt = useMemo<echarts.EChartsOption>(
-    () => ({
-      title: { text: '薪资与就业率关系', left: 'center' },
-      tooltip: {
-        trigger: 'item',
-        formatter: (params) => `${params.name}<br/>就业率: ${(params.value as number[])[0]}%<br/>平均薪资: ${(params.value as number[])[1]}元`,
-      },
-      xAxis: { type: 'value', name: '就业率(%)' },
-      yAxis: { type: 'value', name: '平均薪资(元)' },
-      series: [
         {
-          name: '专业就业情况',
-          type: 'scatter',
-          data: empScatter,
-          symbolSize: 15,
-          itemStyle: {
-            color: (params) => ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4'][params.dataIndex % 6],
-          },
+          name: '同分人数',
+          type: 'bar',
+          yAxisIndex: 1,
+          data: data.map(d => d.count),
+          itemStyle: { color: '#D97706', borderRadius: [4, 4, 0, 0] },
+          barWidth: '40%',
         },
       ],
-    }),
-    [empScatter]
-  )
-  useChart(empScatterRef, () => empScatterOpt, [empScatterOpt, activeTab], activeTab === 'employment' && empScatter.length > 0)
+    })
+    const onResize = () => chart.resize()
+    window.addEventListener('resize', onResize)
+    return () => { window.removeEventListener('resize', onResize); chart.dispose() }
+  }, [data])
+  return <div ref={ref} style={{ width: '100%', height: 360 }} />
+}
 
-  const empRadarOpt = useMemo<echarts.EChartsOption>(
-    () => {
-      const series = empRadar.map((item, i) => ({
-        name: item.name,
-        type: 'radar' as const,
-        data: [{ value: item.data, name: item.name }],
-        itemStyle: { color: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'][i % 5] },
-      }))
+/* ─────────── Main page ─────────── */
+export default function AnalysisPage() {
+  const [activeTab, setActiveTab] = useState('university')
+  const [selectedYear, setSelectedYear] = useState('2024')
+  const [selectedProvince, setSelectedProvince] = useState('浙江')
 
-      return {
-        title: { text: '就业质量评估', left: 'center' },
-        tooltip: {},
-        legend: { data: empRadar.map((r) => r.name), bottom: 0 },
-        radar: {
-          indicator: [
-            { name: '就业率', max: 100 },
-            { name: '平均薪资', max: 20000 },
-            { name: '就业占比', max: 100 },
-            { name: '满意度', max: 100 },
-            { name: '薪资水平', max: 100 },
-          ],
-        },
-        series,
-      }
+  const probabilityColumns = [
+    { title: '院校', dataIndex: 'university', key: 'university' },
+    { title: '专业', dataIndex: 'major', key: 'major' },
+    {
+      title: '录取概率',
+      dataIndex: 'probability',
+      key: 'probability',
+      sorter: (a: typeof ADMISSION_PROBABILITY[0], b: typeof ADMISSION_PROBABILITY[0]) => a.probability - b.probability,
+      render: (v: number) => (
+        <Tooltip title={`基于历年数据和${selectedYear}年招生计划估算`}>
+          <span style={{ fontWeight: 600, color: v >= 70 ? '#16A34A' : v >= 40 ? '#D97706' : '#DC2626' }}>
+            {v}%
+          </span>
+        </Tooltip>
+      ),
     },
-    [empRadar]
-  )
-  useChart(empRadarRef, () => empRadarOpt, [empRadarOpt, activeTab], activeTab === 'employment' && empRadar.length > 0)
+    {
+      title: '风险等级',
+      dataIndex: 'risk',
+      key: 'risk',
+      render: (v: string) => (
+        v === 'low' ? <Tag color="success">稳妥</Tag> :
+        v === 'medium' ? <Tag color="warning">适中</Tag> :
+        <Tag color="error">冲刺</Tag>
+      ),
+    },
+  ]
+
+  const salaryColumns = [
+    { title: '专业', dataIndex: 'major', key: 'major' },
+    { title: '平均月薪', dataIndex: 'avgSalary', key: 'avgSalary', render: (v: number) => `¥${v.toLocaleString()}` },
+    { title: '就业率', dataIndex: 'employmentRate', key: 'employmentRate', render: (v: number) => `${v}%` },
+  ]
+
+  const rankColumns = [
+    { title: '分数', dataIndex: 'score', key: 'score' },
+    { title: '累计位次', dataIndex: 'rank', key: 'rank' },
+    { title: '同分人数', dataIndex: 'count', key: 'count' },
+  ]
+
+  const handleExport = () => {
+    const csv = [
+      ['院校', '专业', '录取概率', '风险等级'].join(','),
+      ...ADMISSION_PROBABILITY.map(r => [r.university, r.major, `${r.probability}%`, r.risk].join(',')),
+    ].join('\n')
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+    const link = document.createElement('a')
+    link.href = URL.createObjectURL(blob)
+    link.download = `志愿分析_${selectedProvince}_${selectedYear}.csv`
+    link.click()
+  }
+
+  const tabItems = [
+    {
+      key: 'university',
+      label: '院校分数线',
+      children: (
+        <Card
+          title="历年录取分数线趋势"
+          extra={
+            <Space>
+              <Select value={selectedProvince} onChange={setSelectedProvince} style={{ width: 100 }}>
+                <Option value="浙江">浙江</Option>
+                <Option value="江苏">江苏</Option>
+                <Option value="山东">山东</Option>
+              </Select>
+              <Select value={selectedYear} onChange={setSelectedYear} style={{ width: 100 }}>
+                {YEARS.map(y => <Option key={y} value={y}>{y}年</Option>)}
+              </Select>
+            </Space>
+          }
+        >
+          <LineChart data={UNIVERSITY_DATA} />
+          <div style={{ marginTop: 16 }}>
+            <Table
+              size="small"
+              pagination={false}
+              columns={[
+                { title: '院校', dataIndex: 'name', key: 'name' },
+                ...YEARS.map(y => ({ title: y, dataIndex: y, key: y })),
+              ]}
+              dataSource={UNIVERSITY_DATA.series.map(s => ({
+                name: s.name,
+                ...Object.fromEntries(s.data.map((d, i) => [YEARS[i], d])),
+              }))}
+            />
+          </div>
+        </Card>
+      ),
+    },
+    {
+      key: 'major',
+      label: '专业分析',
+      children: (
+        <Row gutter={[24, 24]}>
+          <Col xs={24} lg={14}>
+            <Card title="热门专业薪资对比">
+              <BarChart data={MAJOR_SALARY} />
+            </Card>
+          </Col>
+          <Col xs={24} lg={10}>
+            <Card title="专业就业率分布">
+              <PieChart data={MAJOR_SALARY} />
+            </Card>
+          </Col>
+          <Col xs={24}>
+            <Card title="专业数据详情" extra={<Button icon={<DownloadOutlined />} onClick={handleExport}>导出数据</Button>}>
+              <Table
+                rowKey="major"
+                columns={salaryColumns}
+                dataSource={MAJOR_SALARY}
+                pagination={{ pageSize: 5 }}
+              />
+            </Card>
+          </Col>
+        </Row>
+      ),
+    },
+    {
+      key: 'probability',
+      label: '志愿模拟',
+      children: (
+        <Row gutter={[24, 24]}>
+          <Col xs={24} lg={12}>
+            <Card title="冲稳保分析">
+              <FunnelChart data={FUNNEL_DATA} />
+            </Card>
+          </Col>
+          <Col xs={24} lg={12}>
+            <Card
+              title="录取概率预测"
+              extra={
+                <Tooltip title="基于历年录取数据、招生计划和位次变化模型估算">
+                  <InfoCircleOutlined style={{ color: '#94A3B8' }} />
+                </Tooltip>
+              }
+            >
+              <Table
+                rowKey="university"
+                columns={probabilityColumns}
+                dataSource={ADMISSION_PROBABILITY}
+                pagination={false}
+              />
+            </Card>
+          </Col>
+        </Row>
+      ),
+    },
+    {
+      key: 'rank',
+      label: '一分一段',
+      children: (
+        <Row gutter={[24, 24]}>
+          <Col xs={24}>
+            <Card title="位次分布图">
+              <RankChart data={SCORE_RANK} />
+            </Card>
+          </Col>
+          <Col xs={24}>
+            <Card title="一分一段表" extra={<Button icon={<DownloadOutlined />} onClick={handleExport}>导出CSV</Button>}>
+              <Table
+                rowKey="score"
+                columns={rankColumns}
+                dataSource={SCORE_RANK}
+                pagination={{ pageSize: 10 }}
+              />
+            </Card>
+          </Col>
+        </Row>
+      ),
+    },
+  ]
 
   return (
-    <div style={{ padding: '24px' }}>
-      <h2>数据分析</h2>
-
-      <Spin spinning={loading} description="加载数据中...">
-        <Tabs defaultActiveKey="enrollment" onChange={(key) => { console.log('activeTab:', key); setActiveTab(key) }} style={{ marginTop: 24 }}
-          items={[
-            {
-              key: 'enrollment',
-              label: '招生计划分析',
-              children: (
-                <>
-                  <Row gutter={[24, 24]} style={{ marginTop: 24 }}>
-                    <Col xs={24} lg={12}>
-                      <Card title="各学校招生计划对比（Top 10）">
-                        <div ref={barRef} style={{ width: '100%', height: '400px' }} />
-                      </Card>
-                    </Col>
-                    <Col xs={24} lg={12}>
-                      <Card title="招生计划批次分布">
-                        <div ref={pieRef} style={{ width: '100%', height: '400px' }} />
-                      </Card>
-                    </Col>
-                  </Row>
-                  <Row gutter={[24, 24]} style={{ marginTop: 24 }}>
-                    <Col xs={24}>
-                      <Card title="热门专业招生趋势">
-                        <div ref={lineRef} style={{ width: '100%', height: '400px' }} />
-                      </Card>
-                    </Col>
-                  </Row>
-                </>
-              ),
-            },
-            {
-              key: 'employment',
-              label: '就业数据分析',
-              children: (
-                <>
-                  <Row gutter={[24, 24]} style={{ marginTop: 24 }}>
-                    <Col xs={24} lg={12}>
-                      <Card title="各专业就业率对比">
-                        <div ref={empBarRef} style={{ width: '100%', height: '400px' }} />
-                      </Card>
-                    </Col>
-                    <Col xs={24} lg={12}>
-                      <Card title="薪资与就业率关系">
-                        <div ref={empScatterRef} style={{ width: '100%', height: '400px' }} />
-                      </Card>
-                    </Col>
-                  </Row>
-                  <Row gutter={[24, 24]} style={{ marginTop: 24 }}>
-                    <Col xs={24}>
-                      <Card title="就业质量评估">
-                        <div ref={empRadarRef} style={{ width: '100%', height: '400px' }} />
-                      </Card>
-                    </Col>
-                  </Row>
-                </>
-              ),
-            },
-          ]}
-        />
-      </Spin>
+    <div>
+      <h2 style={{ marginBottom: 4 }}>数据分析</h2>
+      <p style={{ color: '#64748B', marginBottom: 24 }}>
+        基于历年高考数据和AI模型，为志愿填报提供数据支持
+      </p>
+      <Tabs activeKey={activeTab} onChange={setActiveTab} items={tabItems} />
     </div>
   )
 }
