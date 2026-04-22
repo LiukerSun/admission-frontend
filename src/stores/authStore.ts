@@ -1,14 +1,12 @@
 import { create } from 'zustand'
-import { api, authApi } from '@/services/auth'
+import { authApi, type CurrentUser } from '@/services/auth'
 import type { AxiosError } from 'axios'
 
-interface User {
+export type User = CurrentUser & {
   id: number
   email: string
-  username?: string
   role: string
   user_type: 'parent' | 'student'
-  status?: string
   created_at: string
 }
 
@@ -23,11 +21,16 @@ interface AuthState {
   register: (email: string, password: string, userType: 'parent' | 'student') => Promise<void>
   logout: () => void
   restore: () => Promise<void>
+  refreshUser: () => Promise<User>
   setAccessToken: (token: string) => void
   setUser: (user: User) => void
 }
 
 const REFRESH_TOKEN_KEY = 'refresh_token'
+
+function applyUser(set: (state: Partial<AuthState>) => void, user: User) {
+  set({ user, isAdmin: user.role === 'admin' })
+}
 
 export const useAuthStore = create<AuthState>((set, get) => ({
   accessToken: null,
@@ -48,9 +51,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       })
       localStorage.setItem(REFRESH_TOKEN_KEY, data.refresh_token)
 
-      const meRes = await api.get('/api/v1/me')
+      const meRes = await authApi.getMe()
       const user = meRes.data.data as User
-      set({ user, isAdmin: user.role === 'admin' })
+      applyUser(set, user)
     } catch (err) {
       const axiosErr = err as AxiosError<{ message?: string }>
       if (axiosErr.response?.status === 401) {
@@ -98,9 +101,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       })
       localStorage.setItem(REFRESH_TOKEN_KEY, data.refresh_token)
 
-      const meRes = await api.get('/api/v1/me')
+      const meRes = await authApi.getMe()
       const user = meRes.data.data as User
-      set({ user, isAdmin: user.role === 'admin' })
+      applyUser(set, user)
     } catch (err) {
       const axiosErr = err as AxiosError<{ message?: string }>
       if (axiosErr.response?.status === 401) {
@@ -122,11 +125,18 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
   },
 
+  refreshUser: async () => {
+    const meRes = await authApi.getMe()
+    const user = meRes.data.data as User
+    applyUser(set, user)
+    return user
+  },
+
   setAccessToken: (token: string) => {
     set({ accessToken: token })
   },
 
   setUser: (user: User) => {
-    set({ user, isAdmin: user.role === 'admin' })
+    applyUser(set, user)
   },
 }))

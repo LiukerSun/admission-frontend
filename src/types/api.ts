@@ -272,6 +272,164 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/users/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 管理员获取用户详情
+         * @description 获取指定用户的完整信息，用于前端编辑表单回填
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description 用户 ID */
+                    id: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"] & {
+                            data?: components["schemas"]["admin.UserResponse"];
+                        };
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+            };
+        };
+        /**
+         * 管理员修改用户信息
+         * @description 修改指定用户的 email、username、role、user_type、status
+         */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description 用户 ID */
+                    id: number;
+                };
+                cookie?: never;
+            };
+            /** @description 用户信息 */
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["admin.UpdateUserRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"] & {
+                            data?: components["schemas"]["admin.UserResponse"];
+                        };
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+            };
+        };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/users/{id}/disable": {
         parameters: {
             query?: never;
@@ -418,6 +576,93 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/users/{id}/password": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * 管理员重置用户密码
+         * @description 管理员为指定用户重置密码，重置后用户需重新登录
+         */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description 用户 ID */
+                    id: number;
+                };
+                cookie?: never;
+            };
+            /** @description 新密码 */
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["admin.ResetPasswordRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"] & {
+                            data?: {
+                                [key: string]: string;
+                            };
+                        };
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+            };
+        };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/users/{id}/role": {
         parameters: {
             query?: never;
@@ -498,6 +743,78 @@ export interface paths {
                 };
             };
         };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/analysis/employment-data": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 获取就业情况数据
+         * @description 获取模拟的专业就业情况数据，支持分页和筛选
+         */
+        get: {
+            parameters: {
+                query?: {
+                    /** @description 专业名称 */
+                    major_name?: string;
+                    /** @description 省份 */
+                    province?: string;
+                    /** @description 年份 */
+                    year?: number;
+                    /** @description 行业 */
+                    industry?: string;
+                    /** @description 页码，默认1 */
+                    page?: number;
+                    /** @description 每页数量，默认10 */
+                    per_page?: number;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"] & {
+                            data?: components["schemas"]["analysis.EmploymentDataResponse"];
+                        };
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+                /** @description Internal Server Error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+            };
+        };
+        put?: never;
         post?: never;
         delete?: never;
         options?: never;
@@ -928,6 +1245,222 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/me/password": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * 用户修改自己的密码
+         * @description 当前登录用户通过旧密码校验后修改自己的密码
+         */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            /** @description 密码信息 */
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["user.ChangePasswordRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"] & {
+                            data?: {
+                                [key: string]: string;
+                            };
+                        };
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+            };
+        };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/me/phone/send-code": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 发送手机号验证码
+         * @description 当前登录用户向指定手机号发送验证码，用于绑定手机号
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            /** @description 手机号 */
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["user.SendPhoneCodeRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"] & {
+                            data?: {
+                                [key: string]: string;
+                            };
+                        };
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/me/phone/verify": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 校验手机号验证码
+         * @description 当前登录用户校验验证码并完成手机号绑定
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            /** @description 手机号与验证码 */
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["user.VerifyPhoneRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"] & {
+                            data?: {
+                                [key: string]: string;
+                            };
+                        };
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/health": {
         parameters: {
             query?: never;
@@ -1001,6 +1534,10 @@ export interface components {
             /** @example 100 */
             total?: number;
         };
+        "admin.ResetPasswordRequest": {
+            /** @example newpass123 */
+            new_password: string;
+        };
         "admin.SafeUserInfo": {
             /** @example user@example.com */
             email?: string;
@@ -1027,6 +1564,27 @@ export interface components {
              */
             role: "user" | "premium" | "admin";
         };
+        "admin.UpdateUserRequest": {
+            /** @example user@example.com */
+            email?: string;
+            /**
+             * @example premium
+             * @enum {string}
+             */
+            role?: "user" | "premium" | "admin";
+            /**
+             * @example active
+             * @enum {string}
+             */
+            status?: "active" | "banned";
+            /**
+             * @example student
+             * @enum {string}
+             */
+            user_type?: "parent" | "student";
+            /** @example johndoe */
+            username?: string;
+        };
         "admin.UserListItem": {
             /** @example 2024-01-01T00:00:00Z */
             created_at?: string;
@@ -1034,6 +1592,10 @@ export interface components {
             email?: string;
             /** @example 1 */
             id?: number;
+            /** @example 13800138000 */
+            phone?: string;
+            /** @example true */
+            phone_verified?: boolean;
             /** @example user */
             role?: string;
             /** @example active */
@@ -1051,6 +1613,68 @@ export interface components {
             /** @example 100 */
             total?: number;
             users?: components["schemas"]["admin.UserListItem"][];
+        };
+        "admin.UserResponse": {
+            /** @example 2024-01-01T00:00:00Z */
+            created_at?: string;
+            /** @example user@example.com */
+            email?: string;
+            /** @example 1 */
+            id?: number;
+            /** @example 13800138000 */
+            phone?: string;
+            /** @example true */
+            phone_verified?: boolean;
+            /** @example user */
+            role?: string;
+            /** @example active */
+            status?: string;
+            /** @example 2024-01-01T00:00:00Z */
+            updated_at?: string;
+            /** @example student */
+            user_type?: string;
+            /** @example johndoe */
+            username?: string;
+        };
+        "analysis.EmploymentData": {
+            /** @description 平均薪资 */
+            average_salary?: number;
+            /** @description 就业省份 */
+            employment_province?: string;
+            /** @description 就业率 */
+            employment_rate?: number;
+            /** @description 深造率 */
+            further_study_rate?: number;
+            /** @description 毕业生总数 */
+            graduates_count?: number;
+            /** @description 最高薪资 */
+            highest_salary?: number;
+            /** @description 数据ID */
+            id?: number;
+            /** @description 主要就业行业 */
+            industry?: string;
+            /** @description 主要职位 */
+            job_title?: string;
+            /** @description 最低薪资 */
+            lowest_salary?: number;
+            /** @description 专业代码 */
+            major_code?: string;
+            /** @description 专业名称 */
+            major_name?: string;
+            /** @description 省份 */
+            province?: string;
+            /** @description 年份 */
+            year?: number;
+        };
+        "analysis.EmploymentDataResponse": {
+            /** @description 就业情况列表 */
+            data?: components["schemas"]["analysis.EmploymentData"][];
+            /** @description 当前页码 */
+            page?: number;
+            /** @description 每页数量 */
+            per_page?: number;
+            /** @description 总数据量 */
+            total?: number;
         };
         "analysis.EnrollmentPlan": {
             /** @description 实际招生人数 */
@@ -1111,6 +1735,12 @@ export interface components {
             id?: number;
             user?: components["schemas"]["user.SafeUser"];
         };
+        "user.ChangePasswordRequest": {
+            /** @example oldpass123 */
+            current_password: string;
+            /** @example newpass123 */
+            new_password: string;
+        };
         "user.CreateBindingRequest": {
             /** @example xiaoming@example.com */
             student_email: string;
@@ -1143,6 +1773,10 @@ export interface components {
             email?: string;
             /** @example 1 */
             id?: number;
+            /** @example 13800138000 */
+            phone?: string;
+            /** @example true */
+            phone_verified?: boolean;
             /** @example user */
             role?: string;
             /** @example active */
@@ -1156,6 +1790,10 @@ export interface components {
             email?: string;
             id?: number;
         };
+        "user.SendPhoneCodeRequest": {
+            /** @example 13800138000 */
+            phone: string;
+        };
         "user.TokenResponse": {
             /** @example eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9... */
             access_token?: string;
@@ -1163,6 +1801,12 @@ export interface components {
             expires_in?: number;
             /** @example abc123... */
             refresh_token?: string;
+        };
+        "user.VerifyPhoneRequest": {
+            /** @example 123456 */
+            code: string;
+            /** @example 13800138000 */
+            phone: string;
         };
         "web.Response": {
             code?: number;
