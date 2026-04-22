@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const mockPost = vi.fn()
-const mockGet = vi.fn()
+const mockGetMe = vi.fn()
 const localStorageMock = (() => {
   let store: Record<string, string> = {}
 
@@ -25,12 +25,10 @@ const localStorageMock = (() => {
 
 vi.mock('@/services/auth', () => ({
   authApi: {
+    getMe: mockGetMe,
     login: mockPost,
     register: mockPost,
     refresh: mockPost,
-  },
-  api: {
-    get: mockGet,
   },
 }))
 
@@ -56,11 +54,13 @@ describe('useAuthStore', () => {
         },
       },
     })
-    mockGet.mockResolvedValueOnce({
+    mockGetMe.mockResolvedValueOnce({
       data: {
         data: {
           id: 1,
           email: 'admin@example.com',
+          phone: '13800138000',
+          phone_verified: true,
           role: 'admin',
           user_type: 'parent',
           created_at: '2026-04-21T00:00:00Z',
@@ -78,6 +78,8 @@ describe('useAuthStore', () => {
     expect(state.isAuthenticated).toBe(true)
     expect(state.accessToken).toBe('access-token')
     expect(state.user?.email).toBe('admin@example.com')
+    expect(state.user?.phone).toBe('13800138000')
+    expect(state.user?.phone_verified).toBe(true)
     expect(state.user?.role).toBe('admin')
     expect(localStorage.getItem('refresh_token')).toBe('refresh-token-next')
   })
