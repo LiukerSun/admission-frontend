@@ -131,8 +131,9 @@ function App() {
     <ConfigProvider
       theme={{
         token: {
-          colorPrimary: '#1a5fb4',
-          borderRadius: 4,
+          colorPrimary: '#1E40AF',
+          borderRadius: 6,
+          fontFamily: "'Fira Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
         },
       }}
     >
