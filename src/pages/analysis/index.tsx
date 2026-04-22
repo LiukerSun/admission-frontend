@@ -343,7 +343,7 @@ export default function AnalysisPage() {
       title: { text: '薪资与就业率关系', left: 'center' },
       tooltip: {
         trigger: 'item',
-        formatter: (params: any) => `${params.name}<br/>就业率: ${params.value[0]}%<br/>平均薪资: ${params.value[1]}元`,
+        formatter: (params) => `${params.name}<br/>就业率: ${(params.value as number[])[0]}%<br/>平均薪资: ${(params.value as number[])[1]}元`,
       },
       xAxis: { type: 'value', name: '就业率(%)' },
       yAxis: { type: 'value', name: '平均薪资(元)' },
@@ -354,7 +354,7 @@ export default function AnalysisPage() {
           data: empScatter,
           symbolSize: 15,
           itemStyle: {
-            color: (params: any) => ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4'][params.dataIndex % 6],
+            color: (params) => ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4'][params.dataIndex % 6],
           },
         },
       ],
