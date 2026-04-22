@@ -1,8 +1,16 @@
 import { useEffect, useState, useCallback } from 'react'
-import { Table, Input, Select, Button, Space, Tag, message, Modal, Form } from 'antd'
-import { SearchOutlined } from '@ant-design/icons'
+import {
+  Table, Input, Select, Button, Space, Tag, message, Modal, Form,
+  Card, Row, Col, Statistic, Dropdown, Popconfirm, Tooltip,
+} from 'antd'
+import {
+  SearchOutlined, DownloadOutlined, ReloadOutlined,
+  TeamOutlined, UserAddOutlined, StopOutlined, MoreOutlined,
+  LockOutlined, EditOutlined,
+} from '@ant-design/icons'
 import { adminApi, type UserListItem, type AdminUserDetail, type UpdateUserRequest } from '@/services/admin'
 import { useAuthStore } from '@/stores/authStore'
+import type { MenuProps } from 'antd'
 
 const { Option } = Select
 
@@ -20,7 +28,7 @@ interface ResetPasswordFormValues {
 }
 
 export default function AdminUsersPage() {
-  const { user: currentUser, setUser } = useAuthStore()
+  const { user: currentUser } = useAuthStore()
   const [form] = Form.useForm<EditUserFormValues>()
   const [passwordForm] = Form.useForm<ResetPasswordFormValues>()
   const [users, setUsers] = useState<UserListItem[]>([])
@@ -28,6 +36,7 @@ export default function AdminUsersPage() {
   const [total, setTotal] = useState(0)
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(20)
+  const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([])
   const [editingUser, setEditingUser] = useState<AdminUserDetail | null>(null)
   const [passwordTarget, setPasswordTarget] = useState<UserListItem | null>(null)
   const [editModalOpen, setEditModalOpen] = useState(false)
@@ -61,22 +70,16 @@ export default function AdminUsersPage() {
     const timer = window.setTimeout(() => {
       void fetchUsers()
     }, 0)
-
     return () => window.clearTimeout(timer)
   }, [fetchUsers])
 
   const handleDisable = (id: number) => {
-    Modal.confirm({
-      title: '确认禁用该用户？',
-      onOk: () => {
-        adminApi.disableUser(id)
-          .then(() => {
-            message.success('已禁用')
-            fetchUsers()
-          })
-          .catch(() => message.error('操作失败'))
-      },
-    })
+    adminApi.disableUser(id)
+      .then(() => {
+        message.success('已禁用')
+        fetchUsers()
+      })
+      .catch(() => message.error('操作失败'))
   }
 
   const handleEnable = (id: number) => {
@@ -92,7 +95,6 @@ export default function AdminUsersPage() {
     setEditModalOpen(true)
     setEditLoading(true)
     form.resetFields()
-
     try {
       const res = await adminApi.getUser(id)
       const detail = res.data.data
@@ -134,64 +136,30 @@ export default function AdminUsersPage() {
   }
 
   const buildUpdatePayload = (values: EditUserFormValues): UpdateUserRequest => {
-    if (!editingUser) {
-      return {}
-    }
-
+    if (!editingUser) return {}
     const payload: UpdateUserRequest = {}
     const email = values.email.trim()
     const username = values.username?.trim()
-
-    if (email !== editingUser.email) {
-      payload.email = email
-    }
-    if ((username || '') !== (editingUser.username || '')) {
-      payload.username = username || undefined
-    }
-    if (values.role !== editingUser.role) {
-      payload.role = values.role
-    }
-    if (values.user_type !== editingUser.user_type) {
-      payload.user_type = values.user_type
-    }
-    if (values.status !== editingUser.status) {
-      payload.status = values.status
-    }
-
+    if (email !== editingUser.email) payload.email = email
+    if ((username || '') !== (editingUser.username || '')) payload.username = username || undefined
+    if (values.role !== editingUser.role) payload.role = values.role
+    if (values.user_type !== editingUser.user_type) payload.user_type = values.user_type
+    if (values.status !== editingUser.status) payload.status = values.status
     return payload
   }
 
   const handleEditSubmit = async () => {
-    if (!editingUser) {
-      return
-    }
-
+    if (!editingUser) return
     try {
       const values = await form.validateFields()
       const payload = buildUpdatePayload(values)
-
       if (Object.keys(payload).length === 0) {
         message.info('没有需要保存的变更')
         closeEditModal()
         return
       }
-
       setSaving(true)
-      const res = await adminApi.updateUser(editingUser.id, payload)
-      const updatedUser = res.data.data
-
-      if (updatedUser.id === currentUser?.id) {
-        setUser({
-          id: updatedUser.id,
-          email: updatedUser.email,
-          username: updatedUser.username,
-          role: updatedUser.role,
-          user_type: updatedUser.user_type,
-          status: updatedUser.status,
-          created_at: updatedUser.created_at,
-        })
-      }
-
+      await adminApi.updateUser(editingUser.id, payload)
       message.success('用户信息已更新')
       closeEditModal()
       fetchUsers()
@@ -208,10 +176,7 @@ export default function AdminUsersPage() {
   }
 
   const handleResetPassword = async () => {
-    if (!passwordTarget) {
-      return
-    }
-
+    if (!passwordTarget) return
     try {
       const values = await passwordForm.validateFields()
       setPasswordSaving(true)
@@ -232,115 +197,299 @@ export default function AdminUsersPage() {
     }
   }
 
+  const handleBatchDisable = () => {
+    Modal.confirm({
+      title: `确认禁用选中的 ${selectedRowKeys.length} 个用户？`,
+      onOk: () => {
+        Promise.all(selectedRowKeys.map(id => adminApi.disableUser(Number(id))))
+          .then(() => {
+            message.success('批量禁用成功')
+            setSelectedRowKeys([])
+            fetchUsers()
+          })
+          .catch(() => message.error('批量禁用失败'))
+      },
+    })
+  }
+
+  const handleBatchEnable = () => {
+    Promise.all(selectedRowKeys.map(id => adminApi.enableUser(Number(id))))
+      .then(() => {
+        message.success('批量启用成功')
+        setSelectedRowKeys([])
+        fetchUsers()
+      })
+      .catch(() => message.error('批量启用失败'))
+  }
+
+  const handleExport = () => {
+    const exportData = selectedRowKeys.length > 0
+      ? users.filter(u => selectedRowKeys.includes(u.id!))
+      : users
+    const csv = [
+      ['ID', '用户名', '邮箱', '角色', '身份类型', '状态', '注册时间'].join(','),
+      ...exportData.map(u => [
+        u.id, u.username, u.email, u.role, u.user_type,
+        u.status === 'banned' ? '已封禁' : '正常',
+        u.created_at ? new Date(u.created_at).toLocaleString() : '-',
+      ].join(',')),
+    ].join('\n')
+    const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' })
+    const link = document.createElement('a')
+    link.href = URL.createObjectURL(blob)
+    link.download = `用户列表_${new Date().toISOString().slice(0, 10)}.csv`
+    link.click()
+  }
+
   const isEditingSelf = editingUser?.id === currentUser?.id
 
+  const roleTagColor: Record<string, string> = {
+    admin: 'red',
+    premium: 'orange',
+    user: 'blue',
+  }
+
+  const userTypeMap: Record<string, string> = {
+    parent: '家长',
+    student: '学生',
+  }
+
   const columns = [
-    { title: 'ID', dataIndex: 'id', key: 'id' },
-    { title: '用户名', dataIndex: 'username', key: 'username' },
+    { title: 'ID', dataIndex: 'id', key: 'id', width: 70 },
+    {
+      title: '用户名',
+      dataIndex: 'username',
+      key: 'username',
+      render: (v: string) => v || '-',
+    },
     { title: '邮箱', dataIndex: 'email', key: 'email' },
-    { title: '角色', dataIndex: 'role', key: 'role' },
-    { title: '身份类型', dataIndex: 'user_type', key: 'user_type' },
+    {
+      title: '角色',
+      dataIndex: 'role',
+      key: 'role',
+      filters: [
+        { text: 'user', value: 'user' },
+        { text: 'premium', value: 'premium' },
+        { text: 'admin', value: 'admin' },
+      ],
+      onFilter: (value: string, record: UserListItem) => record.role === value,
+      render: (v: string) => <Tag color={roleTagColor[v] || 'default'}>{v}</Tag>,
+    },
+    {
+      title: '身份类型',
+      dataIndex: 'user_type',
+      key: 'user_type',
+      render: (v: string) => userTypeMap[v] || v,
+    },
     {
       title: '状态',
       dataIndex: 'status',
       key: 'status',
+      filters: [
+        { text: '正常', value: 'active' },
+        { text: '已封禁', value: 'banned' },
+      ],
+      onFilter: (value: string, record: UserListItem) => record.status === value,
       render: (status: string) => (
         status === 'banned'
-          ? <Tag color="red">已封禁</Tag>
-          : <Tag color="green">正常</Tag>
+          ? <Tag color="error">已封禁</Tag>
+          : <Tag color="success">正常</Tag>
       ),
     },
     {
       title: '注册时间',
       dataIndex: 'created_at',
       key: 'created_at',
+      sorter: (a: UserListItem, b: UserListItem) =>
+        new Date(a.created_at || 0).getTime() - new Date(b.created_at || 0).getTime(),
       render: (v: string) => v ? new Date(v).toLocaleString() : '-',
     },
     {
       title: '操作',
       key: 'action',
-      render: (_: unknown, record: UserListItem) => (
-        <Space>
-          <Button type="link" onClick={() => openEditModal(record.id!)}>
-            编辑
-          </Button>
-          <Button type="link" onClick={() => openPasswordModal(record)}>
-            重置密码
-          </Button>
-          {record.id !== currentUser?.id && (
-            record.status === 'banned' ? (
-              <Button type="link" onClick={() => handleEnable(record.id!)}>
-                启用
-              </Button>
-            ) : (
-              <Button type="link" danger onClick={() => handleDisable(record.id!)}>
-                禁用
-              </Button>
-            )
-          )}
-        </Space>
-      ),
+      width: 120,
+      render: (_: unknown, record: UserListItem) => {
+        const items: MenuProps['items'] = [
+          {
+            key: 'edit',
+            icon: <EditOutlined />,
+            label: '编辑',
+            onClick: () => openEditModal(record.id!),
+          },
+          {
+            key: 'password',
+            icon: <LockOutlined />,
+            label: '重置密码',
+            onClick: () => openPasswordModal(record),
+          },
+          { type: 'divider' as const },
+          record.id !== currentUser?.id && record.status === 'banned'
+            ? {
+                key: 'enable',
+                icon: <UserAddOutlined />,
+                label: '启用',
+                onClick: () => handleEnable(record.id!),
+              }
+            : record.id !== currentUser?.id
+              ? {
+                  key: 'disable',
+                  icon: <StopOutlined />,
+                  label: '禁用',
+                  danger: true,
+                  onClick: () => handleDisable(record.id!),
+                }
+              : null,
+        ].filter(Boolean)
+
+        return (
+          <Dropdown menu={{ items }} placement="bottomRight" trigger={['click']}>
+            <Button type="text" icon={<MoreOutlined />} />
+          </Dropdown>
+        )
+      },
     },
   ]
 
+  const activeCount = users.filter(u => u.status === 'active').length
+  const bannedCount = users.filter(u => u.status === 'banned').length
+
   return (
     <div>
-      <h2>用户管理</h2>
-      <Space wrap style={{ marginBottom: 16, marginTop: 16 }}>
-        <Input
-          placeholder="邮箱搜索"
-          value={filters.email}
-          onChange={(e) => setFilters({ ...filters, email: e.target.value })}
-          onPressEnter={fetchUsers}
-          prefix={<SearchOutlined />}
+      <h2 style={{ marginBottom: 4 }}>用户管理</h2>
+      <p style={{ color: '#64748B', marginBottom: 24 }}>
+        管理平台注册用户，支持批量操作和数据导出
+      </p>
+
+      <Row gutter={[24, 24]} style={{ marginBottom: 24 }}>
+        <Col xs={24} sm={12} lg={8}>
+          <Card>
+            <Statistic
+              title="总用户"
+              value={total}
+              prefix={<TeamOutlined style={{ color: '#1E40AF' }} />}
+            />
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} lg={8}>
+          <Card>
+            <Statistic
+              title="正常"
+              value={activeCount}
+              prefix={<UserAddOutlined style={{ color: '#16A34A' }} />}
+              valueStyle={{ color: '#16A34A' }}
+            />
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} lg={8}>
+          <Card>
+            <Statistic
+              title="已封禁"
+              value={bannedCount}
+              prefix={<StopOutlined style={{ color: '#DC2626' }} />}
+              valueStyle={{ color: '#DC2626' }}
+            />
+          </Card>
+        </Col>
+      </Row>
+
+      <Card
+        title="用户列表"
+        extra={
+          <Space>
+            <Tooltip title="刷新">
+              <Button icon={<ReloadOutlined />} onClick={fetchUsers} />
+            </Tooltip>
+            <Button icon={<DownloadOutlined />} onClick={handleExport}>
+              导出{selectedRowKeys.length > 0 ? `(${selectedRowKeys.length})` : ''}
+            </Button>
+          </Space>
+        }
+      >
+        <Space wrap style={{ marginBottom: 16 }}>
+          <Input
+            placeholder="邮箱搜索"
+            value={filters.email}
+            onChange={(e) => setFilters({ ...filters, email: e.target.value })}
+            onPressEnter={fetchUsers}
+            prefix={<SearchOutlined />}
+            allowClear
+          />
+          <Input
+            placeholder="用户名搜索"
+            value={filters.username}
+            onChange={(e) => setFilters({ ...filters, username: e.target.value })}
+            onPressEnter={fetchUsers}
+            prefix={<SearchOutlined />}
+            allowClear
+          />
+          <Select
+            placeholder="角色"
+            value={filters.role || undefined}
+            style={{ width: 120 }}
+            onChange={(value) => setFilters({ ...filters, role: value })}
+            allowClear
+          >
+            <Option value="user">user</Option>
+            <Option value="premium">premium</Option>
+            <Option value="admin">admin</Option>
+          </Select>
+          <Select
+            placeholder="状态"
+            value={filters.status || undefined}
+            style={{ width: 120 }}
+            onChange={(value) => setFilters({ ...filters, status: value })}
+            allowClear
+          >
+            <Option value="active">正常</Option>
+            <Option value="banned">已封禁</Option>
+          </Select>
+          <Button type="primary" onClick={fetchUsers}>
+            搜索
+          </Button>
+          <Button onClick={() => { setFilters({ email: '', username: '', role: '', status: '' }); setPage(1) }}>
+            重置
+          </Button>
+        </Space>
+
+        {selectedRowKeys.length > 0 && (
+          <div style={{ marginBottom: 16, padding: '8px 16px', background: '#EFF6FF', borderRadius: 6, display: 'flex', alignItems: 'center', gap: 12 }}>
+            <span style={{ color: '#1E40AF', fontWeight: 500 }}>
+              已选择 {selectedRowKeys.length} 项
+            </span>
+            <Button size="small" onClick={handleBatchEnable}>批量启用</Button>
+            <Popconfirm title="确认禁用选中用户？" onConfirm={handleBatchDisable}>
+              <Button size="small" danger>批量禁用</Button>
+            </Popconfirm>
+            <Button size="small" type="link" onClick={() => setSelectedRowKeys([])}>
+              取消选择
+            </Button>
+          </div>
+        )}
+
+        <Table
+          rowKey="id"
+          columns={columns}
+          dataSource={users}
+          loading={loading}
+          rowSelection={{
+            selectedRowKeys,
+            onChange: setSelectedRowKeys,
+          }}
+          pagination={{
+            current: page,
+            pageSize,
+            total,
+            showSizeChanger: true,
+            showTotal: (t) => `共 ${t} 条`,
+            onChange: (p, ps) => {
+              setPage(p)
+              setPageSize(ps)
+            },
+          }}
+          scroll={{ x: 900 }}
         />
-        <Input
-          placeholder="用户名搜索"
-          value={filters.username}
-          onChange={(e) => setFilters({ ...filters, username: e.target.value })}
-          onPressEnter={fetchUsers}
-          prefix={<SearchOutlined />}
-        />
-        <Select
-          placeholder="角色"
-          value={filters.role || undefined}
-          style={{ width: 120 }}
-          onChange={(value) => setFilters({ ...filters, role: value })}
-          allowClear
-        >
-          <Option value="user">user</Option>
-          <Option value="premium">premium</Option>
-          <Option value="admin">admin</Option>
-        </Select>
-        <Select
-          placeholder="状态"
-          value={filters.status || undefined}
-          style={{ width: 120 }}
-          onChange={(value) => setFilters({ ...filters, status: value })}
-          allowClear
-        >
-          <Option value="active">正常</Option>
-          <Option value="banned">已封禁</Option>
-        </Select>
-        <Button type="primary" onClick={fetchUsers}>
-          搜索
-        </Button>
-      </Space>
-      <Table
-        rowKey="id"
-        columns={columns}
-        dataSource={users}
-        loading={loading}
-        pagination={{
-          current: page,
-          pageSize,
-          total,
-          onChange: (p, ps) => {
-            setPage(p)
-            setPageSize(ps)
-          },
-        }}
-      />
+      </Card>
+
       <Modal
         title={editingUser ? `编辑用户 #${editingUser.id}` : '编辑用户'}
         open={editModalOpen}
@@ -363,17 +512,7 @@ export default function AdminUsersPage() {
           <Form.Item
             label="用户名"
             name="username"
-            rules={[
-              { max: 50, message: '用户名不能超过 50 个字符' },
-              {
-                validator: (_, value) => {
-                  if (!value || value.trim().length > 0) {
-                    return Promise.resolve()
-                  }
-                  return Promise.reject(new Error('用户名不能为空字符串'))
-                },
-              },
-            ]}
+            rules={[{ max: 50, message: '用户名不能超过 50 个字符' }]}
           >
             <Input placeholder="留空则不修改用户名" disabled={editLoading} />
           </Form.Item>
@@ -394,8 +533,8 @@ export default function AdminUsersPage() {
             rules={[{ required: true, message: '请选择身份类型' }]}
           >
             <Select disabled={editLoading}>
-              <Option value="parent">parent</Option>
-              <Option value="student">student</Option>
+              <Option value="parent">家长</Option>
+              <Option value="student">学生</Option>
             </Select>
           </Form.Item>
           <Form.Item
@@ -404,12 +543,13 @@ export default function AdminUsersPage() {
             rules={[{ required: true, message: '请选择账号状态' }]}
           >
             <Select disabled={editLoading || isEditingSelf}>
-              <Option value="active">active</Option>
-              <Option value="banned">banned</Option>
+              <Option value="active">正常</Option>
+              <Option value="banned">已封禁</Option>
             </Select>
           </Form.Item>
         </Form>
       </Modal>
+
       <Modal
         title={passwordTarget ? `重置密码 #${passwordTarget.id}` : '重置密码'}
         open={passwordModalOpen}
