@@ -82,5 +82,3 @@ npm run typegen
 - 后端服务: [admission-api](https://github.com/LiukerSun/admission-api)
 - 默认地址: `http://localhost:8080`
 - 需要 Redis 运行（Refresh Token 存储）
-
-
