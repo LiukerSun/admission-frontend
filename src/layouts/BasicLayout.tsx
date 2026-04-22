@@ -26,6 +26,11 @@ export default function BasicLayout() {
       label: <Link to="/dashboard">控制台</Link>,
     },
     {
+      key: '/analysis',
+      icon: <BarChartOutlined />,
+      label: <Link to="/analysis">数据分析</Link>,
+    },
+    {
       key: '/bindings',
       icon: <LinkOutlined />,
       label: <Link to="/bindings">绑定管理</Link>,

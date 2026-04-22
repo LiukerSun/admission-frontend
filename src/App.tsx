@@ -11,6 +11,7 @@ import RegisterPage from '@/pages/auth/RegisterPage'
 import DashboardPage from '@/pages/dashboard'
 import ProfilePage from '@/pages/profile'
 import BindingsPage from '@/pages/bindings'
+import AnalysisPage from '@/pages/analysis'
 import AdminDashboardPage from '@/pages/admin/AdminDashboardPage'
 import AdminUsersPage from '@/pages/admin/AdminUsersPage'
 import AdminBindingsPage from '@/pages/admin/AdminBindingsPage'
@@ -72,6 +73,14 @@ const router = createBrowserRouter([
         element: (
           <RequireAuth>
             <BindingsPage />
+          </RequireAuth>
+        ),
+      },
+      {
+        path: 'analysis',
+        element: (
+          <RequireAuth>
+            <AnalysisPage />
           </RequireAuth>
         ),
       },
