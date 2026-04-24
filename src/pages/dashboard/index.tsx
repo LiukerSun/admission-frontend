@@ -257,6 +257,12 @@ export default function DashboardPage() {
                   <a href="/analysis" style={{ display: 'block', padding: '12px 16px', background: '#EFF6FF', borderRadius: 6, color: '#1E40AF', textDecoration: 'none', fontWeight: 500 }}>
                     查看数据分析 &rarr;
                   </a>
+                  <a href="/membership" style={{ display: 'block', padding: '12px 16px', background: '#FDF2F8', borderRadius: 6, color: '#BE185D', textDecoration: 'none', fontWeight: 500 }}>
+                    开通会员服务 &rarr;
+                  </a>
+                  <a href="/orders" style={{ display: 'block', padding: '12px 16px', background: '#F8FAFC', borderRadius: 6, color: '#334155', textDecoration: 'none', fontWeight: 500 }}>
+                    查看我的订单 &rarr;
+                  </a>
                   <a href="/bindings" style={{ display: 'block', padding: '12px 16px', background: '#FEF3C7', borderRadius: 6, color: '#D97706', textDecoration: 'none', fontWeight: 500 }}>
                     管理绑定关系 &rarr;
                   </a>

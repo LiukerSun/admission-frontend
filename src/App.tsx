@@ -12,9 +12,12 @@ import DashboardPage from '@/pages/dashboard'
 import ProfilePage from '@/pages/profile'
 import BindingsPage from '@/pages/bindings'
 import AnalysisPage from '@/pages/analysis'
+import MembershipPage from '@/pages/membership'
+import OrdersPage from '@/pages/orders'
 import AdminDashboardPage from '@/pages/admin/AdminDashboardPage'
 import AdminUsersPage from '@/pages/admin/AdminUsersPage'
 import AdminBindingsPage from '@/pages/admin/AdminBindingsPage'
+import AdminPaymentOrdersPage from '@/pages/admin/AdminPaymentOrdersPage'
 import RequireAuth from '@/components/RequireAuth'
 import RequireAdmin from '@/components/RequireAdmin'
 import NoAuth from '@/components/NoAuth'
@@ -85,6 +88,22 @@ const router = createBrowserRouter([
         ),
       },
       {
+        path: 'membership',
+        element: (
+          <RequireAuth>
+            <MembershipPage />
+          </RequireAuth>
+        ),
+      },
+      {
+        path: 'orders',
+        element: (
+          <RequireAuth>
+            <OrdersPage />
+          </RequireAuth>
+        ),
+      },
+      {
         path: 'admin/dashboard',
         element: (
           <RequireAdmin>
@@ -105,6 +124,14 @@ const router = createBrowserRouter([
         element: (
           <RequireAdmin>
             <AdminBindingsPage />
+          </RequireAdmin>
+        ),
+      },
+      {
+        path: 'admin/payment/orders',
+        element: (
+          <RequireAdmin>
+            <AdminPaymentOrdersPage />
           </RequireAdmin>
         ),
       },
