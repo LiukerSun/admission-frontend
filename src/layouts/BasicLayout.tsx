@@ -22,6 +22,7 @@ import {
 } from '@ant-design/icons'
 import { useAuthStore } from '@/stores/authStore'
 import type { MenuProps } from 'antd'
+import './basicLayout.css'
 
 const { Header, Sider, Content } = Layout
 
@@ -170,68 +171,38 @@ export default function BasicLayout() {
   }
 
   return (
-    <Layout style={{ minHeight: '100vh' }}>
+    <Layout className="appShell">
       <Sider
         theme="light"
-        width={220}
+        width={236}
         collapsible
         collapsed={collapsed}
         onCollapse={setCollapsed}
         trigger={null}
-        style={{
-          boxShadow: '2px 0 8px rgba(0,0,0,0.04)',
-          zIndex: 10,
-        }}
+        className="appSider"
       >
         <div
-          style={{
-            height: 64,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: collapsed ? 'center' : 'flex-start',
-            padding: collapsed ? 0 : '0 20px',
-            fontSize: collapsed ? 20 : 16,
-            fontWeight: 700,
-            cursor: 'pointer',
-            color: '#1E40AF',
-            borderBottom: '1px solid #E9EEF6',
-            overflow: 'hidden',
-            whiteSpace: 'nowrap',
-            transition: 'all 0.2s',
-          }}
+          className={collapsed ? 'appBrand appBrandCollapsed' : 'appBrand'}
           onClick={() => navigate('/')}
           title="AI志愿填报助手"
         >
-          {collapsed ? (
-            <span style={{ fontSize: 14, fontWeight: 700, color: '#1E40AF' }}>AI</span>
-          ) : 'AI志愿填报助手'}
+          <span className="appBrandMark">AI</span>
+          {!collapsed && <span>志愿填报助手</span>}
         </div>
         <Menu
           mode="inline"
           selectedKeys={[location.pathname]}
           defaultOpenKeys={location.pathname.startsWith('/admin') ? ['/admin'] : []}
           items={menuItems}
-          style={{ borderRight: 0 }}
+          className="appMenu"
           inlineCollapsed={collapsed}
         />
       </Sider>
 
       <Layout>
-        <Header
-          style={{
-            background: '#fff',
-            padding: '0 24px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            borderBottom: '1px solid #E9EEF6',
-            position: 'sticky',
-            top: 0,
-            zIndex: 9,
-          }}
-        >
+        <Header className="appHeader">
           {/* 左侧：折叠按钮 + 面包屑 + 快捷入口 */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 16, flex: 1 }}>
+          <div className="appHeaderLeft">
             <Button
               type="text"
               icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
@@ -241,12 +212,13 @@ export default function BasicLayout() {
 
             {breadcrumbItems.length > 0 && (
               <Breadcrumb
+                className="appBreadcrumb"
                 items={[
-                  { title: <Link to="/dashboard" style={{ color: '#64748B' }}><HomeOutlined /></Link> },
+                  { title: <Link to="/dashboard" style={{ color: 'var(--color-text-muted)' }}><HomeOutlined /></Link> },
                   ...breadcrumbItems.map((item, idx) => ({
                     title: (
                       <span style={{
-                        color: idx === breadcrumbItems.length - 1 ? '#1E3A8A' : '#64748B',
+                        color: idx === breadcrumbItems.length - 1 ? 'var(--color-text)' : 'var(--color-text-muted)',
                         fontWeight: idx === breadcrumbItems.length - 1 ? 600 : 400,
                       }}>
                         {item.title}
@@ -258,18 +230,18 @@ export default function BasicLayout() {
             )}
 
             <Dropdown menu={{ items: quickNavItems }} placement="bottomLeft">
-              <Button type="link" style={{ color: '#64748B', padding: '0 8px' }}>
+              <Button type="link" className="appQuickLink">
                 快捷入口 ▾
               </Button>
             </Dropdown>
           </div>
 
           {/* 右侧：搜索 + 通知 + 用户 */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div className="appHeaderRight">
             <Input
-              placeholder="全局搜索..."
-              prefix={<SearchOutlined style={{ color: '#94A3B8' }} />}
-              style={{ width: 200, borderRadius: 20, background: '#F1F5F9', borderColor: 'transparent' }}
+              placeholder="搜索功能或数据..."
+              prefix={<SearchOutlined style={{ color: 'var(--color-text-subtle)' }} />}
+              className="appSearch"
               onPressEnter={(e) => {
                 const val = (e.target as HTMLInputElement).value
                 if (val.trim()) {
@@ -282,27 +254,25 @@ export default function BasicLayout() {
               <Badge count={2} size="small" offset={[0, 2]}>
                 <Button
                   type="text"
-                  icon={<BellOutlined style={{ fontSize: 18, color: '#64748B' }} />}
+                  icon={<BellOutlined style={{ fontSize: 18, color: 'var(--color-text-muted)' }} />}
                   style={{ width: 40, height: 40 }}
                 />
               </Badge>
             </Dropdown>
 
             <Dropdown menu={{ items: dropdownItems }} placement="bottomRight">
-              <span style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, padding: '4px 8px', borderRadius: 6, transition: 'background 0.2s' }}>
-                <Avatar icon={<UserOutlined />} style={{ backgroundColor: '#1E40AF' }} size="small" />
-                {!collapsed && (
-                  <span style={{ color: '#1E3A8A', fontWeight: 500, fontSize: 14 }}>
+              <span className="appUserTrigger">
+                <Avatar icon={<UserOutlined />} style={{ backgroundColor: 'var(--color-primary)' }} size="small" />
+                <span style={{ fontWeight: 600, fontSize: 14 }}>
                     {user?.email?.split('@')[0]}
-                  </span>
-                )}
+                </span>
               </span>
             </Dropdown>
           </div>
         </Header>
 
-        <Content style={{ margin: 24, padding: 0 }}>
-          <div style={{ padding: 24, background: '#fff', borderRadius: 8, border: '1px solid #E9EEF6' }}>
+        <Content className="appContent">
+          <div className="appContentInner">
             <Outlet />
           </div>
         </Content>

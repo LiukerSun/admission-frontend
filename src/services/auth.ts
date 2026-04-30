@@ -25,6 +25,15 @@ export interface ChangePasswordRequest {
   new_password: string
 }
 
+interface ForgotPasswordRequest {
+  email: string
+}
+
+interface ResetPasswordRequest {
+  token: string
+  new_password: string
+}
+
 type SendPhoneCodeRequest = components['schemas']['user.SendPhoneCodeRequest']
 type VerifyPhoneRequest = components['schemas']['user.VerifyPhoneRequest']
 
@@ -51,6 +60,12 @@ export const authApi = {
 
   changePassword: (data: ChangePasswordRequest) =>
     api.put<{ data: { message: string } }>('/api/v1/me/password', data),
+
+  forgotPassword: (data: ForgotPasswordRequest) =>
+    publicClient.post<{ data: { message: string; token?: string } }>('/api/v1/auth/forgot-password', data),
+
+  resetPassword: (data: ResetPasswordRequest) =>
+    publicClient.post<{ data: { message: string } }>('/api/v1/auth/reset-password', data),
 
   sendPhoneCode: (data: SendPhoneCodeRequest) =>
     api.post<{ data: { message: string } }>('/api/v1/me/phone/send-code', data),

@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { Table, Button, message, Modal } from 'antd'
 import { adminApi, type BindingListItem } from '@/services/admin'
+import { PageHeader } from '@/components/ui'
 
 export default function AdminBindingsPage() {
   const [bindings, setBindings] = useState<BindingListItem[]>([])
@@ -74,7 +75,7 @@ export default function AdminBindingsPage() {
 
   return (
     <div>
-      <h2>绑定管理</h2>
+      <PageHeader eyebrow="系统管理" title="绑定管理" description="查看并解除家长与学生之间的绑定关系。" />
       <Table
         rowKey="id"
         columns={columns}

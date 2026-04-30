@@ -1,0 +1,244 @@
+.softPageHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 24px;
+}
+
+.softPageHeaderMain {
+  min-width: 0;
+}
+
+.softEyebrow {
+  margin-bottom: 8px;
+  color: var(--color-text-subtle);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+.softPageTitle {
+  margin: 0;
+  color: var(--color-text);
+  font-size: 26px;
+  line-height: 1.25;
+  font-weight: 750;
+  letter-spacing: 0;
+}
+
+.softPageDescription {
+  max-width: 720px;
+  margin-top: 8px;
+  color: var(--color-text-muted);
+  font-size: 14px;
+  line-height: 1.75;
+}
+
+.softPageHeaderActions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.softMetricCard,
+.softDataPanel,
+.softEmptyState {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-soft);
+}
+
+.softMetricCard {
+  height: 100%;
+  padding: 18px;
+}
+
+.softMetricTop {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.softMetricIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-md);
+  color: var(--metric-color);
+  background: color-mix(in oklab, var(--metric-color) 12%, white);
+}
+
+.softMetricTitle {
+  color: var(--color-text-muted);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.softMetricValue {
+  margin-top: 8px;
+  color: var(--color-text);
+  font-size: 28px;
+  line-height: 1.1;
+  font-weight: 760;
+}
+
+.softMetricFooter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 14px;
+  color: var(--color-text-subtle);
+  font-size: 12px;
+}
+
+.softMetricTrend {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--metric-color);
+  font-weight: 700;
+}
+
+.softDataPanel {
+  overflow: hidden;
+}
+
+.softDataPanelHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px 20px;
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-surface-muted);
+}
+
+.softDataPanelTitle {
+  margin: 0;
+  color: var(--color-text);
+  font-size: 16px;
+  line-height: 1.35;
+  font-weight: 720;
+}
+
+.softDataPanelDescription {
+  margin-top: 4px;
+  color: var(--color-text-muted);
+  font-size: 13px;
+  line-height: 1.65;
+}
+
+.softDataPanelBody {
+  padding: 20px;
+}
+
+.softDataPanelBodyCompact {
+  padding: 0;
+}
+
+.softActionToolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface-muted);
+}
+
+.softActionToolbarMain,
+.softActionToolbarExtra {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.softStatusStack {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.softStatusStackCompact {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+
+.softStatusPill {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 2px 9px;
+  border: 1px solid color-mix(in oklab, var(--status-color) 22%, white);
+  border-radius: 999px;
+  color: color-mix(in oklab, var(--status-color) 82%, black);
+  background: color-mix(in oklab, var(--status-color) 10%, white);
+  font-size: 12px;
+  font-weight: 650;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+.softEmptyState {
+  padding: 34px 20px;
+  text-align: center;
+}
+
+.softEmptyIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 46px;
+  height: 46px;
+  margin-bottom: 14px;
+  border-radius: var(--radius-lg);
+  color: var(--color-primary);
+  background: var(--color-primary-soft);
+}
+
+.softEmptyTitle {
+  margin: 0;
+  color: var(--color-text);
+  font-size: 16px;
+  font-weight: 720;
+}
+
+.softEmptyDescription {
+  max-width: 520px;
+  margin: 8px auto 0;
+  color: var(--color-text-muted);
+  line-height: 1.75;
+}
+
+.softEmptyAction {
+  margin-top: 18px;
+}
+
+@media (max-width: 768px) {
+  .softPageHeader,
+  .softDataPanelHeader,
+  .softActionToolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .softPageHeaderActions,
+  .softActionToolbarExtra {
+    justify-content: flex-start;
+  }
+
+  .softPageTitle {
+    font-size: 22px;
+  }
+}

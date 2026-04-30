@@ -7,12 +7,11 @@ import {
   TeamOutlined,
   UserAddOutlined,
   LinkOutlined,
-  RiseOutlined,
-  FallOutlined,
 } from '@ant-design/icons'
 import { useAuthStore } from '@/stores/authStore'
 import { adminApi, type StatsResponse } from '@/services/admin'
 import * as echarts from 'echarts'
+import { DataPanel, MetricCard, PageHeader } from '@/components/ui'
 
 function Sparkline({ data, color }: { data: number[]; color: string }) {
   const chartRef = useRef<HTMLDivElement>(null)
@@ -48,16 +47,6 @@ function Sparkline({ data, color }: { data: number[]; color: string }) {
   }, [data, color])
 
   return <div ref={chartRef} style={{ width: '100%', height: 48 }} />
-}
-
-function TrendTag({ value }: { value: number }) {
-  const isUp = value >= 0
-  return (
-    <span style={{ color: isUp ? '#16A34A' : '#DC2626', fontSize: 12, display: 'inline-flex', alignItems: 'center', gap: 2 }}>
-      {isUp ? <RiseOutlined /> : <FallOutlined />}
-      {Math.abs(value)}%
-    </span>
-  )
 }
 
 export default function DashboardPage() {
@@ -101,62 +90,33 @@ export default function DashboardPage() {
 
   return (
     <div>
-      <h2 style={{ marginBottom: 4 }}>{isAdmin ? '平台控制台' : '我的控制台'}</h2>
-      <p style={{ color: '#64748B', marginBottom: 24 }}>
-        {isAdmin ? '查看平台整体运行数据和用户活跃度' : '查看你的志愿填报进度和收藏数据'}
-      </p>
+      <PageHeader
+        eyebrow={isAdmin ? '系统管理' : '我的工作台'}
+        title={isAdmin ? '平台控制台' : '我的控制台'}
+        description={isAdmin ? '查看平台整体运行数据和用户活跃度。' : '查看你的志愿填报进度、收藏数据和下一步操作。'}
+      />
 
       {isAdmin ? (
         <>
           <Row gutter={[24, 24]}>
             <Col xs={24} sm={12} lg={8}>
-              <Card bodyStyle={{ paddingBottom: 12 }}>
-                <Statistic
-                  title={<span style={{ fontSize: 13, color: '#64748B' }}>总用户数</span>}
-                  value={stats?.total_users ?? 0}
-                  prefix={<TeamOutlined style={{ color: '#1E40AF' }} />}
-                  valueStyle={{ fontSize: 28, fontWeight: 600 }}
-                />
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 }}>
-                  <TrendTag value={12.5} />
-                  <span style={{ fontSize: 12, color: '#94A3B8' }}>较上月</span>
-                </div>
+              <MetricCard title="总用户数" value={stats?.total_users ?? 0} icon={<TeamOutlined />} trend={12.5} trendLabel="较上月">
                 <Sparkline data={sparkData} color="#1E40AF" />
-              </Card>
+              </MetricCard>
             </Col>
             <Col xs={24} sm={12} lg={8}>
-              <Card bodyStyle={{ paddingBottom: 12 }}>
-                <Statistic
-                  title={<span style={{ fontSize: 13, color: '#64748B' }}>活跃用户</span>}
-                  value={stats?.active_users ?? 0}
-                  prefix={<UserAddOutlined style={{ color: '#D97706' }} />}
-                  valueStyle={{ fontSize: 28, fontWeight: 600 }}
-                />
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 }}>
-                  <TrendTag value={8.3} />
-                  <span style={{ fontSize: 12, color: '#94A3B8' }}>较上月</span>
-                </div>
+              <MetricCard title="活跃用户" value={stats?.active_users ?? 0} icon={<UserAddOutlined />} tone="amber" trend={8.3} trendLabel="较上月">
                 <Sparkline data={sparkData2} color="#D97706" />
-              </Card>
+              </MetricCard>
             </Col>
             <Col xs={24} sm={12} lg={8}>
-              <Card bodyStyle={{ paddingBottom: 12 }}>
-                <Statistic
-                  title={<span style={{ fontSize: 13, color: '#64748B' }}>绑定总数</span>}
-                  value={stats?.total_bindings ?? 0}
-                  prefix={<LinkOutlined style={{ color: '#16A34A' }} />}
-                  valueStyle={{ fontSize: 28, fontWeight: 600 }}
-                />
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 }}>
-                  <TrendTag value={-2.1} />
-                  <span style={{ fontSize: 12, color: '#94A3B8' }}>较上月</span>
-                </div>
+              <MetricCard title="绑定总数" value={stats?.total_bindings ?? 0} icon={<LinkOutlined />} tone="green" trend={-2.1} trendLabel="较上月">
                 <Sparkline data={sparkData3} color="#16A34A" />
-              </Card>
+              </MetricCard>
             </Col>
           </Row>
           {stats?.users_by_role && (
-            <Card title="角色分布" style={{ marginTop: 24 }}>
+            <DataPanel title="角色分布" style={{ marginTop: 24 }}>
               <Row gutter={[24, 24]}>
                 {Object.entries(stats.users_by_role).map(([role, count]) => (
                   <Col xs={12} sm={8} lg={6} key={role}>
@@ -164,56 +124,26 @@ export default function DashboardPage() {
                   </Col>
                 ))}
               </Row>
-            </Card>
+            </DataPanel>
           )}
         </>
       ) : (
         <>
           <Row gutter={[24, 24]}>
             <Col xs={24} sm={12} lg={8}>
-              <Card bodyStyle={{ paddingBottom: 12 }}>
-                <Statistic
-                  title={<span style={{ fontSize: 13, color: '#64748B' }}>已完成分析</span>}
-                  value={12}
-                  prefix={<BarChartOutlined style={{ color: '#1E40AF' }} />}
-                  valueStyle={{ fontSize: 28, fontWeight: 600 }}
-                />
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 }}>
-                  <TrendTag value={20} />
-                  <span style={{ fontSize: 12, color: '#94A3B8' }}>较上周</span>
-                </div>
+              <MetricCard title="已完成分析" value={12} icon={<BarChartOutlined />} trend={20} trendLabel="较上周">
                 <Sparkline data={[5, 8, 6, 10, 12, 11, 12]} color="#1E40AF" />
-              </Card>
+              </MetricCard>
             </Col>
             <Col xs={24} sm={12} lg={8}>
-              <Card bodyStyle={{ paddingBottom: 12 }}>
-                <Statistic
-                  title={<span style={{ fontSize: 13, color: '#64748B' }}>收藏院校</span>}
-                  value={5}
-                  prefix={<LineChartOutlined style={{ color: '#D97706' }} />}
-                  valueStyle={{ fontSize: 28, fontWeight: 600 }}
-                />
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 }}>
-                  <TrendTag value={0} />
-                  <span style={{ fontSize: 12, color: '#94A3B8' }}>较上周</span>
-                </div>
+              <MetricCard title="收藏院校" value={5} icon={<LineChartOutlined />} tone="amber" trend={0} trendLabel="较上周">
                 <Sparkline data={[3, 4, 4, 5, 5, 5, 5]} color="#D97706" />
-              </Card>
+              </MetricCard>
             </Col>
             <Col xs={24} sm={12} lg={8}>
-              <Card bodyStyle={{ paddingBottom: 12 }}>
-                <Statistic
-                  title={<span style={{ fontSize: 13, color: '#64748B' }}>对比方案</span>}
-                  value={3}
-                  prefix={<PieChartOutlined style={{ color: '#16A34A' }} />}
-                  valueStyle={{ fontSize: 28, fontWeight: 600 }}
-                />
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 }}>
-                  <TrendTag value={50} />
-                  <span style={{ fontSize: 12, color: '#94A3B8' }}>较上周</span>
-                </div>
+              <MetricCard title="对比方案" value={3} icon={<PieChartOutlined />} tone="green" trend={50} trendLabel="较上周">
                 <Sparkline data={[1, 1, 2, 2, 3, 3, 3]} color="#16A34A" />
-              </Card>
+              </MetricCard>
             </Col>
           </Row>
 

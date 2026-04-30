@@ -27,7 +27,17 @@ export default function LoginPage() {
   }
 
   return (
-    <Card title="用户登录" style={{ width: 400 }}>
+    <Card
+      title="欢迎回来"
+      styles={{
+        header: { borderBottom: '1px solid var(--color-border)', fontSize: 20, fontWeight: 760 },
+        body: { padding: 28 },
+      }}
+      style={{ width: '100%', borderRadius: 'var(--radius-lg)' }}
+    >
+      <p style={{ marginTop: -8, marginBottom: 24, color: 'var(--color-text-muted)', lineHeight: 1.7 }}>
+        登录后继续整理志愿计划、查看订单状态和家庭协作进度。
+      </p>
       <Form layout="vertical" onFinish={onFinish} autoComplete="off">
         <Form.Item
           label="邮箱"
@@ -55,6 +65,8 @@ export default function LoginPage() {
         </Form.Item>
 
         <div style={{ textAlign: 'center' }}>
+          <Link to="/forgot-password">忘记密码</Link>
+          <span style={{ margin: '0 12px' }}>|</span>
           还没有账号？<Link to="/register">立即注册</Link>
         </div>
 

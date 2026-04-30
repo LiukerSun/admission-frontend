@@ -3,6 +3,7 @@ import { Card, Form, Input, Button, List, Empty, message, Tag } from 'antd'
 import { useAuthStore } from '@/stores/authStore'
 import { bindingsApi, type BindingWithUserDetail } from '@/services/bindings'
 import { UserOutlined } from '@ant-design/icons'
+import { DataPanel, PageHeader } from '@/components/ui'
 
 export default function BindingsPage() {
   const { user } = useAuthStore()
@@ -59,10 +60,14 @@ export default function BindingsPage() {
 
   return (
     <div>
-      <h2>绑定管理</h2>
+      <PageHeader
+        eyebrow="家庭协作"
+        title="绑定管理"
+        description={isParent ? '绑定学生账号后，可以围绕同一份报考计划同步查看进度。' : '查看已绑定的家长账号，保持报考沟通一致。'}
+      />
 
       {isParent && (
-        <Card title="绑定学生" style={{ marginTop: 24, marginBottom: 24 }}>
+        <DataPanel title="绑定学生" description="请输入学生注册邮箱，学生确认后即可建立协作关系。" className="bindingCreatePanel">
           <Form form={form} layout="vertical" onFinish={onFinish} autoComplete="off">
             <Form.Item
               label="学生邮箱"
@@ -80,10 +85,14 @@ export default function BindingsPage() {
               </Button>
             </Form.Item>
           </Form>
-        </Card>
+        </DataPanel>
       )}
 
-      <Card title={isParent ? '已绑定学生' : '已绑定家长'} loading={loading}>
+      <Card
+        title={isParent ? '已绑定学生' : '已绑定家长'}
+        loading={loading}
+        style={{ marginTop: isParent ? 24 : 0 }}
+      >
         {bindings.length === 0 ? (
           <Empty description={isParent ? '尚未绑定任何学生' : '尚未绑定家长'} />
         ) : (

@@ -1,12 +1,16 @@
 import { Outlet, NavLink, useNavigate } from 'react-router-dom'
 import { Avatar, Badge, Button, Input } from 'antd'
 import {
+  BarChartOutlined,
   BellOutlined,
   CalendarOutlined,
+  CheckCircleOutlined,
   HomeOutlined,
+  LinkOutlined,
   LoginOutlined,
   LogoutOutlined,
   SearchOutlined,
+  SlidersOutlined,
   UserOutlined,
 } from '@ant-design/icons'
 import { useAuthStore } from '@/stores/authStore'
@@ -29,29 +33,51 @@ export default function LandingLayout() {
       <div className="landingShell">
         <aside className="landingSider">
           <div className="landingBrand">
-            <div className="landingBrandMark" />
-            智慧高考
+            <img src="/landing/logo.webp" alt="智慧高考" className="landingBrandLogo" />
+            <div>
+              <span>智慧高考</span>
+              <small>升学规划工作台</small>
+            </div>
           </div>
+
           <nav className="landingNav">
             <NavLink to="/" end className={navItemClass}>
-              首页
+              <HomeOutlined />
+              <span>首页</span>
             </NavLink>
             <NavLink to="/analysis" className={navItemClass}>
-              院校库
+              <BarChartOutlined />
+              <span>院校数据</span>
             </NavLink>
             <NavLink to="/dashboard" className={navItemClass}>
-              数据中心
+              <SlidersOutlined />
+              <span>数据中心</span>
             </NavLink>
             <NavLink to="/bindings" className={navItemClass}>
-              志愿模拟
+              <LinkOutlined />
+              <span>协作填报</span>
             </NavLink>
           </nav>
+
           <div className="landingSideCard">
             <div className="landingSideCardHeader">
               <CalendarOutlined />
-              报考月历
+              报考节奏
             </div>
-            <div className="landingSideCardGlass" />
+            <div className="landingSideCardSteps">
+              <div className="landingTimelineItem">
+                <CheckCircleOutlined />
+                查分与位次确认
+              </div>
+              <div className="landingTimelineItem">
+                <CheckCircleOutlined />
+                院校专业短名单
+              </div>
+              <div className="landingTimelineItem">
+                <CheckCircleOutlined />
+                家庭协作核对
+              </div>
+            </div>
           </div>
         </aside>
 
@@ -64,7 +90,7 @@ export default function LandingLayout() {
               <Input
                 allowClear
                 prefix={<SearchOutlined />}
-                placeholder="全局搜素"
+                placeholder="搜索院校、专业或功能"
                 onPressEnter={() => navigate('/analysis')}
               />
             </div>

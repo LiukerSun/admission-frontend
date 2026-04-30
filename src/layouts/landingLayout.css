@@ -1,164 +1,312 @@
- .landingRoot {
-   min-height: 100vh;
-   position: relative;
-   overflow: hidden;
-   background: radial-gradient(circle at 35% 20%, rgba(250, 234, 225, 1) 0%, rgba(157, 205, 237, 1) 65%, rgba(157, 205, 237, 1) 100%);
- }
+.landingRoot {
+  position: relative;
+  min-height: 100vh;
+  overflow: hidden;
+  background:
+    linear-gradient(135deg, rgba(249, 246, 240, 0.98) 0%, rgba(238, 246, 245, 0.96) 52%, rgba(250, 251, 247, 0.98) 100%);
+}
 
- .landingRoot::before {
-   content: '';
-   position: absolute;
-   inset: -200px;
-   background:
-     radial-gradient(closest-side at 20% 60%, rgba(252, 96, 177, 0.35) 0%, rgba(240, 151, 139, 0.18) 45%, rgba(250, 140, 5, 0) 75%),
-     radial-gradient(closest-side at 55% 88%, rgba(96, 219, 252, 0.35) 0%, rgba(139, 240, 203, 0.18) 45%, rgba(250, 217, 5, 0) 75%),
-     radial-gradient(closest-side at 80% 30%, rgba(153, 175, 240, 0.32) 0%, rgba(32, 159, 250, 0.16) 48%, rgba(10, 250, 222, 0) 78%);
-   filter: blur(54px);
-   pointer-events: none;
- }
+.landingRoot::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 18% 10%, rgba(197, 139, 69, 0.12), transparent 28%),
+    radial-gradient(circle at 86% 20%, rgba(114, 167, 149, 0.16), transparent 30%),
+    url('/landing/bg.webp') center / cover;
+  opacity: 0.28;
+  pointer-events: none;
+}
 
- .landingShell {
-   position: relative;
-   z-index: 1;
-   max-width: 1560px;
-   margin: 0 auto;
-   padding: 24px;
-   display: flex;
-   gap: 24px;
- }
+.landingShell {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  gap: 20px;
+  width: min(100%, 1504px);
+  margin: 0 auto;
+  padding: 24px;
+}
 
- .landingSider {
-   width: 355px;
-   flex: 0 0 355px;
-   border-radius: 16px;
-   padding: 18px 18px 20px;
-   background: rgba(232, 250, 250, 0.85);
-   box-shadow: 0 10px 30px rgba(7, 32, 60, 0.06);
-   backdrop-filter: blur(20px);
- }
+.landingSider {
+  position: sticky;
+  top: 24px;
+  align-self: flex-start;
+  flex: 0 0 286px;
+  width: 286px;
+  min-height: calc(100vh - 48px);
+  padding: 16px;
+  border: 1px solid rgba(213, 224, 225, 0.88);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.76);
+  box-shadow: 0 22px 64px rgba(40, 61, 70, 0.1);
+  backdrop-filter: blur(18px);
+}
 
- .landingBrand {
-   display: flex;
-   align-items: center;
-   gap: 12px;
-   font-weight: 800;
-   font-size: 20px;
-   color: #063966;
-   padding: 8px 10px 14px;
- }
+.landingBrand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 4px 4px 20px;
+  color: var(--color-text);
+}
 
- .landingBrandMark {
-   width: 26px;
-   height: 26px;
-   border-radius: 8px;
-   background: rgba(180, 232, 250, 0.9);
- }
+.landingBrandLogo {
+  width: 42px;
+  height: 42px;
+  object-fit: contain;
+  border: 1px solid rgba(226, 233, 234, 0.8);
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 10px 28px rgba(47, 95, 143, 0.1);
+}
 
- .landingNav {
-   display: grid;
-   gap: 12px;
-   padding: 0 10px;
- }
+.landingBrand span,
+.landingBrand small {
+  display: block;
+}
 
- .landingNavItem {
-   display: flex;
-   align-items: center;
-   gap: 12px;
-   height: 86px;
-   border-radius: 13px;
-   padding: 0 18px;
-   text-decoration: none;
-   color: #000;
-   font-size: 22px;
-   font-weight: 600;
- }
+.landingBrand span {
+  font-size: 18px;
+  line-height: 1.25;
+  font-weight: 850;
+}
 
- .landingNavItemActive {
-   background: rgba(180, 232, 250, 0.7);
- }
+.landingBrand small {
+  margin-top: 3px;
+  color: var(--color-text-subtle);
+  font-size: 12px;
+  font-weight: 650;
+}
 
- .landingSideCard {
-   margin-top: 18px;
-   border-radius: 13px;
-   padding: 16px;
-   background: #d7f5f5;
- }
+.landingNav {
+  display: grid;
+  gap: 7px;
+  padding-top: 4px;
+}
 
- .landingSideCardHeader {
-   display: flex;
-   align-items: center;
-   gap: 10px;
-   font-size: 20px;
-   font-weight: 700;
-   color: #000;
-   padding: 2px 6px 12px;
- }
+.landingNavItem {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  min-height: 46px;
+  padding: 0 12px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  color: var(--color-text-muted);
+  font-size: 15px;
+  font-weight: 720;
+  text-decoration: none;
+  transition: background 0.22s ease, border-color 0.22s ease, color 0.22s ease, transform 0.22s ease;
+}
 
- .landingSideCardGlass {
-   border-radius: 13px;
-   background: rgba(255, 255, 255, 0.4);
-   box-shadow: inset 0 15px 30px rgba(255, 255, 255, 0.2), inset 0 0 15px rgba(255, 255, 255, 0.25), inset 0 0 2px rgba(255, 255, 255, 0.7), inset 0 1px 1px rgba(255, 255, 255, 0.5);
-   backdrop-filter: blur(28px);
-   height: 328px;
- }
+.landingNavItem .anticon {
+  color: var(--color-text-subtle);
+  font-size: 16px;
+}
 
- .landingMain {
-   min-width: 0;
-   flex: 1;
-   display: flex;
-   flex-direction: column;
-   gap: 18px;
- }
+.landingNavItem:hover,
+.landingNavItemActive {
+  border-color: rgba(47, 95, 143, 0.12);
+  background: rgba(231, 240, 247, 0.72);
+  color: var(--color-primary);
+  transform: translateX(2px);
+}
 
- .landingTopbar {
-   height: 117px;
-   border-radius: 13px;
-   background: rgba(255, 255, 255, 0.85);
-   box-shadow: 0 10px 30px rgba(7, 32, 60, 0.06);
-   backdrop-filter: blur(20px);
-   display: flex;
-   align-items: center;
-   padding: 18px 22px;
-   gap: 16px;
- }
+.landingNavItem:hover .anticon,
+.landingNavItemActive .anticon {
+  color: var(--color-primary);
+}
 
- .landingTopbarLeft {
-   display: flex;
-   align-items: center;
-   gap: 12px;
- }
+.landingNavItemActive::after {
+  content: '';
+  position: absolute;
+  top: 12px;
+  right: 10px;
+  bottom: 12px;
+  width: 3px;
+  border-radius: 999px;
+  background: var(--color-accent);
+}
 
- .landingSearch {
-   flex: 1;
-   display: flex;
-   justify-content: center;
- }
+.landingSideCard {
+  margin-top: 18px;
+  padding: 16px;
+  border: 1px solid rgba(226, 233, 234, 0.88);
+  border-radius: 8px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.9), rgba(247, 251, 249, 0.94)),
+    linear-gradient(135deg, rgba(43, 92, 131, 0.06), rgba(109, 159, 142, 0.08));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
+}
 
- .landingSearch .ant-input-affix-wrapper {
-   width: min(611px, 100%);
-   border-radius: 40px;
-   background: rgba(235, 245, 250, 0.7);
-   border: none;
-   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.12), inset 0 15px 30px rgba(250, 253, 255, 0.2), inset 0 0 15px rgba(250, 253, 255, 0.2);
- }
+.landingSideCardHeader {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-bottom: 12px;
+  color: var(--color-text);
+  font-size: 15px;
+  font-weight: 800;
+}
 
- .landingSearch .ant-input {
-   background: transparent;
- }
+.landingSideCardHeader .anticon {
+  color: var(--color-primary);
+}
 
- .landingActions {
-   display: flex;
-   align-items: center;
-   gap: 10px;
- }
+.landingSideCardSteps {
+  display: grid;
+  gap: 10px;
+}
 
- @media (max-width: 1024px) {
-   .landingShell {
-     flex-direction: column;
-   }
+.landingTimelineItem {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 42px;
+  padding: 10px 12px;
+  border: 1px solid rgba(226, 233, 234, 0.84);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.8);
+  color: var(--color-text-muted);
+  font-size: 13px;
+  font-weight: 650;
+}
 
-   .landingSider {
-     width: 100%;
-     flex: 0 0 auto;
-   }
- }
+.landingTimelineItem .anticon {
+  color: var(--color-accent);
+  font-size: 13px;
+}
+
+.landingMain {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.landingTopbar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-height: 72px;
+  padding: 14px 18px;
+  border: 1px solid rgba(213, 224, 225, 0.86);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.8);
+  box-shadow: 0 18px 50px rgba(40, 61, 70, 0.08);
+  backdrop-filter: blur(18px);
+}
+
+.landingTopbarLeft {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.landingTopbarLeft .ant-btn,
+.landingActions .ant-btn {
+  border-radius: 999px;
+}
+
+.landingSearch {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+}
+
+.landingSearch .ant-input-affix-wrapper {
+  width: min(620px, 100%);
+  min-height: 42px;
+  border-color: rgba(202, 216, 220, 0.92);
+  border-radius: 999px;
+  background: rgba(250, 251, 248, 0.78);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.85);
+  transition: border-color 0.22s ease, box-shadow 0.22s ease;
+}
+
+.landingSearch .ant-input-affix-wrapper:hover,
+.landingSearch .ant-input-affix-wrapper-focused {
+  border-color: rgba(47, 95, 143, 0.34);
+  box-shadow: 0 12px 30px rgba(47, 95, 143, 0.09);
+}
+
+.landingSearch .ant-input {
+  background: transparent;
+}
+
+.landingActions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+@media (max-width: 1120px) {
+  .landingShell {
+    flex-direction: column;
+  }
+
+  .landingSider {
+    position: static;
+    width: 100%;
+    min-height: auto;
+    flex: 0 0 auto;
+  }
+
+  .landingNav {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .landingSideCard {
+    display: none;
+  }
+}
+
+@media (max-width: 720px) {
+  .landingShell {
+    padding: 12px;
+  }
+
+  .landingSider,
+  .landingTopbar {
+    border-radius: 8px;
+  }
+
+  .landingBrand {
+    padding-bottom: 14px;
+  }
+
+  .landingTopbar {
+    flex-wrap: wrap;
+    gap: 12px;
+    padding: 12px;
+  }
+
+  .landingSearch {
+    order: 3;
+    width: 100%;
+    flex-basis: 100%;
+  }
+
+  .landingActions {
+    margin-left: auto;
+  }
+
+  .landingActions .ant-avatar {
+    display: none;
+  }
+
+  .landingNav {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landingNavItem,
+  .landingSearch .ant-input-affix-wrapper {
+    transition: none;
+    transform: none;
+  }
+}

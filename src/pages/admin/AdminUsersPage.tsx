@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import {
   Table, Input, Select, Button, Space, Tag, message, Modal, Form,
-  Card, Row, Col, Statistic, Dropdown, Popconfirm, Tooltip,
+  Card, Row, Col, Dropdown, Popconfirm, Tooltip,
 } from 'antd'
 import {
   SearchOutlined, DownloadOutlined, ReloadOutlined,
@@ -11,6 +11,7 @@ import {
 import { adminApi, type UserListItem, type AdminUserDetail, type UpdateUserRequest } from '@/services/admin'
 import { useAuthStore } from '@/stores/authStore'
 import type { MenuProps } from 'antd'
+import { ActionToolbar, MetricCard, PageHeader } from '@/components/ui'
 
 const { Option } = Select
 
@@ -355,40 +356,21 @@ export default function AdminUsersPage() {
 
   return (
     <div>
-      <h2 style={{ marginBottom: 4 }}>用户管理</h2>
-      <p style={{ color: '#64748B', marginBottom: 24 }}>
-        管理平台注册用户，支持批量操作和数据导出
-      </p>
+      <PageHeader
+        eyebrow="系统管理"
+        title="用户管理"
+        description="管理平台注册用户，支持筛选、编辑、重置密码、批量操作和数据导出。"
+      />
 
       <Row gutter={[24, 24]} style={{ marginBottom: 24 }}>
         <Col xs={24} sm={12} lg={8}>
-          <Card>
-            <Statistic
-              title="总用户"
-              value={total}
-              prefix={<TeamOutlined style={{ color: '#1E40AF' }} />}
-            />
-          </Card>
+          <MetricCard title="总用户" value={total} icon={<TeamOutlined />} />
         </Col>
         <Col xs={24} sm={12} lg={8}>
-          <Card>
-            <Statistic
-              title="正常"
-              value={activeCount}
-              prefix={<UserAddOutlined style={{ color: '#16A34A' }} />}
-              valueStyle={{ color: '#16A34A' }}
-            />
-          </Card>
+          <MetricCard title="正常" value={activeCount} icon={<UserAddOutlined />} tone="green" />
         </Col>
         <Col xs={24} sm={12} lg={8}>
-          <Card>
-            <Statistic
-              title="已封禁"
-              value={bannedCount}
-              prefix={<StopOutlined style={{ color: '#DC2626' }} />}
-              valueStyle={{ color: '#DC2626' }}
-            />
-          </Card>
+          <MetricCard title="已封禁" value={bannedCount} icon={<StopOutlined />} tone="red" />
         </Col>
       </Row>
 
@@ -405,7 +387,16 @@ export default function AdminUsersPage() {
           </Space>
         }
       >
-        <Space wrap style={{ marginBottom: 16 }}>
+        <ActionToolbar
+          extra={(
+            <>
+              <Button type="primary" onClick={fetchUsers}>搜索</Button>
+              <Button onClick={() => { setFilters({ email: '', username: '', role: '', status: '' }); setPage(1) }}>
+                重置
+              </Button>
+            </>
+          )}
+        >
           <Input
             placeholder="邮箱搜索"
             value={filters.email}
@@ -443,13 +434,7 @@ export default function AdminUsersPage() {
             <Option value="active">正常</Option>
             <Option value="banned">已封禁</Option>
           </Select>
-          <Button type="primary" onClick={fetchUsers}>
-            搜索
-          </Button>
-          <Button onClick={() => { setFilters({ email: '', username: '', role: '', status: '' }); setPage(1) }}>
-            重置
-          </Button>
-        </Space>
+        </ActionToolbar>
 
         {selectedRowKeys.length > 0 && (
           <div style={{ marginBottom: 16, padding: '8px 16px', background: '#EFF6FF', borderRadius: 6, display: 'flex', alignItems: 'center', gap: 12 }}>

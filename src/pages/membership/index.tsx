@@ -4,7 +4,6 @@ import {
   Button,
   Card,
   Col,
-  Empty,
   Modal,
   Row,
   Skeleton,
@@ -20,8 +19,9 @@ import { createOrderIdempotencyKey, showOrderCreatedSuccess } from '@/components
 import { membershipApi, type CurrentMembership, type MembershipPlan } from '@/services/membership'
 import { paymentApi } from '@/services/payment'
 import { formatDateTime, formatMoney } from '@/utils/paymentFormat'
+import { DataPanel, MetricCard, PageHeader, SmartEmptyState } from '@/components/ui'
 
-const { Paragraph, Title } = Typography
+const { Title } = Typography
 
 export default function MembershipPage() {
   const navigate = useNavigate()
@@ -86,40 +86,30 @@ export default function MembershipPage() {
 
   return (
     <div>
-      <Space style={{ width: '100%', justifyContent: 'space-between', marginBottom: 24 }} align="start">
-        <div>
-          <h2 style={{ marginBottom: 4 }}>会员中心</h2>
-          <Paragraph type="secondary" style={{ marginBottom: 0 }}>
-            选择会员套餐创建订单，当前支付通道为 Mock 支付，适合本地联调订单和权益发放流程。
-          </Paragraph>
-        </div>
-        <Button onClick={() => navigate('/orders')}>查看我的订单</Button>
-      </Space>
+      <PageHeader
+        eyebrow="会员服务"
+        title="会员中心"
+        description="选择会员套餐创建订单，当前支付通道为 Mock 支付，适合本地联调订单和权益发放流程。"
+        actions={<Button onClick={() => navigate('/orders')}>查看我的订单</Button>}
+      />
 
-      <Card style={{ marginBottom: 24 }}>
-        <Row gutter={[24, 24]} align="middle">
+      <DataPanel style={{ marginBottom: 24 }}>
+        <Row gutter={[24, 24]}>
           <Col xs={24} md={8}>
-            <Statistic
-              title="当前会员状态"
-              value={membership?.active ? '已开通' : '未开通'}
-              prefix={<CrownOutlined />}
-              valueStyle={{ color: membership?.active ? '#16A34A' : '#64748B' }}
-            />
+            <MetricCard title="当前会员状态" value={membership?.active ? '已开通' : '未开通'} icon={<CrownOutlined />} tone={membership?.active ? 'green' : 'slate'} />
           </Col>
           <Col xs={24} md={8}>
-            <Statistic title="会员等级" value={membership?.membership_level || 'premium'} />
+            <MetricCard title="会员等级" value={membership?.membership_level || 'premium'} icon={<CrownOutlined />} tone="amber" />
           </Col>
           <Col xs={24} md={8}>
-            <Statistic title="有效期至" value={formatDateTime(membership?.ends_at)} />
+            <MetricCard title="有效期至" value={formatDateTime(membership?.ends_at)} tone="blue" />
           </Col>
         </Row>
-      </Card>
+      </DataPanel>
 
-      <Title level={4} style={{ marginTop: 8 }}>可购买套餐</Title>
+      <Title level={4} style={{ marginTop: 8, color: 'var(--color-text)' }}>可购买套餐</Title>
       {plans.length === 0 ? (
-        <Card>
-          <Empty description="暂无可购买会员套餐" />
-        </Card>
+        <SmartEmptyState title="暂无可购买会员套餐" description="套餐上架后会在这里展示价格、周期和会员等级。" />
       ) : (
         <Row gutter={[24, 24]}>
           {plans.map((plan) => (

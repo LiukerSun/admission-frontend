@@ -34,6 +34,7 @@ import { paymentApi } from '@/services/payment'
 import { useAuthStore } from '@/stores/authStore'
 import { formatDateTime, formatMoney } from '@/utils/paymentFormat'
 import { isMainlandPhone, normalizeMainlandPhone } from '@/utils/phone'
+import { PageHeader } from '@/components/ui'
 
 interface ChangePasswordFormValues {
   currentPassword: string
@@ -449,12 +450,11 @@ export default function ProfilePage() {
 
   return (
     <div>
-      <Typography.Title level={2} style={{ marginBottom: 4, fontSize: 24 }}>
-        个人中心
-      </Typography.Title>
-      <Typography.Text type="secondary" style={{ fontSize: 14 }}>
-        管理您的个人信息、账号安全和手机号绑定。
-      </Typography.Text>
+      <PageHeader
+        eyebrow="账号设置"
+        title="个人中心"
+        description="管理您的个人信息、账号安全、手机号绑定和会员续费。"
+      />
 
       <Card
         style={{ marginTop: 24, marginBottom: 24, background: '#F8FAFC' }}

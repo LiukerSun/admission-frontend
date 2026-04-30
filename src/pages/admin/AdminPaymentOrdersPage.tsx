@@ -46,6 +46,7 @@ import {
   paymentChannelLabel,
   paymentStatusLabel,
 } from '@/utils/paymentFormat'
+import { ActionToolbar, PageHeader, SmartEmptyState } from '@/components/ui'
 
 const { useBreakpoint } = Grid
 
@@ -439,21 +440,14 @@ export default function AdminPaymentOrdersPage() {
 
   return (
     <div>
-      <Space style={{ width: '100%', justifyContent: 'space-between', marginBottom: 24 }}>
-        <div>
-          <Typography.Title level={2} style={{ marginBottom: 4, fontSize: 24 }}>
-            支付订单管理
-          </Typography.Title>
-          <Typography.Text type="secondary" style={{ fontSize: 14 }}>
-            查看订单、支付尝试、回调记录，并处理会员权益发放问题。
-          </Typography.Text>
-        </div>
-        <Button icon={<ReloadOutlined />} onClick={() => void fetchOrders()}>
-          刷新
-        </Button>
-      </Space>
+      <PageHeader
+        eyebrow="系统管理"
+        title="支付订单管理"
+        description="查看订单、支付尝试、回调记录，并处理会员权益发放问题。"
+        actions={<Button icon={<ReloadOutlined />} onClick={() => void fetchOrders()}>刷新</Button>}
+      />
 
-      <Card style={{ marginBottom: 16 }}>
+      <Card style={{ marginBottom: 16 }} styles={{ body: { padding: 12 } }}>
         <Form
           form={form}
           layout={screens.md ? 'inline' : 'vertical'}
@@ -493,12 +487,12 @@ export default function AdminPaymentOrdersPage() {
             />
           </Form.Item>
           <Form.Item style={{ marginBottom: 8 }}>
-            <Space>
+            <ActionToolbar>
               <Button type="primary" onClick={() => void handleSearch()}>
                 搜索
               </Button>
               <Button onClick={handleReset}>重置</Button>
-            </Space>
+            </ActionToolbar>
           </Form.Item>
         </Form>
       </Card>
@@ -522,14 +516,13 @@ export default function AdminPaymentOrdersPage() {
         }}
         locale={{
           emptyText: (
-            <div style={{ padding: '40px 0', textAlign: 'center' }}>
-              <Typography.Text type="secondary">暂无订单数据</Typography.Text>
-              <div style={{ marginTop: 8 }}>
-                <Button type="primary" icon={<ReloadOutlined />} onClick={() => void fetchOrders()}>
-                  刷新
-                </Button>
-              </div>
-            </div>
+            <SmartEmptyState
+              title="暂无订单数据"
+              description="订单产生后会在这里展示支付、回调和会员权益状态。"
+              actionText="刷新"
+              onAction={() => void fetchOrders()}
+              icon={<ReloadOutlined />}
+            />
           ),
         }}
       />

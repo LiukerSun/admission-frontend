@@ -15,6 +15,7 @@ import {
   orderStatusLabel,
   paymentChannelLabel,
 } from '@/utils/paymentFormat'
+import { PageHeader, SmartEmptyState } from '@/components/ui'
 
 const { useBreakpoint } = Grid
 
@@ -246,19 +247,12 @@ export default function OrdersPage() {
 
   return (
     <div>
-      <Space style={{ width: '100%', justifyContent: 'space-between', marginBottom: 24 }}>
-        <div>
-          <Typography.Title level={2} style={{ marginBottom: 4, fontSize: 24 }}>
-            我的订单
-          </Typography.Title>
-          <Typography.Text type="secondary" style={{ fontSize: 14 }}>
-            查看会员订单、执行 Mock 支付并检测权益发放状态。
-          </Typography.Text>
-        </div>
-        <Button icon={<ReloadOutlined />} onClick={() => void fetchOrders()}>
-          刷新
-        </Button>
-      </Space>
+      <PageHeader
+        eyebrow="会员服务"
+        title="我的订单"
+        description="查看会员订单、执行 Mock 支付并检测权益发放状态。"
+        actions={<Button icon={<ReloadOutlined />} onClick={() => void fetchOrders()}>刷新</Button>}
+      />
 
       <Table
         rowKey="order_no"
@@ -279,14 +273,13 @@ export default function OrdersPage() {
         }}
         locale={{
           emptyText: (
-            <div style={{ padding: '40px 0', textAlign: 'center' }}>
-              <Typography.Text type="secondary">暂无订单数据</Typography.Text>
-              <div style={{ marginTop: 8 }}>
-                <Button type="primary" icon={<ReloadOutlined />} onClick={() => void fetchOrders()}>
-                  刷新
-                </Button>
-              </div>
-            </div>
+            <SmartEmptyState
+              title="暂无订单数据"
+              description="购买会员套餐后，订单和权益发放状态会出现在这里。"
+              actionText="刷新"
+              onAction={() => void fetchOrders()}
+              icon={<ReloadOutlined />}
+            />
           ),
         }}
       />
