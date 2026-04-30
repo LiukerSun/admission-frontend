@@ -40,7 +40,8 @@ export default function OrdersPage() {
       const res = await paymentApi.listMyOrders({ page, page_size: pageSize })
       setOrders(res.data.data.items ?? [])
       setTotal(res.data.data.total ?? 0)
-    } catch {
+    } catch (err) {
+      console.error('加载订单列表失败', err)
       message.error('加载订单列表失败')
     } finally {
       setLoading(false)
@@ -48,10 +49,7 @@ export default function OrdersPage() {
   }, [page, pageSize])
 
   useEffect(() => {
-    const timer = window.setTimeout(() => {
-      void fetchOrders()
-    }, 0)
-    return () => window.clearTimeout(timer)
+    void fetchOrders()
   }, [fetchOrders])
 
   const openDetail = useCallback(async (orderNo: string) => {
@@ -60,7 +58,8 @@ export default function OrdersPage() {
     try {
       const res = await paymentApi.getMyOrder(orderNo)
       setSelectedOrder(res.data.data)
-    } catch {
+    } catch (err) {
+      console.error('加载订单详情失败', err)
       message.error('加载订单详情失败')
     } finally {
       setDetailLoading(false)
@@ -73,10 +72,7 @@ export default function OrdersPage() {
       const params = new URLSearchParams(searchParams)
       params.delete('orderNo')
       setSearchParams(params, { replace: true })
-      const timer = window.setTimeout(() => {
-        void openDetail(orderNo)
-      }, 0)
-      return () => window.clearTimeout(timer)
+      void openDetail(orderNo)
     }
   }, [openDetail, searchParams, setSearchParams])
 
@@ -130,7 +126,8 @@ export default function OrdersPage() {
       applyUpdatedOrder(res.data.data)
       message.success('订单状态已刷新')
       void fetchOrders()
-    } catch {
+    } catch (err) {
+      console.error('检测订单状态失败', err)
       message.error('检测订单状态失败')
     } finally {
       setActionLoading('')

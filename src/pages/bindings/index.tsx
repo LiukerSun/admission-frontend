@@ -18,7 +18,8 @@ export default function BindingsPage() {
     try {
       const res = await bindingsApi.list()
       setBindings(res.data.data?.bindings ?? [])
-    } catch {
+    } catch (err) {
+      console.error('获取绑定关系失败', err)
       message.error('获取绑定关系失败')
     } finally {
       setLoading(false)
@@ -26,11 +27,7 @@ export default function BindingsPage() {
   }
 
   useEffect(() => {
-    const timer = window.setTimeout(() => {
-      void fetchBindings()
-    }, 0)
-
-    return () => window.clearTimeout(timer)
+    void fetchBindings()
   }, [])
 
   const onFinish = async (values: { studentEmail: string }) => {

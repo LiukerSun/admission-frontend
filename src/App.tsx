@@ -1,141 +1,176 @@
-import { useEffect } from 'react'
+import { useEffect, lazy, Suspense } from 'react'
 import { createBrowserRouter, RouterProvider } from 'react-router-dom'
 import { ConfigProvider } from 'antd'
 import { useAuthStore } from '@/stores/authStore'
-import LandingLayout from '@/layouts/LandingLayout'
-import AuthLayout from '@/layouts/AuthLayout'
-import BasicLayout from '@/layouts/BasicLayout'
-import LandingPage from '@/pages/landing'
-import LoginPage from '@/pages/auth/LoginPage'
-import RegisterPage from '@/pages/auth/RegisterPage'
-import DashboardPage from '@/pages/dashboard'
-import ProfilePage from '@/pages/profile'
-import BindingsPage from '@/pages/bindings'
-import AnalysisPage from '@/pages/analysis'
-import MembershipPage from '@/pages/membership'
-import OrdersPage from '@/pages/orders'
-import AdminDashboardPage from '@/pages/admin/AdminDashboardPage'
-import AdminUsersPage from '@/pages/admin/AdminUsersPage'
-import AdminBindingsPage from '@/pages/admin/AdminBindingsPage'
-import AdminPaymentOrdersPage from '@/pages/admin/AdminPaymentOrdersPage'
-import RequireAuth from '@/components/RequireAuth'
-import RequireAdmin from '@/components/RequireAdmin'
-import NoAuth from '@/components/NoAuth'
+import ErrorBoundary from '@/components/ErrorBoundary'
 import GlobalSpin from '@/components/GlobalSpin'
+
+const LandingLayout = lazy(() => import('@/layouts/LandingLayout'))
+const AuthLayout = lazy(() => import('@/layouts/AuthLayout'))
+const BasicLayout = lazy(() => import('@/layouts/BasicLayout'))
+const LandingPage = lazy(() => import('@/pages/landing'))
+const LoginPage = lazy(() => import('@/pages/auth/LoginPage'))
+const RegisterPage = lazy(() => import('@/pages/auth/RegisterPage'))
+const DashboardPage = lazy(() => import('@/pages/dashboard'))
+const ProfilePage = lazy(() => import('@/pages/profile'))
+const BindingsPage = lazy(() => import('@/pages/bindings'))
+const AnalysisPage = lazy(() => import('@/pages/analysis'))
+const MembershipPage = lazy(() => import('@/pages/membership'))
+const OrdersPage = lazy(() => import('@/pages/orders'))
+const AdminDashboardPage = lazy(() => import('@/pages/admin/AdminDashboardPage'))
+const AdminUsersPage = lazy(() => import('@/pages/admin/AdminUsersPage'))
+const AdminBindingsPage = lazy(() => import('@/pages/admin/AdminBindingsPage'))
+const AdminPaymentOrdersPage = lazy(() => import('@/pages/admin/AdminPaymentOrdersPage'))
+const NotFoundPage = lazy(() => import('@/pages/NotFound'))
+const RequireAuth = lazy(() => import('@/components/RequireAuth'))
+const RequireAdmin = lazy(() => import('@/components/RequireAdmin'))
+const NoAuth = lazy(() => import('@/components/NoAuth'))
+
+function SuspenseWrapper({ children }: { children: React.ReactNode }) {
+  return <Suspense fallback={<GlobalSpin />}>{children}</Suspense>
+}
 
 const router = createBrowserRouter([
   {
     path: '/',
-    element: <LandingLayout />,
-    children: [{ index: true, element: <LandingPage /> }],
+    element: <SuspenseWrapper><LandingLayout /></SuspenseWrapper>,
+    children: [{ index: true, element: <SuspenseWrapper><LandingPage /></SuspenseWrapper> }],
   },
   {
     path: '/',
-    element: <AuthLayout />,
+    element: <SuspenseWrapper><AuthLayout /></SuspenseWrapper>,
     children: [
       {
         path: 'login',
         element: (
-          <NoAuth>
-            <LoginPage />
-          </NoAuth>
+          <SuspenseWrapper>
+            <NoAuth>
+              <LoginPage />
+            </NoAuth>
+          </SuspenseWrapper>
         ),
       },
       {
         path: 'register',
         element: (
-          <NoAuth>
-            <RegisterPage />
-          </NoAuth>
+          <SuspenseWrapper>
+            <NoAuth>
+              <RegisterPage />
+            </NoAuth>
+          </SuspenseWrapper>
         ),
       },
     ],
   },
   {
     path: '/',
-    element: <BasicLayout />,
+    element: <SuspenseWrapper><BasicLayout /></SuspenseWrapper>,
     children: [
       {
         path: 'dashboard',
         element: (
-          <RequireAuth>
-            <DashboardPage />
-          </RequireAuth>
+          <SuspenseWrapper>
+            <RequireAuth>
+              <DashboardPage />
+            </RequireAuth>
+          </SuspenseWrapper>
         ),
       },
       {
         path: 'profile',
         element: (
-          <RequireAuth>
-            <ProfilePage />
-          </RequireAuth>
+          <SuspenseWrapper>
+            <RequireAuth>
+              <ProfilePage />
+            </RequireAuth>
+          </SuspenseWrapper>
         ),
       },
       {
         path: 'bindings',
         element: (
-          <RequireAuth>
-            <BindingsPage />
-          </RequireAuth>
+          <SuspenseWrapper>
+            <RequireAuth>
+              <BindingsPage />
+            </RequireAuth>
+          </SuspenseWrapper>
         ),
       },
       {
         path: 'analysis',
         element: (
-          <RequireAuth>
-            <AnalysisPage />
-          </RequireAuth>
+          <SuspenseWrapper>
+            <RequireAuth>
+              <AnalysisPage />
+            </RequireAuth>
+          </SuspenseWrapper>
         ),
       },
       {
         path: 'membership',
         element: (
-          <RequireAuth>
-            <MembershipPage />
-          </RequireAuth>
+          <SuspenseWrapper>
+            <RequireAuth>
+              <MembershipPage />
+            </RequireAuth>
+          </SuspenseWrapper>
         ),
       },
       {
         path: 'orders',
         element: (
-          <RequireAuth>
-            <OrdersPage />
-          </RequireAuth>
+          <SuspenseWrapper>
+            <RequireAuth>
+              <OrdersPage />
+            </RequireAuth>
+          </SuspenseWrapper>
         ),
       },
       {
         path: 'admin/dashboard',
         element: (
-          <RequireAdmin>
-            <AdminDashboardPage />
-          </RequireAdmin>
+          <SuspenseWrapper>
+            <RequireAdmin>
+              <AdminDashboardPage />
+            </RequireAdmin>
+          </SuspenseWrapper>
         ),
       },
       {
         path: 'admin/users',
         element: (
-          <RequireAdmin>
-            <AdminUsersPage />
-          </RequireAdmin>
+          <SuspenseWrapper>
+            <RequireAdmin>
+              <AdminUsersPage />
+            </RequireAdmin>
+          </SuspenseWrapper>
         ),
       },
       {
         path: 'admin/bindings',
         element: (
-          <RequireAdmin>
-            <AdminBindingsPage />
-          </RequireAdmin>
+          <SuspenseWrapper>
+            <RequireAdmin>
+              <AdminBindingsPage />
+            </RequireAdmin>
+          </SuspenseWrapper>
         ),
       },
       {
         path: 'admin/payment/orders',
         element: (
-          <RequireAdmin>
-            <AdminPaymentOrdersPage />
-          </RequireAdmin>
+          <SuspenseWrapper>
+            <RequireAdmin>
+              <AdminPaymentOrdersPage />
+            </RequireAdmin>
+          </SuspenseWrapper>
         ),
       },
     ],
+  },
+  {
+    path: '*',
+    element: <SuspenseWrapper><NotFoundPage /></SuspenseWrapper>,
   },
 ])
 
@@ -155,19 +190,21 @@ function AppInitializer({ children }: { children: React.ReactNode }) {
 
 function App() {
   return (
-    <ConfigProvider
-      theme={{
-        token: {
-          colorPrimary: '#1E40AF',
-          borderRadius: 6,
-          fontFamily: "'Fira Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
-        },
-      }}
-    >
-      <AppInitializer>
-        <RouterProvider router={router} />
-      </AppInitializer>
-    </ConfigProvider>
+    <ErrorBoundary>
+      <ConfigProvider
+        theme={{
+          token: {
+            colorPrimary: '#1E40AF',
+            borderRadius: 6,
+            fontFamily: "'Fira Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+          },
+        }}
+      >
+        <AppInitializer>
+          <RouterProvider router={router} />
+        </AppInitializer>
+      </ConfigProvider>
+    </ErrorBoundary>
   )
 }
 

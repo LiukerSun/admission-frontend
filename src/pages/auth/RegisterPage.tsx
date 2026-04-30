@@ -21,15 +21,16 @@ export default function RegisterPage() {
       await register(values.email, values.password, values.userType)
       message.success('注册成功，已自动登录')
       navigate('/dashboard')
-    } catch {
-      message.error('注册失败，该邮箱可能已被注册')
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : '注册失败，请稍后重试'
+      message.error(msg)
     } finally {
       setLoading(false)
     }
   }
 
   return (
-    <Card title="用户注册" style={{ width: 400 }}>
+    <Card title="用户注册" style={{ width: '100%', maxWidth: 400 }}>
       <Form layout="vertical" onFinish={onFinish} autoComplete="off">
         <Form.Item
           label="邮箱"
@@ -45,7 +46,10 @@ export default function RegisterPage() {
         <Form.Item
           label="密码"
           name="password"
-          rules={[{ required: true, message: '请输入密码' }, { min: 8, message: '密码至少 8 位' }]}
+          rules={[
+            { required: true, message: '请输入密码' },
+            { min: 8, message: '密码至少 8 位' },
+          ]}
         >
           <Input.Password placeholder="请输入密码" />
         </Form.Item>

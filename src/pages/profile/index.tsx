@@ -106,7 +106,8 @@ export default function ProfilePage() {
         ])
         setMembership(membershipRes.data.data)
         setPlans(plansRes.data.data ?? [])
-      } catch {
+      } catch (err) {
+        console.error('加载会员信息失败:', err)
         message.error('加载会员信息失败')
       } finally {
         setLoadingMembership(false)
@@ -152,6 +153,7 @@ export default function ProfilePage() {
           message.error('密码至少 8 位，且只能包含字母和数字')
         }
       } else if (!('errorFields' in (err as object))) {
+        console.error('修改密码失败:', err)
         message.error('修改密码失败')
       }
     } finally {
@@ -190,6 +192,7 @@ export default function ProfilePage() {
       startCountdown()
     } catch (err: unknown) {
       if (!('errorFields' in (err as object))) {
+        console.error('发送验证码失败:', err)
         message.error(getPhoneErrorMessage(err, '发送验证码失败'))
       }
     } finally {
@@ -211,6 +214,7 @@ export default function ProfilePage() {
       message.success('手机号绑定成功')
     } catch (err: unknown) {
       if (!('errorFields' in (err as object))) {
+        console.error('手机号绑定失败:', err)
         message.error(getPhoneErrorMessage(err, '手机号绑定失败'))
       }
     } finally {
@@ -237,6 +241,7 @@ export default function ProfilePage() {
           showOrderCreatedSuccess(order, (orderNo) => navigate(`/orders?orderNo=${orderNo}`))
         } catch (err: unknown) {
           const axiosErr = err as { response?: { status?: number; data?: { message?: string } } }
+          console.error('创建订单失败:', err)
           message.error(axiosErr.response?.data?.message || '创建订单失败')
         } finally {
           setCreatingPlanCode('')
@@ -315,10 +320,6 @@ export default function ProfilePage() {
               rules={[
                 { required: true, message: '请输入当前密码' },
                 { min: 8, message: '密码至少 8 位' },
-                {
-                  pattern: /^[A-Za-z0-9]+$/,
-                  message: '密码只能包含字母和数字',
-                },
               ]}
             >
               <Input.Password placeholder="请输入当前密码" />
@@ -330,10 +331,6 @@ export default function ProfilePage() {
               rules={[
                 { required: true, message: '请输入新密码' },
                 { min: 8, message: '密码至少 8 位' },
-                {
-                  pattern: /^[A-Za-z0-9]+$/,
-                  message: '密码只能包含字母和数字',
-                },
                 ({ getFieldValue }) => ({
                   validator(_, value) {
                     if (!value || getFieldValue('currentPassword') !== value) {
@@ -458,7 +455,7 @@ export default function ProfilePage() {
 
       <Card
         style={{ marginTop: 24, marginBottom: 24, background: '#F8FAFC' }}
-        bodyStyle={{ padding: '24px 32px' }}
+        styles={{ body: { padding: '24px 32px' } }}
       >
         <Row gutter={[24, 24]} align="middle">
           <Col xs={24} sm="auto">

@@ -16,16 +16,12 @@ export default function AdminBindingsPage() {
         setBindings(res.data.data.bindings ?? [])
         setTotal(res.data.data.total ?? 0)
       })
-      .catch(() => message.error('加载绑定列表失败'))
+      .catch((err) => { console.error(err); message.error('加载绑定列表失败') })
       .finally(() => setLoading(false))
   }, [page, pageSize])
 
   useEffect(() => {
-    const timer = window.setTimeout(() => {
-      void fetchBindings()
-    }, 0)
-
-    return () => window.clearTimeout(timer)
+    void fetchBindings()
   }, [fetchBindings])
 
   const handleDelete = (id: number) => {
@@ -38,7 +34,7 @@ export default function AdminBindingsPage() {
             message.success('已解除绑定')
             fetchBindings()
           })
-          .catch(() => message.error('操作失败'))
+          .catch((err) => { console.error(err); message.error('操作失败') })
       },
     })
   }

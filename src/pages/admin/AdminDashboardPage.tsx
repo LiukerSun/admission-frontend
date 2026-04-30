@@ -14,10 +14,12 @@ export default function AdminDashboardPage() {
   const [error, setError] = useState('')
 
   useEffect(() => {
+    let cancelled = false
     adminApi.getStats()
-      .then((res) => setStats(res.data.data))
-      .catch(() => setError('加载统计数据失败'))
-      .finally(() => setLoading(false))
+      .then((res) => { if (!cancelled) setStats(res.data.data) })
+      .catch((err) => { console.error('Failed to load stats:', err); if (!cancelled) setError('加载统计数据失败') })
+      .finally(() => { if (!cancelled) setLoading(false) })
+    return () => { cancelled = true }
   }, [])
 
   if (loading) {

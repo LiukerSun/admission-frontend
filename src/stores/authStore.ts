@@ -32,6 +32,14 @@ function applyUser(set: (state: Partial<AuthState>) => void, user: User) {
   set({ user, isAdmin: user.role === 'admin' })
 }
 
+function extractUser(data: unknown): User {
+  const u = data as User
+  if (!u?.id || !u?.email) {
+    throw new Error('Invalid user data from API')
+  }
+  return u
+}
+
 export const useAuthStore = create<AuthState>((set, get) => ({
   accessToken: null,
   user: null,
@@ -52,7 +60,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       localStorage.setItem(REFRESH_TOKEN_KEY, data.refresh_token)
 
       const meRes = await authApi.getMe()
-      const user = meRes.data.data as User
+      const user = extractUser(meRes.data.data)
       applyUser(set, user)
     } catch (err) {
       const axiosErr = err as AxiosError<{ message?: string }>
@@ -69,8 +77,17 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   register: async (email: string, password: string, userType: 'parent' | 'student') => {
-    await authApi.register({ email, password, user_type: userType })
-    await get().login(email, password)
+    try {
+      await authApi.register({ email, password, user_type: userType })
+    } catch {
+      throw new Error('注册失败，该邮箱可能已被注册')
+    }
+
+    try {
+      await get().login(email, password)
+    } catch {
+      throw new Error('注册成功，但自动登录失败，请返回登录页')
+    }
   },
 
   logout: () => {
@@ -102,7 +119,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       localStorage.setItem(REFRESH_TOKEN_KEY, data.refresh_token)
 
       const meRes = await authApi.getMe()
-      const user = meRes.data.data as User
+      const user = extractUser(meRes.data.data)
       applyUser(set, user)
     } catch (err) {
       const axiosErr = err as AxiosError<{ message?: string }>
@@ -127,7 +144,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   refreshUser: async () => {
     const meRes = await authApi.getMe()
-    const user = meRes.data.data as User
+    const user = extractUser(meRes.data.data)
     applyUser(set, user)
     return user
   },

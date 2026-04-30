@@ -30,6 +30,7 @@ type VerifyPhoneRequest = components['schemas']['user.VerifyPhoneRequest']
 
 const publicClient = axios.create({
   baseURL: API_BASE_URL,
+  timeout: 15000,
   headers: {
     'Content-Type': 'application/json',
     'X-Platform': 'web',

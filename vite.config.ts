@@ -18,4 +18,17 @@ export default defineConfig({
       },
     },
   },
+  build: {
+    sourcemap: false,
+    target: 'esnext',
+    rollupOptions: {
+      output: {
+        manualChunks(id: string) {
+          if (id.includes('react')) return 'vendor'
+          if (id.includes('antd')) return 'antd'
+          if (id.includes('echarts')) return 'echarts'
+        },
+      },
+    },
+  },
 })

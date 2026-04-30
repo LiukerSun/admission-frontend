@@ -3,7 +3,7 @@ import api from './api'
 export type OrderStatus = 'created' | 'awaiting_payment' | 'paid' | 'fulfilled' | 'closed' | 'failed'
 export type PaymentStatus = 'unpaid' | 'paying' | 'paid' | 'failed'
 export type EntitlementStatus = 'pending' | 'granted' | 'failed'
-export type PaymentChannel = 'mock' | string
+export type PaymentChannel = string & {} | 'mock'
 
 export interface CreateOrderRequest {
   plan_code: string

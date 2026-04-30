@@ -19,15 +19,16 @@ export default function LoginPage() {
       await login(values.email, values.password)
       message.success('登录成功')
       navigate('/dashboard')
-    } catch {
-      message.error('登录失败，请检查邮箱和密码')
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : '登录失败，请检查邮箱和密码'
+      message.error(msg)
     } finally {
       setLoading(false)
     }
   }
 
   return (
-    <Card title="用户登录" style={{ width: 400 }}>
+    <Card title="用户登录" style={{ width: '100%', maxWidth: 400 }}>
       <Form layout="vertical" onFinish={onFinish} autoComplete="off">
         <Form.Item
           label="邮箱"

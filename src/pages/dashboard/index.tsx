@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useMemo, useState } from 'react'
 import { Card, Statistic, Row, Col, Spin, Divider } from 'antd'
 import {
   BarChartOutlined,
@@ -10,44 +10,56 @@ import {
   RiseOutlined,
   FallOutlined,
 } from '@ant-design/icons'
+import { Link } from 'react-router-dom'
 import { useAuthStore } from '@/stores/authStore'
 import { adminApi, type StatsResponse } from '@/services/admin'
 import * as echarts from 'echarts'
 
 function Sparkline({ data, color }: { data: number[]; color: string }) {
   const chartRef = useRef<HTMLDivElement>(null)
+  const instanceRef = useRef<echarts.ECharts | null>(null)
 
   useEffect(() => {
     if (!chartRef.current) return
-    const chart = echarts.init(chartRef.current)
-    chart.setOption({
-      grid: { top: 4, right: 4, bottom: 4, left: 4 },
-      xAxis: { show: false, type: 'category', data: data.map((_, i) => i) },
-      yAxis: { show: false, type: 'value' },
-      series: [{
-        type: 'line',
-        data,
-        smooth: true,
-        symbol: 'none',
-        lineStyle: { width: 2, color },
-        areaStyle: {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          color: new (echarts as any).graphic.LinearGradient(0, 0, 0, 1, [
-            { offset: 0, color: color + '33' },
-            { offset: 1, color: color + '05' },
-          ]),
-        },
-      }],
-    })
+    if (!instanceRef.current) {
+      (async () => {
+        const chart = echarts.init(chartRef.current!)
+        instanceRef.current = chart
+        chart.setOption({
+          grid: { top: 4, right: 4, bottom: 4, left: 4 },
+          xAxis: { show: false, type: 'category', data: data.map((_, i) => i) },
+          yAxis: { show: false, type: 'value' },
+          series: [{
+            type: 'line',
+            data,
+            smooth: true,
+            symbol: 'none',
+            lineStyle: { width: 2, color },
+            areaStyle: {
+              color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                { offset: 0, color: color + '33' },
+                { offset: 1, color: color + '05' },
+              ]),
+            },
+          }],
+        })
+      })()
+    }
+  }, [data, color])
+
+  useEffect(() => {
+    const chart = instanceRef.current
+    if (!chart) return
     const handleResize = () => chart.resize()
     window.addEventListener('resize', handleResize)
     return () => {
       window.removeEventListener('resize', handleResize)
       chart.dispose()
+      instanceRef.current = null
     }
-  }, [data, color])
+  }, [])
 
-  return <div ref={chartRef} style={{ width: '100%', height: 48 }} />
+  return <div ref={chartRef} style={{ width: '100%', height: 48 }} role="img" aria-label={`趋势图: ${data.join(', ')}`} />
 }
 
 function TrendTag({ value }: { value: number }) {
@@ -61,7 +73,7 @@ function TrendTag({ value }: { value: number }) {
 }
 
 export default function DashboardPage() {
-  const { isAdmin } = useAuthStore()
+  const isAdmin = useAuthStore((s) => s.isAdmin)
   const [stats, setStats] = useState<StatsResponse | null>(null)
   const [loading, setLoading] = useState(false)
 
@@ -73,23 +85,19 @@ export default function DashboardPage() {
       try {
         const res = await adminApi.getStats()
         if (!cancelled) setStats(res.data.data)
-      } catch {
-        // ignore
+      } catch (err) {
+        console.error('Failed to load admin stats:', err)
       } finally {
         if (!cancelled) setLoading(false)
       }
     }
     void run()
-    return () => {
-      cancelled = true
-      setStats(null)
-      setLoading(false)
-    }
+    return () => { cancelled = true }
   }, [isAdmin])
 
-  const sparkData = [12, 18, 15, 25, 22, 30, 35]
-  const sparkData2 = [8, 12, 10, 14, 18, 16, 20]
-  const sparkData3 = [3, 2, 4, 3, 5, 4, 6]
+  const sparkData = useMemo(() => [12, 18, 15, 25, 22, 30, 35], [])
+  const sparkData2 = useMemo(() => [8, 12, 10, 14, 18, 16, 20], [])
+  const sparkData3 = useMemo(() => [3, 2, 4, 3, 5, 4, 6], [])
 
   if (isAdmin && loading) {
     return (
@@ -110,7 +118,7 @@ export default function DashboardPage() {
         <>
           <Row gutter={[24, 24]}>
             <Col xs={24} sm={12} lg={8}>
-              <Card bodyStyle={{ paddingBottom: 12 }}>
+              <Card styles={{ body: { paddingBottom: 12 } }}>
                 <Statistic
                   title={<span style={{ fontSize: 13, color: '#64748B' }}>总用户数</span>}
                   value={stats?.total_users ?? 0}
@@ -125,7 +133,7 @@ export default function DashboardPage() {
               </Card>
             </Col>
             <Col xs={24} sm={12} lg={8}>
-              <Card bodyStyle={{ paddingBottom: 12 }}>
+              <Card styles={{ body: { paddingBottom: 12 } }}>
                 <Statistic
                   title={<span style={{ fontSize: 13, color: '#64748B' }}>活跃用户</span>}
                   value={stats?.active_users ?? 0}
@@ -140,7 +148,7 @@ export default function DashboardPage() {
               </Card>
             </Col>
             <Col xs={24} sm={12} lg={8}>
-              <Card bodyStyle={{ paddingBottom: 12 }}>
+              <Card styles={{ body: { paddingBottom: 12 } }}>
                 <Statistic
                   title={<span style={{ fontSize: 13, color: '#64748B' }}>绑定总数</span>}
                   value={stats?.total_bindings ?? 0}
@@ -171,7 +179,7 @@ export default function DashboardPage() {
         <>
           <Row gutter={[24, 24]}>
             <Col xs={24} sm={12} lg={8}>
-              <Card bodyStyle={{ paddingBottom: 12 }}>
+              <Card styles={{ body: { paddingBottom: 12 } }}>
                 <Statistic
                   title={<span style={{ fontSize: 13, color: '#64748B' }}>已完成分析</span>}
                   value={12}
@@ -186,7 +194,7 @@ export default function DashboardPage() {
               </Card>
             </Col>
             <Col xs={24} sm={12} lg={8}>
-              <Card bodyStyle={{ paddingBottom: 12 }}>
+              <Card styles={{ body: { paddingBottom: 12 } }}>
                 <Statistic
                   title={<span style={{ fontSize: 13, color: '#64748B' }}>收藏院校</span>}
                   value={5}
@@ -201,7 +209,7 @@ export default function DashboardPage() {
               </Card>
             </Col>
             <Col xs={24} sm={12} lg={8}>
-              <Card bodyStyle={{ paddingBottom: 12 }}>
+              <Card styles={{ body: { paddingBottom: 12 } }}>
                 <Statistic
                   title={<span style={{ fontSize: 13, color: '#64748B' }}>对比方案</span>}
                   value={3}
@@ -254,21 +262,21 @@ export default function DashboardPage() {
             <Col xs={24} lg={8}>
               <Card title="快捷入口">
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                  <a href="/analysis" style={{ display: 'block', padding: '12px 16px', background: '#EFF6FF', borderRadius: 6, color: '#1E40AF', textDecoration: 'none', fontWeight: 500 }}>
+                  <Link to="/analysis" style={{ display: 'block', padding: '12px 16px', background: '#EFF6FF', borderRadius: 6, color: '#1E40AF', textDecoration: 'none', fontWeight: 500 }}>
                     查看数据分析 &rarr;
-                  </a>
-                  <a href="/membership" style={{ display: 'block', padding: '12px 16px', background: '#FDF2F8', borderRadius: 6, color: '#BE185D', textDecoration: 'none', fontWeight: 500 }}>
+                  </Link>
+                  <Link to="/membership" style={{ display: 'block', padding: '12px 16px', background: '#FDF2F8', borderRadius: 6, color: '#BE185D', textDecoration: 'none', fontWeight: 500 }}>
                     开通会员服务 &rarr;
-                  </a>
-                  <a href="/orders" style={{ display: 'block', padding: '12px 16px', background: '#F8FAFC', borderRadius: 6, color: '#334155', textDecoration: 'none', fontWeight: 500 }}>
+                  </Link>
+                  <Link to="/orders" style={{ display: 'block', padding: '12px 16px', background: '#F8FAFC', borderRadius: 6, color: '#334155', textDecoration: 'none', fontWeight: 500 }}>
                     查看我的订单 &rarr;
-                  </a>
-                  <a href="/bindings" style={{ display: 'block', padding: '12px 16px', background: '#FEF3C7', borderRadius: 6, color: '#D97706', textDecoration: 'none', fontWeight: 500 }}>
+                  </Link>
+                  <Link to="/bindings" style={{ display: 'block', padding: '12px 16px', background: '#FEF3C7', borderRadius: 6, color: '#D97706', textDecoration: 'none', fontWeight: 500 }}>
                     管理绑定关系 &rarr;
-                  </a>
-                  <a href="/profile" style={{ display: 'block', padding: '12px 16px', background: '#ECFDF5', borderRadius: 6, color: '#16A34A', textDecoration: 'none', fontWeight: 500 }}>
+                  </Link>
+                  <Link to="/profile" style={{ display: 'block', padding: '12px 16px', background: '#ECFDF5', borderRadius: 6, color: '#16A34A', textDecoration: 'none', fontWeight: 500 }}>
                     完善个人资料 &rarr;
-                  </a>
+                  </Link>
                 </div>
               </Card>
             </Col>

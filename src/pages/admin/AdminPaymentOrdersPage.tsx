@@ -101,7 +101,8 @@ export default function AdminPaymentOrdersPage() {
       const res = await paymentApi.adminListOrders(params)
       setOrders(res.data.data.items ?? [])
       setTotal(res.data.data.total ?? 0)
-    } catch {
+    } catch (err) {
+      console.error('Failed to fetch payment orders', err)
       message.error('加载支付订单失败')
     } finally {
       setLoading(false)
@@ -109,10 +110,7 @@ export default function AdminPaymentOrdersPage() {
   }, [filters, page, pageSize])
 
   useEffect(() => {
-    const timer = window.setTimeout(() => {
-      void fetchOrders()
-    }, 0)
-    return () => window.clearTimeout(timer)
+    fetchOrders()
   }, [fetchOrders])
 
   useEffect(() => {
@@ -143,7 +141,8 @@ export default function AdminPaymentOrdersPage() {
     try {
       const res = await paymentApi.adminGetOrder(orderNo)
       setDetail(res.data.data)
-    } catch {
+    } catch (err) {
+      console.error('Failed to load order detail', err)
       message.error('加载订单详情失败')
     } finally {
       setDetailLoading(false)
@@ -157,7 +156,8 @@ export default function AdminPaymentOrdersPage() {
     try {
       const res = await paymentApi.adminListOrders({ user_id: userId, page: 1, page_size: 100 })
       setUserOrders(res.data.data.items ?? [])
-    } catch {
+    } catch (err) {
+      console.error('Failed to load user orders', err)
       message.error('加载用户订单失败')
     } finally {
       setUserOrdersLoading(false)
@@ -197,6 +197,7 @@ export default function AdminPaymentOrdersPage() {
             void openDetail(order.order_no)
           }
         } catch (err: unknown) {
+          console.error('Order action failed', err)
           const axiosErr = err as { response?: { data?: { message?: string } } }
           message.error(axiosErr.response?.data?.message || `${actionText}失败`)
         } finally {
@@ -207,9 +208,13 @@ export default function AdminPaymentOrdersPage() {
   }
 
   const handleSearch = async () => {
-    const values = await form.validateFields()
-    setPage(1)
-    setFilters(values)
+    try {
+      const values = await form.validateFields()
+      setPage(1)
+      setFilters(values)
+    } catch (err) {
+      console.error('Search form validation failed', err)
+    }
   }
 
   const handleReset = () => {

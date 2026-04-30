@@ -1,6 +1,6 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom'
-import { Layout, Menu, Dropdown, Avatar, Spin, Breadcrumb, Button, Badge, Input } from 'antd'
+import { Layout, Menu, Dropdown, Avatar, Spin, Breadcrumb, Button, Badge } from 'antd'
 import {
   DashboardOutlined,
   UserOutlined,
@@ -12,7 +12,6 @@ import {
   MenuFoldOutlined,
   MenuUnfoldOutlined,
   BellOutlined,
-  SearchOutlined,
   HomeOutlined,
   QuestionCircleOutlined,
   FileTextOutlined,
@@ -54,12 +53,14 @@ function buildBreadcrumbItems(pathname: string) {
 }
 
 export default function BasicLayout() {
-  const { user, logout, isRestoring } = useAuthStore()
+  const user = useAuthStore((s) => s.user)
+  const logout = useAuthStore((s) => s.logout)
+  const isRestoring = useAuthStore((s) => s.isRestoring)
   const location = useLocation()
   const navigate = useNavigate()
   const [collapsed, setCollapsed] = useState(false)
 
-  const menuItems: MenuProps['items'] = [
+  const menuItems = useMemo<MenuProps['items']>(() => [
     {
       key: '/dashboard',
       icon: <DashboardOutlined />,
@@ -121,9 +122,9 @@ export default function BasicLayout() {
           },
         ]
       : []),
-  ]
+  ], [user?.role])
 
-  const dropdownItems: MenuProps['items'] = [
+  const dropdownItems = useMemo<MenuProps['items']>(() => [
     {
       key: 'profile',
       icon: <UserOutlined />,
@@ -139,16 +140,16 @@ export default function BasicLayout() {
         navigate('/login')
       },
     },
-  ]
+  ], [logout, navigate])
 
-  const notificationItems: MenuProps['items'] = [
+  const notificationItems = useMemo<MenuProps['items']>(() => [
     { key: '1', label: '系统通知：数据分析模块已更新', disabled: true },
     { key: '2', label: '志愿模拟功能上线', disabled: true },
     { type: 'divider' as const },
     { key: 'all', label: '查看全部通知', onClick: () => navigate('/dashboard') },
-  ]
+  ], [navigate])
 
-  const quickNavItems: MenuProps['items'] = [
+  const quickNavItems = useMemo<MenuProps['items']>(() => [
     { key: 'dashboard', icon: <HomeOutlined />, label: '控制台', onClick: () => navigate('/dashboard') },
     { key: 'analysis', icon: <BarChartOutlined />, label: '数据分析', onClick: () => navigate('/analysis') },
     { key: 'membership', icon: <CrownOutlined />, label: '会员中心', onClick: () => navigate('/membership') },
@@ -157,7 +158,7 @@ export default function BasicLayout() {
     { type: 'divider' as const },
     { key: 'help', icon: <QuestionCircleOutlined />, label: '使用帮助', onClick: () => navigate('/dashboard') },
     { key: 'feedback', icon: <FileTextOutlined />, label: '意见反馈', onClick: () => navigate('/profile') },
-  ]
+  ], [navigate])
 
   const breadcrumbItems = buildBreadcrumbItems(location.pathname)
 
@@ -234,6 +235,7 @@ export default function BasicLayout() {
           <div style={{ display: 'flex', alignItems: 'center', gap: 16, flex: 1 }}>
             <Button
               type="text"
+              aria-label={collapsed ? '展开侧边栏' : '收起侧边栏'}
               icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
               onClick={() => setCollapsed(!collapsed)}
               style={{ fontSize: 16, width: 40, height: 40 }}
@@ -264,24 +266,13 @@ export default function BasicLayout() {
             </Dropdown>
           </div>
 
-          {/* 右侧：搜索 + 通知 + 用户 */}
+          {/* 右侧：通知 + 用户 */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <Input
-              placeholder="全局搜索..."
-              prefix={<SearchOutlined style={{ color: '#94A3B8' }} />}
-              style={{ width: 200, borderRadius: 20, background: '#F1F5F9', borderColor: 'transparent' }}
-              onPressEnter={(e) => {
-                const val = (e.target as HTMLInputElement).value
-                if (val.trim()) {
-                  navigate('/analysis')
-                }
-              }}
-            />
-
             <Dropdown menu={{ items: notificationItems }} placement="bottomRight">
               <Badge count={2} size="small" offset={[0, 2]}>
                 <Button
                   type="text"
+                  aria-label="通知"
                   icon={<BellOutlined style={{ fontSize: 18, color: '#64748B' }} />}
                   style={{ width: 40, height: 40 }}
                 />

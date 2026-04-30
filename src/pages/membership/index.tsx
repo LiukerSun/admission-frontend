@@ -39,7 +39,8 @@ export default function MembershipPage() {
       ])
       setPlans(plansRes.data.data ?? [])
       setMembership(membershipRes.data.data)
-    } catch {
+    } catch (err) {
+      console.error('加载会员信息失败', err)
       message.error('加载会员信息失败')
     } finally {
       setLoading(false)
@@ -47,11 +48,7 @@ export default function MembershipPage() {
   }
 
   useEffect(() => {
-    const timer = window.setTimeout(() => {
-      void loadData()
-    }, 0)
-
-    return () => window.clearTimeout(timer)
+    void loadData()
   }, [])
 
   const handleCreateOrder = (plan: MembershipPlan) => {
@@ -107,7 +104,7 @@ export default function MembershipPage() {
             />
           </Col>
           <Col xs={24} md={8}>
-            <Statistic title="会员等级" value={membership?.membership_level || 'premium'} />
+            <Statistic title="会员等级" value={membership?.membership_level || '-'} />
           </Col>
           <Col xs={24} md={8}>
             <Statistic title="有效期至" value={formatDateTime(membership?.ends_at)} />

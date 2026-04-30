@@ -1,3 +1,4 @@
+import { useCallback, useMemo } from 'react'
 import { Outlet, Link, useNavigate } from 'react-router-dom'
 import { Layout, Menu, Button } from 'antd'
 import { useAuthStore } from '@/stores/authStore'
@@ -5,7 +6,8 @@ import { useAuthStore } from '@/stores/authStore'
 const { Header, Content, Footer } = Layout
 
 export default function LandingLayout() {
-  const { isAuthenticated, logout } = useAuthStore()
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
+  const logout = useAuthStore((s) => s.logout)
   const navigate = useNavigate()
 
   const handleLogout = () => {
@@ -13,34 +15,25 @@ export default function LandingLayout() {
     navigate('/login')
   }
 
+  const menuItems = useMemo(() => {
+    if (isAuthenticated) {
+      return [
+        { key: 'dashboard', label: <Link to="/dashboard">控制台</Link> },
+        { key: 'profile', label: <Link to="/profile">个人中心</Link> },
+        { key: 'logout', label: <Button type="link" onClick={handleLogout}>退出</Button> },
+      ]
+    }
+    return [
+      { key: 'login', label: <Link to="/login">登录</Link> },
+      { key: 'register', label: <Link to="/register">注册</Link> },
+    ]
+  }, [isAuthenticated, handleLogout])
+
   return (
     <Layout style={{ minHeight: '100vh' }}>
       <Header style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#fff' }}>
         <div style={{ fontSize: 18, fontWeight: 700 }}>志愿报考分析平台</div>
-        <Menu mode="horizontal" style={{ flex: 1, justifyContent: 'flex-end', border: 'none' }}>
-          {isAuthenticated ? (
-            <>
-              <Menu.Item key="dashboard">
-                <Link to="/dashboard">控制台</Link>
-              </Menu.Item>
-              <Menu.Item key="profile">
-                <Link to="/profile">个人中心</Link>
-              </Menu.Item>
-              <Menu.Item key="logout">
-                <Button type="link" onClick={handleLogout}>退出</Button>
-              </Menu.Item>
-            </>
-          ) : (
-            <>
-              <Menu.Item key="login">
-                <Link to="/login">登录</Link>
-              </Menu.Item>
-              <Menu.Item key="register">
-                <Link to="/register">注册</Link>
-              </Menu.Item>
-            </>
-          )}
-        </Menu>
+        <Menu mode="horizontal" items={menuItems} style={{ flex: 1, justifyContent: 'flex-end', border: 'none' }} />
       </Header>
       <Content>
         <Outlet />

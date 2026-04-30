@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useCallback, useState } from 'react'
 import {
   Table, Input, Select, Button, Space, Tag, message, Modal, Form,
   Card, Row, Col, Statistic, Dropdown, Popconfirm, Tooltip,
@@ -28,7 +28,7 @@ interface ResetPasswordFormValues {
 }
 
 export default function AdminUsersPage() {
-  const { user: currentUser } = useAuthStore()
+  const currentUser = useAuthStore((s) => s.user)
   const [form] = Form.useForm<EditUserFormValues>()
   const [passwordForm] = Form.useForm<ResetPasswordFormValues>()
   const [users, setUsers] = useState<UserListItem[]>([])
@@ -62,15 +62,12 @@ export default function AdminUsersPage() {
         setUsers(res.data.data.users ?? [])
         setTotal(res.data.data.total ?? 0)
       })
-      .catch(() => message.error('加载用户列表失败'))
+      .catch((err) => { console.error('Failed to load users:', err); message.error('加载用户列表失败') })
       .finally(() => setLoading(false))
   }, [page, pageSize, filters])
 
   useEffect(() => {
-    const timer = window.setTimeout(() => {
-      void fetchUsers()
-    }, 0)
-    return () => window.clearTimeout(timer)
+    fetchUsers()
   }, [fetchUsers])
 
   const handleDisable = (id: number) => {
@@ -79,7 +76,7 @@ export default function AdminUsersPage() {
         message.success('已禁用')
         fetchUsers()
       })
-      .catch(() => message.error('操作失败'))
+      .catch((err) => { console.error('Failed to disable user:', err); message.error('操作失败') })
   }
 
   const handleEnable = (id: number) => {
@@ -88,7 +85,7 @@ export default function AdminUsersPage() {
         message.success('已启用')
         fetchUsers()
       })
-      .catch(() => message.error('操作失败'))
+      .catch((err) => { console.error('Failed to enable user:', err); message.error('操作失败') })
   }
 
   const openEditModal = async (id: number) => {
@@ -106,7 +103,8 @@ export default function AdminUsersPage() {
         user_type: detail.user_type,
         status: detail.status,
       })
-    } catch {
+    } catch (err) {
+      console.error('Failed to load user details:', err)
       message.error('加载用户详情失败')
       setEditModalOpen(false)
     } finally {
@@ -168,6 +166,7 @@ export default function AdminUsersPage() {
       if (axiosErr.response?.status === 409) {
         message.error('邮箱或用户名已存在')
       } else if (!('errorFields' in (err as object))) {
+        console.error('Failed to update user:', err)
         message.error('更新用户失败')
       }
     } finally {
@@ -180,7 +179,7 @@ export default function AdminUsersPage() {
     try {
       const values = await passwordForm.validateFields()
       setPasswordSaving(true)
-      await adminApi.resetPassword(passwordTarget.id!, {
+      await adminApi.resetPassword(passwordTarget.id, {
         new_password: values.newPassword,
       })
       message.success('密码已重置，用户需重新登录')
@@ -188,8 +187,9 @@ export default function AdminUsersPage() {
     } catch (err: unknown) {
       const axiosErr = err as { response?: { status?: number } }
       if (axiosErr.response?.status === 400) {
-        message.error('新密码至少 8 位，且只能包含字母和数字')
+        message.error('新密码至少 8 位')
       } else if (!('errorFields' in (err as object))) {
+        console.error('Failed to reset password:', err)
         message.error('重置密码失败')
       }
     } finally {
@@ -200,26 +200,53 @@ export default function AdminUsersPage() {
   const handleBatchDisable = () => {
     Modal.confirm({
       title: `确认禁用选中的 ${selectedRowKeys.length} 个用户？`,
-      onOk: () => {
-        Promise.all(selectedRowKeys.map(id => adminApi.disableUser(Number(id))))
-          .then(() => {
-            message.success('批量禁用成功')
-            setSelectedRowKeys([])
-            fetchUsers()
-          })
-          .catch(() => message.error('批量禁用失败'))
+      onOk: async () => {
+        try {
+          const results = await Promise.allSettled(
+            selectedRowKeys.map(id => adminApi.disableUser(Number(id)))
+          )
+          const succeeded = results.filter(r => r.status === 'fulfilled').length
+          const failed = results.filter(r => r.status === 'rejected').length
+          if (failed > 0) {
+            console.error(`Batch disable: ${failed} failed out of ${results.length}`)
+            message.warning(`已禁用 ${succeeded} 个用户，${failed} 个操作失败`)
+          } else {
+            message.success(`批量禁用成功 (${succeeded} 个)`)
+          }
+          setSelectedRowKeys([])
+          fetchUsers()
+        } catch (err) {
+          console.error('Batch disable failed:', err)
+          message.error('批量禁用失败')
+        }
       },
     })
   }
 
   const handleBatchEnable = () => {
-    Promise.all(selectedRowKeys.map(id => adminApi.enableUser(Number(id))))
-      .then(() => {
-        message.success('批量启用成功')
-        setSelectedRowKeys([])
-        fetchUsers()
-      })
-      .catch(() => message.error('批量启用失败'))
+    Modal.confirm({
+      title: `确认启用选中的 ${selectedRowKeys.length} 个用户？`,
+      onOk: async () => {
+        try {
+          const results = await Promise.allSettled(
+            selectedRowKeys.map(id => adminApi.enableUser(Number(id)))
+          )
+          const succeeded = results.filter(r => r.status === 'fulfilled').length
+          const failed = results.filter(r => r.status === 'rejected').length
+          if (failed > 0) {
+            console.error(`Batch enable: ${failed} failed out of ${results.length}`)
+            message.warning(`已启用 ${succeeded} 个用户，${failed} 个操作失败`)
+          } else {
+            message.success(`批量启用成功 (${succeeded} 个)`)
+          }
+          setSelectedRowKeys([])
+          fetchUsers()
+        } catch (err) {
+          console.error('Batch enable failed:', err)
+          message.error('批量启用失败')
+        }
+      },
+    })
   }
 
   const handleExport = () => {
@@ -239,6 +266,7 @@ export default function AdminUsersPage() {
     link.href = URL.createObjectURL(blob)
     link.download = `用户列表_${new Date().toISOString().slice(0, 10)}.csv`
     link.click()
+    URL.revokeObjectURL(link.href)
   }
 
   const isEditingSelf = editingUser?.id === currentUser?.id
@@ -496,7 +524,7 @@ export default function AdminUsersPage() {
         onCancel={closeEditModal}
         onOk={handleEditSubmit}
         confirmLoading={saving}
-        destroyOnHidden
+        destroyOnClose
       >
         <Form form={form} layout="vertical" autoComplete="off">
           <Form.Item
@@ -556,7 +584,7 @@ export default function AdminUsersPage() {
         onCancel={closePasswordModal}
         onOk={handleResetPassword}
         confirmLoading={passwordSaving}
-        destroyOnHidden
+        destroyOnClose
       >
         <Form form={passwordForm} layout="vertical" autoComplete="off">
           <Form.Item label="用户邮箱">
@@ -568,10 +596,6 @@ export default function AdminUsersPage() {
             rules={[
               { required: true, message: '请输入新密码' },
               { min: 8, message: '密码至少 8 位' },
-              {
-                pattern: /^[A-Za-z0-9]+$/,
-                message: '密码只能包含字母和数字',
-              },
             ]}
           >
             <Input.Password placeholder="请输入新密码" />
