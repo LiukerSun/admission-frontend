@@ -77,6 +77,14 @@ export default function LandingLayout() {
                 <CheckCircleOutlined />
                 家庭协作核对
               </div>
+              <div className="landingTimelineItem">
+                <CheckCircleOutlined />
+                志愿方案导出
+              </div>
+              <div className="landingTimelineItem">
+                <CheckCircleOutlined />
+                录取进度跟踪
+              </div>
             </div>
           </div>
         </aside>
