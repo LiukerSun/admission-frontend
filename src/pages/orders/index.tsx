@@ -49,8 +49,21 @@ export default function OrdersPage() {
   }, [page, pageSize])
 
   useEffect(() => {
-    void fetchOrders()
-  }, [fetchOrders])
+    const doFetch = async () => {
+      setLoading(true)
+      try {
+        const res = await paymentApi.listMyOrders({ page, page_size: pageSize })
+        setOrders(res.data.data.items ?? [])
+        setTotal(res.data.data.total ?? 0)
+      } catch (err) {
+        console.error('加载订单列表失败', err)
+        message.error('加载订单列表失败')
+      } finally {
+        setLoading(false)
+      }
+    }
+    void doFetch()
+  }, [page, pageSize])
 
   const openDetail = useCallback(async (orderNo: string) => {
     setDetailOpen(true)
@@ -72,9 +85,22 @@ export default function OrdersPage() {
       const params = new URLSearchParams(searchParams)
       params.delete('orderNo')
       setSearchParams(params, { replace: true })
-      void openDetail(orderNo)
+      const doOpen = async () => {
+        setDetailOpen(true)
+        setDetailLoading(true)
+        try {
+          const res = await paymentApi.getMyOrder(orderNo)
+          setSelectedOrder(res.data.data)
+        } catch (err) {
+          console.error('加载订单详情失败', err)
+          message.error('加载订单详情失败')
+        } finally {
+          setDetailLoading(false)
+        }
+      }
+      void doOpen()
     }
-  }, [openDetail, searchParams, setSearchParams])
+  }, [searchParams, setSearchParams])
 
   useEffect(() => {
     const params = new URLSearchParams(searchParams)

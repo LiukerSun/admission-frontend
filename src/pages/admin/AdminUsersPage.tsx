@@ -67,8 +67,25 @@ export default function AdminUsersPage() {
   }, [page, pageSize, filters])
 
   useEffect(() => {
-    fetchUsers()
-  }, [fetchUsers])
+    const load = async () => {
+      setLoading(true)
+      try {
+        const res = await adminApi.getUsers({
+          page,
+          page_size: pageSize,
+          ...filters,
+        })
+        setUsers(res.data.data.users ?? [])
+        setTotal(res.data.data.total ?? 0)
+      } catch (err) {
+        console.error('Failed to load users:', err)
+        message.error('加载用户列表失败')
+      } finally {
+        setLoading(false)
+      }
+    }
+    load()
+  }, [page, pageSize, filters])
 
   const handleDisable = (id: number) => {
     adminApi.disableUser(id)

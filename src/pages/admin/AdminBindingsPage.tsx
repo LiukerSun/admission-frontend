@@ -21,8 +21,21 @@ export default function AdminBindingsPage() {
   }, [page, pageSize])
 
   useEffect(() => {
-    void fetchBindings()
-  }, [fetchBindings])
+    const load = async () => {
+      setLoading(true)
+      try {
+        const res = await adminApi.getBindings({ page, page_size: pageSize })
+        setBindings(res.data.data.bindings ?? [])
+        setTotal(res.data.data.total ?? 0)
+      } catch (err) {
+        console.error(err)
+        message.error('加载绑定列表失败')
+      } finally {
+        setLoading(false)
+      }
+    }
+    load()
+  }, [page, pageSize])
 
   const handleDelete = (id: number) => {
     Modal.confirm({

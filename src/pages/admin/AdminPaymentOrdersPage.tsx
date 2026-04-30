@@ -110,8 +110,26 @@ export default function AdminPaymentOrdersPage() {
   }, [filters, page, pageSize])
 
   useEffect(() => {
-    fetchOrders()
-  }, [fetchOrders])
+    const load = async () => {
+      setLoading(true)
+      try {
+        const params: AdminOrderListQuery = {
+          page,
+          page_size: pageSize,
+          ...filters,
+        }
+        const res = await paymentApi.adminListOrders(params)
+        setOrders(res.data.data.items ?? [])
+        setTotal(res.data.data.total ?? 0)
+      } catch (err) {
+        console.error('Failed to fetch payment orders', err)
+        message.error('加载支付订单失败')
+      } finally {
+        setLoading(false)
+      }
+    }
+    load()
+  }, [filters, page, pageSize])
 
   useEffect(() => {
     const params = new URLSearchParams(searchParams)

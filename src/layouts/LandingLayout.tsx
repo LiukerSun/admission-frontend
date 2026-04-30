@@ -1,4 +1,3 @@
-import { useCallback, useMemo } from 'react'
 import { Outlet, Link, useNavigate } from 'react-router-dom'
 import { Layout, Menu, Button } from 'antd'
 import { useAuthStore } from '@/stores/authStore'
@@ -15,19 +14,16 @@ export default function LandingLayout() {
     navigate('/login')
   }
 
-  const menuItems = useMemo(() => {
-    if (isAuthenticated) {
-      return [
+  const menuItems = isAuthenticated
+    ? [
         { key: 'dashboard', label: <Link to="/dashboard">控制台</Link> },
         { key: 'profile', label: <Link to="/profile">个人中心</Link> },
         { key: 'logout', label: <Button type="link" onClick={handleLogout}>退出</Button> },
       ]
-    }
-    return [
-      { key: 'login', label: <Link to="/login">登录</Link> },
-      { key: 'register', label: <Link to="/register">注册</Link> },
-    ]
-  }, [isAuthenticated, handleLogout])
+    : [
+        { key: 'login', label: <Link to="/login">登录</Link> },
+        { key: 'register', label: <Link to="/register">注册</Link> },
+      ]
 
   return (
     <Layout style={{ minHeight: '100vh' }}>

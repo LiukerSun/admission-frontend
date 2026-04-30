@@ -30,24 +30,23 @@ export default function MembershipPage() {
   const [loading, setLoading] = useState(true)
   const [creatingPlanCode, setCreatingPlanCode] = useState('')
 
-  const loadData = async () => {
-    setLoading(true)
-    try {
-      const [plansRes, membershipRes] = await Promise.all([
-        membershipApi.getPlans(),
-        membershipApi.getCurrent(),
-      ])
-      setPlans(plansRes.data.data ?? [])
-      setMembership(membershipRes.data.data)
-    } catch (err) {
-      console.error('加载会员信息失败', err)
-      message.error('加载会员信息失败')
-    } finally {
-      setLoading(false)
-    }
-  }
-
   useEffect(() => {
+    const loadData = async () => {
+      setLoading(true)
+      try {
+        const [plansRes, membershipRes] = await Promise.all([
+          membershipApi.getPlans(),
+          membershipApi.getCurrent(),
+        ])
+        setPlans(plansRes.data.data ?? [])
+        setMembership(membershipRes.data.data)
+      } catch (err) {
+        console.error('加载会员信息失败', err)
+        message.error('加载会员信息失败')
+      } finally {
+        setLoading(false)
+      }
+    }
     void loadData()
   }, [])
 
