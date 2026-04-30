@@ -1,0 +1,164 @@
+ .landingRoot {
+   min-height: 100vh;
+   position: relative;
+   overflow: hidden;
+   background: radial-gradient(circle at 35% 20%, rgba(250, 234, 225, 1) 0%, rgba(157, 205, 237, 1) 65%, rgba(157, 205, 237, 1) 100%);
+ }
+ 
+ .landingRoot::before {
+   content: '';
+   position: absolute;
+   inset: -200px;
+   background:
+     radial-gradient(closest-side at 20% 60%, rgba(252, 96, 177, 0.35) 0%, rgba(240, 151, 139, 0.18) 45%, rgba(250, 140, 5, 0) 75%),
+     radial-gradient(closest-side at 55% 88%, rgba(96, 219, 252, 0.35) 0%, rgba(139, 240, 203, 0.18) 45%, rgba(250, 217, 5, 0) 75%),
+     radial-gradient(closest-side at 80% 30%, rgba(153, 175, 240, 0.32) 0%, rgba(32, 159, 250, 0.16) 48%, rgba(10, 250, 222, 0) 78%);
+   filter: blur(54px);
+   pointer-events: none;
+ }
+ 
+ .landingShell {
+   position: relative;
+   z-index: 1;
+   max-width: 1560px;
+   margin: 0 auto;
+   padding: 24px;
+   display: flex;
+   gap: 24px;
+ }
+ 
+ .landingSider {
+   width: 355px;
+   flex: 0 0 355px;
+   border-radius: 16px;
+   padding: 18px 18px 20px;
+   background: rgba(232, 250, 250, 0.85);
+   box-shadow: 0 10px 30px rgba(7, 32, 60, 0.06);
+   backdrop-filter: blur(20px);
+ }
+ 
+ .landingBrand {
+   display: flex;
+   align-items: center;
+   gap: 12px;
+   font-weight: 800;
+   font-size: 20px;
+   color: #063966;
+   padding: 8px 10px 14px;
+ }
+ 
+ .landingBrandMark {
+   width: 26px;
+   height: 26px;
+   border-radius: 8px;
+   background: rgba(180, 232, 250, 0.9);
+ }
+ 
+ .landingNav {
+   display: grid;
+   gap: 12px;
+   padding: 0 10px;
+ }
+ 
+ .landingNavItem {
+   display: flex;
+   align-items: center;
+   gap: 12px;
+   height: 86px;
+   border-radius: 13px;
+   padding: 0 18px;
+   text-decoration: none;
+   color: #000;
+   font-size: 22px;
+   font-weight: 600;
+ }
+ 
+ .landingNavItemActive {
+   background: rgba(180, 232, 250, 0.7);
+ }
+ 
+ .landingSideCard {
+   margin-top: 18px;
+   border-radius: 13px;
+   padding: 16px;
+   background: #d7f5f5;
+ }
+ 
+ .landingSideCardHeader {
+   display: flex;
+   align-items: center;
+   gap: 10px;
+   font-size: 20px;
+   font-weight: 700;
+   color: #000;
+   padding: 2px 6px 12px;
+ }
+ 
+ .landingSideCardGlass {
+   border-radius: 13px;
+   background: rgba(255, 255, 255, 0.4);
+   box-shadow: inset 0 15px 30px rgba(255, 255, 255, 0.2), inset 0 0 15px rgba(255, 255, 255, 0.25), inset 0 0 2px rgba(255, 255, 255, 0.7), inset 0 1px 1px rgba(255, 255, 255, 0.5);
+   backdrop-filter: blur(28px);
+   height: 328px;
+ }
+ 
+ .landingMain {
+   min-width: 0;
+   flex: 1;
+   display: flex;
+   flex-direction: column;
+   gap: 18px;
+ }
+ 
+ .landingTopbar {
+   height: 117px;
+   border-radius: 13px;
+   background: rgba(255, 255, 255, 0.85);
+   box-shadow: 0 10px 30px rgba(7, 32, 60, 0.06);
+   backdrop-filter: blur(20px);
+   display: flex;
+   align-items: center;
+   padding: 18px 22px;
+   gap: 16px;
+ }
+ 
+ .landingTopbarLeft {
+   display: flex;
+   align-items: center;
+   gap: 12px;
+ }
+ 
+ .landingSearch {
+   flex: 1;
+   display: flex;
+   justify-content: center;
+ }
+ 
+ .landingSearch .ant-input-affix-wrapper {
+   width: min(611px, 100%);
+   border-radius: 40px;
+   background: rgba(235, 245, 250, 0.7);
+   border: none;
+   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.12), inset 0 15px 30px rgba(250, 253, 255, 0.2), inset 0 0 15px rgba(250, 253, 255, 0.2);
+ }
+ 
+ .landingSearch .ant-input {
+   background: transparent;
+ }
+ 
+ .landingActions {
+   display: flex;
+   align-items: center;
+   gap: 10px;
+ }
+ 
+ @media (max-width: 1024px) {
+   .landingShell {
+     flex-direction: column;
+   }
+ 
+   .landingSider {
+     width: 100%;
+     flex: 0 0 auto;
+   }
+ }

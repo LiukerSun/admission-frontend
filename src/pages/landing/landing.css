@@ -1,0 +1,283 @@
+ .landingPage {
+   padding: 6px 0 40px;
+ }
+ 
+ .landingContainer {
+   padding: 0 6px;
+ }
+ 
+ .landingHero {
+   border-radius: 40px;
+   background: rgba(227, 209, 188, 0.3);
+   box-shadow: inset 0 15px 30px rgba(255, 255, 255, 0.2), inset 0 1px 1px rgba(255, 255, 255, 0.6);
+   backdrop-filter: blur(68px);
+   padding: 44px 44px 38px;
+ }
+ 
+ .landingHeroGrid {
+   display: grid;
+   grid-template-columns: 1.1fr 0.9fr;
+   gap: 28px;
+   align-items: start;
+ }
+ 
+ .landingPill {
+   display: inline-flex;
+   align-items: center;
+   height: 38px;
+   padding: 0 14px;
+   border-radius: 40px;
+   background: #f2f2f2;
+   color: rgba(0, 0, 0, 0.85);
+   font-weight: 600;
+ }
+ 
+ .landingHeroTitle {
+   margin: 18px 0 10px;
+   font-size: 56px;
+   line-height: 1.12;
+   font-weight: 900;
+   color: #063966;
+   letter-spacing: 0.2px;
+ }
+ 
+ .landingHeroSub {
+   margin: 0 0 14px;
+   font-size: 18px;
+   line-height: 1.8;
+   color: rgba(0, 0, 0, 0.75);
+ }
+ 
+ .landingHeroPoints {
+   margin: 0 0 20px;
+   padding: 0;
+   list-style: none;
+   display: grid;
+   gap: 8px;
+   color: rgba(0, 0, 0, 0.78);
+ }
+ 
+ .landingHeroSearch {
+   display: flex;
+   gap: 12px;
+   align-items: center;
+ }
+ 
+ .landingHeroSearch .ant-input-affix-wrapper {
+   border-radius: 40px;
+   height: 52px;
+   background: rgba(199, 252, 252, 0.3);
+   border: none;
+   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.18), 0 0 2px rgba(255, 255, 255, 0.7), inset 0 15px 30px rgba(255, 255, 255, 0.2), inset 0 0 15px rgba(255, 255, 255, 0.2), inset 0 1px 1px rgba(255, 255, 255, 0.5);
+ }
+ 
+ .landingHeroSearch .ant-input {
+   background: transparent;
+ }
+ 
+ .landingHeroRight {
+   display: grid;
+   gap: 18px;
+ }
+ 
+ .glassCard {
+   border-radius: 40px;
+   background: rgba(255, 255, 255, 0.4);
+   box-shadow: inset 0 15px 30px rgba(255, 255, 255, 0.2), inset 0 0 15px rgba(255, 255, 255, 0.2), inset 0 1px 1px rgba(255, 255, 255, 0.5), inset 0 0 2px rgba(255, 255, 255, 0.7);
+   backdrop-filter: blur(68px);
+ }
+ 
+ .glassCardInner {
+   padding: 24px;
+   min-height: 180px;
+   display: flex;
+   flex-direction: column;
+   justify-content: center;
+   gap: 10px;
+   color: rgba(0, 0, 0, 0.7);
+ }
+ 
+ .sectionTitleWrap {
+   margin: 42px 0 18px;
+   text-align: center;
+ }
+ 
+ .sectionTitle {
+   margin: 0;
+   font-size: 34px;
+   font-weight: 900;
+   color: rgba(0, 0, 0, 0.85);
+ }
+ 
+ .sectionDivider {
+   width: 168px;
+   height: 7px;
+   margin: 10px auto 0;
+   border-radius: 10px;
+   background: rgba(180, 232, 250, 0.9);
+ }
+ 
+ .featureGrid {
+   display: grid;
+   grid-template-columns: repeat(3, minmax(0, 1fr));
+   gap: 18px;
+ }
+ 
+ .featureCard {
+   border-radius: 24px;
+   background: rgba(255, 255, 255, 0.38);
+   backdrop-filter: blur(42px);
+   box-shadow: 0 2px 30px rgba(158, 155, 150, 0.18), inset 0 15px 30px rgba(255, 255, 255, 0.2), inset 0 1px 1px rgba(255, 255, 255, 0.45);
+   padding: 22px 22px 20px;
+ }
+ 
+ .featureTitle {
+   margin: 0 0 10px;
+   font-size: 28px;
+   font-weight: 900;
+ }
+ 
+ .featureTitlePeach {
+   color: #f7ab8d;
+ }
+ 
+ .featureTitleBlue {
+   color: #3aa6ff;
+ }
+ 
+ .featureTitleTeal {
+   color: #31c7bd;
+ }
+ 
+ .featureDesc {
+   margin: 0;
+   color: rgba(0, 0, 0, 0.74);
+   line-height: 1.75;
+ }
+ 
+ .collabGrid {
+   margin-top: 24px;
+   display: grid;
+   grid-template-columns: 1.05fr 0.95fr;
+   gap: 18px;
+ }
+ 
+ .collabCard {
+   border-radius: 40px;
+   padding: 28px;
+   background: rgba(255, 255, 255, 0.38);
+   backdrop-filter: blur(68px);
+   box-shadow: inset 0 15px 30px rgba(255, 255, 255, 0.2), inset 0 1px 1px rgba(255, 255, 255, 0.5);
+ }
+ 
+ .collabTitle {
+   margin: 0 0 14px;
+   font-size: 30px;
+   font-weight: 900;
+   color: rgba(0, 0, 0, 0.85);
+ }
+ 
+ .collabSteps {
+   margin: 0;
+   padding: 0;
+   list-style: none;
+   display: grid;
+   gap: 14px;
+ }
+ 
+ .collabStep {
+   display: grid;
+   grid-template-columns: 34px 1fr;
+   gap: 12px;
+   align-items: start;
+ }
+ 
+ .collabNum {
+   width: 34px;
+   height: 34px;
+   border-radius: 999px;
+   display: grid;
+   place-items: center;
+   background: rgba(180, 232, 250, 0.75);
+   font-weight: 800;
+   color: rgba(0, 0, 0, 0.8);
+ }
+ 
+ .collabStepTitle {
+   margin: 0 0 2px;
+   font-weight: 800;
+   color: rgba(0, 0, 0, 0.85);
+ }
+ 
+ .collabStepDesc {
+   margin: 0;
+   color: rgba(0, 0, 0, 0.72);
+   line-height: 1.65;
+ }
+ 
+ .landingFooter {
+   margin-top: 26px;
+   border-radius: 40px;
+   background: rgba(255, 255, 255, 0.38);
+   backdrop-filter: blur(68px);
+   box-shadow: inset 0 15px 30px rgba(255, 255, 255, 0.2), inset 0 1px 1px rgba(255, 255, 255, 0.5);
+   padding: 28px;
+ }
+ 
+ .footerGrid {
+   display: grid;
+   grid-template-columns: 1fr 1fr 1.2fr;
+   gap: 18px;
+ }
+ 
+ .footerColTitle {
+   margin: 0 0 10px;
+   font-size: 18px;
+   font-weight: 900;
+   color: rgba(0, 0, 0, 0.85);
+ }
+ 
+ .footerList {
+   margin: 0;
+   padding: 0;
+   list-style: none;
+   display: grid;
+   gap: 8px;
+   color: rgba(0, 0, 0, 0.7);
+ }
+ 
+ .footerBrand {
+   font-weight: 900;
+   font-size: 20px;
+   color: rgba(0, 0, 0, 0.85);
+   margin-bottom: 8px;
+ }
+ 
+ .footerCopy {
+   margin-top: 18px;
+   padding-top: 16px;
+   border-top: 1px solid rgba(0, 0, 0, 0.08);
+   color: rgba(0, 0, 0, 0.6);
+   display: flex;
+   justify-content: space-between;
+   gap: 12px;
+   flex-wrap: wrap;
+ }
+ 
+ @media (max-width: 1024px) {
+   .landingHeroGrid {
+     grid-template-columns: 1fr;
+   }
+ 
+   .featureGrid {
+     grid-template-columns: 1fr;
+   }
+ 
+   .collabGrid {
+     grid-template-columns: 1fr;
+   }
+ 
+   .footerGrid {
+     grid-template-columns: 1fr;
+   }
+ }
