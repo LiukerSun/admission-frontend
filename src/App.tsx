@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { createBrowserRouter, RouterProvider } from 'react-router-dom'
 import { ConfigProvider } from 'antd'
 import { useAuthStore } from '@/stores/authStore'
+import ErrorBoundary from '@/components/ErrorBoundary'
 import LandingLayout from '@/layouts/LandingLayout'
 import AuthLayout from '@/layouts/AuthLayout'
 import BasicLayout from '@/layouts/BasicLayout'
@@ -14,6 +15,7 @@ import BindingsPage from '@/pages/bindings'
 import AnalysisPage from '@/pages/analysis'
 import MembershipPage from '@/pages/membership'
 import OrdersPage from '@/pages/orders'
+import NotFoundPage from '@/pages/NotFound'
 import AdminDashboardPage from '@/pages/admin/AdminDashboardPage'
 import AdminUsersPage from '@/pages/admin/AdminUsersPage'
 import AdminBindingsPage from '@/pages/admin/AdminBindingsPage'
@@ -137,6 +139,10 @@ const router = createBrowserRouter([
       },
     ],
   },
+  {
+    path: '*',
+    element: <NotFoundPage />,
+  },
 ])
 
 function AppInitializer({ children }: { children: React.ReactNode }) {
@@ -155,19 +161,21 @@ function AppInitializer({ children }: { children: React.ReactNode }) {
 
 function App() {
   return (
-    <ConfigProvider
-      theme={{
-        token: {
-          colorPrimary: '#1E40AF',
-          borderRadius: 6,
-          fontFamily: "'Fira Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
-        },
-      }}
-    >
-      <AppInitializer>
-        <RouterProvider router={router} />
-      </AppInitializer>
-    </ConfigProvider>
+    <ErrorBoundary>
+      <ConfigProvider
+        theme={{
+          token: {
+            colorPrimary: '#1E40AF',
+            borderRadius: 6,
+            fontFamily: "'Fira Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+          },
+        }}
+      >
+        <AppInitializer>
+          <RouterProvider router={router} />
+        </AppInitializer>
+      </ConfigProvider>
+    </ErrorBoundary>
   )
 }
 

@@ -2,20 +2,28 @@ import axios, { AxiosError, type InternalAxiosRequestConfig } from 'axios'
 import { API_BASE_URL } from '@/utils/constants'
 import { useAuthStore } from '@/stores/authStore'
 
+type Subscriber = { resolve: (token: string) => void; reject: (err: unknown) => void }
+
 let isRefreshing = false
-let refreshSubscribers: ((token: string) => void)[] = []
+let refreshSubscribers: Subscriber[] = []
 
 function onRefreshed(token: string) {
-  refreshSubscribers.forEach((cb) => cb(token))
+  refreshSubscribers.forEach((s) => s.resolve(token))
   refreshSubscribers = []
 }
 
-function addRefreshSubscriber(cb: (token: string) => void) {
+function onRefreshFailed(err: unknown) {
+  refreshSubscribers.forEach((s) => s.reject(err))
+  refreshSubscribers = []
+}
+
+function addRefreshSubscriber(cb: Subscriber) {
   refreshSubscribers.push(cb)
 }
 
 const api = axios.create({
   baseURL: API_BASE_URL,
+  timeout: 15000,
   headers: {
     'Content-Type': 'application/json',
     'X-Platform': 'web',
@@ -37,12 +45,15 @@ api.interceptors.response.use(
 
     if (error.response?.status === 401 && originalRequest && !originalRequest._retry) {
       if (isRefreshing) {
-        return new Promise((resolve) => {
-          addRefreshSubscriber((token: string) => {
-            if (originalRequest.headers) {
-              originalRequest.headers.Authorization = `Bearer ${token}`
-            }
-            resolve(api(originalRequest))
+        return new Promise((resolve, reject) => {
+          addRefreshSubscriber({
+            resolve: (token: string) => {
+              if (originalRequest.headers) {
+                originalRequest.headers.Authorization = `Bearer ${token}`
+              }
+              resolve(api(originalRequest))
+            },
+            reject,
           })
         })
       }
@@ -72,10 +83,11 @@ api.interceptors.response.use(
 
         onRefreshed(data.access_token)
         return api(originalRequest)
-      } catch {
+      } catch (refreshErr) {
+        onRefreshFailed(refreshErr)
         useAuthStore.getState().logout()
         window.location.href = '/login'
-        return Promise.reject(error)
+        return Promise.reject(refreshErr)
       } finally {
         isRefreshing = false
       }

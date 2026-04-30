@@ -45,9 +45,6 @@ export default function LandingLayout() {
             <NavLink to="/bindings" className={navItemClass}>
               志愿模拟
             </NavLink>
-            <NavLink to="/dashboard" className={navItemClass}>
-              AI助手
-            </NavLink>
           </nav>
           <div className="landingSideCard">
             <div className="landingSideCardHeader">

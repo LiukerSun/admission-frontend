@@ -4,7 +4,7 @@
    overflow: hidden;
    background: radial-gradient(circle at 35% 20%, rgba(250, 234, 225, 1) 0%, rgba(157, 205, 237, 1) 65%, rgba(157, 205, 237, 1) 100%);
  }
- 
+
  .landingRoot::before {
    content: '';
    position: absolute;
@@ -16,7 +16,7 @@
    filter: blur(54px);
    pointer-events: none;
  }
- 
+
  .landingShell {
    position: relative;
    z-index: 1;
@@ -26,7 +26,7 @@
    display: flex;
    gap: 24px;
  }
- 
+
  .landingSider {
    width: 355px;
    flex: 0 0 355px;
@@ -36,7 +36,7 @@
    box-shadow: 0 10px 30px rgba(7, 32, 60, 0.06);
    backdrop-filter: blur(20px);
  }
- 
+
  .landingBrand {
    display: flex;
    align-items: center;
@@ -46,20 +46,20 @@
    color: #063966;
    padding: 8px 10px 14px;
  }
- 
+
  .landingBrandMark {
    width: 26px;
    height: 26px;
    border-radius: 8px;
    background: rgba(180, 232, 250, 0.9);
  }
- 
+
  .landingNav {
    display: grid;
    gap: 12px;
    padding: 0 10px;
  }
- 
+
  .landingNavItem {
    display: flex;
    align-items: center;
@@ -72,18 +72,18 @@
    font-size: 22px;
    font-weight: 600;
  }
- 
+
  .landingNavItemActive {
    background: rgba(180, 232, 250, 0.7);
  }
- 
+
  .landingSideCard {
    margin-top: 18px;
    border-radius: 13px;
    padding: 16px;
    background: #d7f5f5;
  }
- 
+
  .landingSideCardHeader {
    display: flex;
    align-items: center;
@@ -93,7 +93,7 @@
    color: #000;
    padding: 2px 6px 12px;
  }
- 
+
  .landingSideCardGlass {
    border-radius: 13px;
    background: rgba(255, 255, 255, 0.4);
@@ -101,7 +101,7 @@
    backdrop-filter: blur(28px);
    height: 328px;
  }
- 
+
  .landingMain {
    min-width: 0;
    flex: 1;
@@ -109,7 +109,7 @@
    flex-direction: column;
    gap: 18px;
  }
- 
+
  .landingTopbar {
    height: 117px;
    border-radius: 13px;
@@ -121,19 +121,19 @@
    padding: 18px 22px;
    gap: 16px;
  }
- 
+
  .landingTopbarLeft {
    display: flex;
    align-items: center;
    gap: 12px;
  }
- 
+
  .landingSearch {
    flex: 1;
    display: flex;
    justify-content: center;
  }
- 
+
  .landingSearch .ant-input-affix-wrapper {
    width: min(611px, 100%);
    border-radius: 40px;
@@ -141,22 +141,22 @@
    border: none;
    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.12), inset 0 15px 30px rgba(250, 253, 255, 0.2), inset 0 0 15px rgba(250, 253, 255, 0.2);
  }
- 
+
  .landingSearch .ant-input {
    background: transparent;
  }
- 
+
  .landingActions {
    display: flex;
    align-items: center;
    gap: 10px;
  }
- 
+
  @media (max-width: 1024px) {
    .landingShell {
      flex-direction: column;
    }
- 
+
    .landingSider {
      width: 100%;
      flex: 0 0 auto;
