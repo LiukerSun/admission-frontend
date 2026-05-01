@@ -1,0 +1,209 @@
+.userCenterRoot {
+  padding: 10px 0 40px;
+}
+
+.userCenterBoard {
+  position: relative;
+  border-radius: 18px;
+  overflow: hidden;
+  padding: 16px;
+  background: linear-gradient(135deg, rgba(230, 242, 252, 0.75) 0%, rgba(181, 215, 241, 0.6) 60%, rgba(124, 187, 236, 0.45) 100%);
+}
+
+.userCenterBoard::before {
+  content: '';
+  position: absolute;
+  inset: -170px;
+  background:
+    radial-gradient(closest-side at 22% 55%, rgba(252, 96, 177, 0.28) 0%, rgba(240, 151, 139, 0.14) 45%, rgba(250, 140, 5, 0) 75%),
+    radial-gradient(closest-side at 58% 86%, rgba(96, 219, 252, 0.26) 0%, rgba(139, 240, 203, 0.12) 45%, rgba(250, 217, 5, 0) 75%),
+    radial-gradient(closest-side at 84% 30%, rgba(153, 175, 240, 0.24) 0%, rgba(32, 159, 250, 0.12) 50%, rgba(10, 250, 222, 0) 78%);
+  filter: blur(52px);
+  pointer-events: none;
+}
+
+.userCenterInner {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  gap: 14px;
+}
+
+.glassPanel {
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.42);
+  backdrop-filter: blur(54px);
+  box-shadow: inset 0 15px 30px rgba(255, 255, 255, 0.2), inset 0 1px 1px rgba(255, 255, 255, 0.5);
+}
+
+.topRow {
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: 14px;
+}
+
+.profileCard {
+  min-height: 140px;
+  padding: 16px;
+  display: grid;
+  grid-template-columns: 140px 1fr;
+  gap: 18px;
+  align-items: center;
+}
+
+.profileAvatar {
+  width: 140px;
+  height: 140px;
+  border-radius: 999px;
+  background: rgba(180, 232, 250, 0.55);
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.6);
+}
+
+.profileHello {
+  font-weight: 900;
+  font-size: 32px;
+  color: rgba(0, 0, 0, 0.85);
+  line-height: 1.1;
+}
+
+.profileMeta {
+  margin-top: 10px;
+  display: grid;
+  gap: 6px;
+  color: rgba(0, 0, 0, 0.7);
+  font-size: 12px;
+}
+
+.manageCard {
+  padding: 16px;
+  min-height: 140px;
+}
+
+.manageTitle {
+  font-weight: 900;
+  color: rgba(0, 0, 0, 0.85);
+  margin-bottom: 12px;
+}
+
+.manageList {
+  display: grid;
+  gap: 10px;
+}
+
+.manageItem {
+  height: 34px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.52);
+  border: none;
+  text-align: left;
+  padding: 0 12px;
+  cursor: pointer;
+  color: rgba(0, 0, 0, 0.72);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  transition: box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.manageItem:hover {
+  box-shadow: 0 6px 18px rgba(7, 32, 60, 0.08);
+  background: rgba(255, 255, 255, 0.6);
+}
+
+.midRow {
+  display: grid;
+  grid-template-columns: 1fr 1.2fr;
+  gap: 14px;
+}
+
+.cardPad {
+  padding: 16px;
+  min-height: 160px;
+}
+
+.cardTitleRed {
+  font-weight: 900;
+  color: rgba(255, 66, 66, 0.85);
+  margin-bottom: 12px;
+}
+
+.cardTitleGreen {
+  font-weight: 900;
+  color: rgba(0, 170, 160, 0.9);
+  margin-bottom: 12px;
+}
+
+.formGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.formGrid .ant-input,
+.formGrid .ant-select-selector,
+.formGrid .ant-input-number {
+  border-radius: 14px !important;
+}
+
+.scoreBox {
+  display: grid;
+  gap: 12px;
+}
+
+.scorePlaceholder {
+  height: 46px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.52);
+}
+
+.bottomRow {
+  display: grid;
+  grid-template-columns: 360px 1fr;
+  gap: 14px;
+}
+
+.cardTitleOrange {
+  font-weight: 900;
+  color: rgba(255, 156, 0, 0.9);
+  margin-bottom: 12px;
+}
+
+.cardTitleBlue {
+  font-weight: 900;
+  color: rgba(0, 120, 200, 0.9);
+  margin-bottom: 12px;
+}
+
+.miniList {
+  display: grid;
+  gap: 10px;
+  color: rgba(0, 0, 0, 0.7);
+  font-size: 12px;
+}
+
+.miniPill {
+  height: 34px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.52);
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  justify-content: space-between;
+}
+
+@media (max-width: 1200px) {
+  .topRow,
+  .midRow,
+  .bottomRow {
+    grid-template-columns: 1fr;
+  }
+
+  .profileCard {
+    grid-template-columns: 100px 1fr;
+  }
+
+  .profileAvatar {
+    width: 100px;
+    height: 100px;
+  }
+}

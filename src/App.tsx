@@ -7,12 +7,16 @@ import LandingLayout from '@/layouts/LandingLayout'
 import AuthLayout from '@/layouts/AuthLayout'
 import BasicLayout from '@/layouts/BasicLayout'
 import LandingPage from '@/pages/landing'
+import CollegeLibraryPage from '@/pages/colleges'
+import AssistantPage from '@/pages/assistant'
+import UserCenterPage from '@/pages/user-center'
 import LoginPage from '@/pages/auth/LoginPage'
 import RegisterPage from '@/pages/auth/RegisterPage'
 import DashboardPage from '@/pages/dashboard'
 import ProfilePage from '@/pages/profile'
 import BindingsPage from '@/pages/bindings'
 import AnalysisPage from '@/pages/analysis'
+import VolunteerSimulatorPage from '@/pages/simulator'
 import MembershipPage from '@/pages/membership'
 import OrdersPage from '@/pages/orders'
 import NotFoundPage from '@/pages/NotFound'
@@ -29,7 +33,35 @@ const router = createBrowserRouter([
   {
     path: '/',
     element: <LandingLayout />,
-    children: [{ index: true, element: <LandingPage /> }],
+    children: [
+      { index: true, element: <LandingPage /> },
+      { path: 'colleges', element: <CollegeLibraryPage /> },
+      { path: 'assistant', element: <AssistantPage /> },
+      {
+        path: 'bindings',
+        element: (
+          <RequireAuth>
+            <VolunteerSimulatorPage />
+          </RequireAuth>
+        ),
+      },
+      {
+        path: 'analysis',
+        element: (
+          <RequireAuth>
+            <AnalysisPage />
+          </RequireAuth>
+        ),
+      },
+      {
+        path: 'user-center',
+        element: (
+          <RequireAuth>
+            <UserCenterPage />
+          </RequireAuth>
+        ),
+      },
+    ],
   },
   {
     path: '/',
@@ -74,18 +106,10 @@ const router = createBrowserRouter([
         ),
       },
       {
-        path: 'bindings',
+        path: 'bindings-manage',
         element: (
           <RequireAuth>
             <BindingsPage />
-          </RequireAuth>
-        ),
-      },
-      {
-        path: 'analysis',
-        element: (
-          <RequireAuth>
-            <AnalysisPage />
           </RequireAuth>
         ),
       },

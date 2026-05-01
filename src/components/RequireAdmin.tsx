@@ -9,6 +9,11 @@ interface Props {
 export default function RequireAdmin({ children }: Props) {
   const { user } = useAuthStore()
   const location = useLocation()
+  const bypassAuth = import.meta.env.DEV && import.meta.env.VITE_BYPASS_AUTH === 'true'
+
+  if (bypassAuth) {
+    return <>{children}</>
+  }
 
   return (
     <RequireAuth>

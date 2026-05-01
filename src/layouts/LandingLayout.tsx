@@ -1,19 +1,19 @@
 import { Outlet, NavLink, useNavigate } from 'react-router-dom'
-import { Avatar, Badge, Button, Input } from 'antd'
+import { Avatar, Badge, Button, Dropdown, Input } from 'antd'
 import {
   BellOutlined,
   CalendarOutlined,
   HomeOutlined,
   LoginOutlined,
-  LogoutOutlined,
   SearchOutlined,
   UserOutlined,
 } from '@ant-design/icons'
 import { useAuthStore } from '@/stores/authStore'
+import type { MenuProps } from 'antd'
 import './landingLayout.css'
 
 export default function LandingLayout() {
-  const { isAuthenticated, logout } = useAuthStore()
+  const { isAuthenticated, logout, user } = useAuthStore()
   const navigate = useNavigate()
 
   const handleLogout = () => {
@@ -23,6 +23,19 @@ export default function LandingLayout() {
 
   const navItemClass = ({ isActive }: { isActive: boolean }) =>
     ['landingNavItem', isActive ? 'landingNavItemActive' : ''].filter(Boolean).join(' ')
+
+  const userMenuItems: MenuProps['items'] = [
+    {
+      key: 'user-center',
+      label: '用户中心',
+      onClick: () => navigate('/user-center'),
+    },
+    {
+      key: 'logout',
+      label: '退出登录',
+      onClick: handleLogout,
+    },
+  ]
 
   return (
     <div className="landingRoot">
@@ -36,14 +49,17 @@ export default function LandingLayout() {
             <NavLink to="/" end className={navItemClass}>
               首页
             </NavLink>
-            <NavLink to="/analysis" className={navItemClass}>
+            <NavLink to="/colleges" className={navItemClass}>
               院校库
             </NavLink>
-            <NavLink to="/dashboard" className={navItemClass}>
+            <NavLink to="/analysis" className={navItemClass}>
               数据中心
             </NavLink>
             <NavLink to="/bindings" className={navItemClass}>
               志愿模拟
+            </NavLink>
+            <NavLink to="/assistant" className={navItemClass}>
+              AI助手
             </NavLink>
           </nav>
           <div className="landingSideCard">
@@ -65,7 +81,11 @@ export default function LandingLayout() {
                 allowClear
                 prefix={<SearchOutlined />}
                 placeholder="全局搜素"
-                onPressEnter={() => navigate('/analysis')}
+                onPressEnter={(e) => {
+                  const val = (e.target as HTMLInputElement).value
+                  const q = val.trim()
+                  navigate(q ? `/colleges?keyword=${encodeURIComponent(q)}` : '/colleges')
+                }}
               />
             </div>
             <div className="landingActions">
@@ -74,13 +94,14 @@ export default function LandingLayout() {
                   <Badge count={1} size="small">
                     <Button type="text" icon={<BellOutlined />} />
                   </Badge>
-                  <Button type="text" icon={<UserOutlined />} onClick={() => navigate('/profile')} />
                   <Button type="text" icon={<LoginOutlined />} onClick={() => navigate('/dashboard')}>
                     控制台
                   </Button>
-                  <Button type="text" icon={<LogoutOutlined />} onClick={handleLogout}>
-                    退出
-                  </Button>
+                  <Dropdown menu={{ items: userMenuItems }} placement="bottomRight" trigger={['click']}>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', cursor: 'pointer' }} title={user?.email || ''}>
+                      <Avatar icon={<UserOutlined />} />
+                    </span>
+                  </Dropdown>
                 </>
               ) : (
                 <>
