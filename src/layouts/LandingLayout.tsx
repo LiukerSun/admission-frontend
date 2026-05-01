@@ -1,4 +1,4 @@
-import { Outlet, useNavigate } from 'react-router-dom'
+import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { Avatar, Badge, Button, Dropdown, Input } from 'antd'
 import {
   BellOutlined,
@@ -10,11 +10,14 @@ import {
 import { useAuthStore } from '@/stores/authStore'
 import type { MenuProps } from 'antd'
 import LandingSiderNav from './components/LandingSiderNav'
+import { LANDING_NAV_ITEMS } from './components/landingNavItems'
 import './landingLayout.css'
 
 export default function LandingLayout() {
   const { isAuthenticated, logout, user } = useAuthStore()
   const navigate = useNavigate()
+  const location = useLocation()
+  const isMarketingHome = location.pathname === '/'
 
   const handleLogout = () => {
     logout()
@@ -33,6 +36,52 @@ export default function LandingLayout() {
       onClick: handleLogout,
     },
   ]
+
+  if (isMarketingHome) {
+    return (
+      <div className="landingRoot landingRootMarketing">
+        <header className="marketingNav">
+          <button className="marketingBrand" type="button" onClick={() => navigate('/')}>
+            <span className="marketingBrandMark" />
+            智慧高考
+          </button>
+          <nav className="marketingLinks" aria-label="首页导航">
+            {LANDING_NAV_ITEMS.map((item) => (
+              <NavLink key={item.to} to={item.to} end={item.end}>
+                {item.label}
+              </NavLink>
+            ))}
+          </nav>
+          <div className="marketingActions">
+            {isAuthenticated ? (
+              <>
+                <Button type="text" onClick={() => navigate('/dashboard')}>
+                  控制台
+                </Button>
+                <Dropdown menu={{ items: userMenuItems }} placement="bottomRight" trigger={['click']}>
+                  <span className="marketingAvatar" title={user?.email || ''}>
+                    <Avatar icon={<UserOutlined />} size="small" />
+                  </span>
+                </Dropdown>
+              </>
+            ) : (
+              <>
+                <Button type="text" onClick={() => navigate('/login')}>
+                  登录
+                </Button>
+                <Button type="primary" onClick={() => navigate('/register')}>
+                  注册
+                </Button>
+              </>
+            )}
+          </div>
+        </header>
+        <main className="marketingMain">
+          <Outlet />
+        </main>
+      </div>
+    )
+  }
 
   return (
     <div className="landingRoot">
