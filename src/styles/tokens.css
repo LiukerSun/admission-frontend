@@ -1,0 +1,57 @@
+:root {
+  --color-brand-500: #1E40AF;
+  --color-info-500: #1E88E5;
+  --color-success-500: #16A34A;
+  --color-warning-500: #F97316;
+  --color-danger-500: #DC2626;
+
+  --color-text-strong: rgba(0, 0, 0, 0.86);
+  --color-text: rgba(0, 0, 0, 0.82);
+  --color-text-muted: rgba(0, 0, 0, 0.62);
+  --color-text-faint: rgba(0, 0, 0, 0.55);
+
+  --surface-glass: rgba(255, 255, 255, 0.42);
+  --surface-glass-strong: rgba(255, 255, 255, 0.45);
+  --surface-glass-soft: rgba(255, 255, 255, 0.46);
+  --surface-pill: rgba(255, 255, 255, 0.52);
+  --surface-pill-soft: rgba(255, 255, 255, 0.50);
+  --surface-hover: rgba(255, 255, 255, 0.58);
+  --surface-hover-strong: rgba(255, 255, 255, 0.62);
+  --surface-active: rgba(180, 232, 250, 0.55);
+  --surface-active-strong: rgba(180, 232, 250, 0.65);
+  --surface-bubble-user: rgba(180, 232, 250, 0.6);
+  --surface-bubble-assistant: rgba(255, 255, 255, 0.62);
+
+  --radius-sm: 12px;
+  --radius-md: 14px;
+  --radius-lg: 16px;
+  --radius-xl: 18px;
+  --radius-pill: 999px;
+
+  --blur-ambient: 52px;
+  --blur-glass: 54px;
+  --blur-glass-soft: 40px;
+
+  --shadow-glass-inset: inset 0 15px 30px rgba(255, 255, 255, 0.2), inset 0 1px 1px rgba(255, 255, 255, 0.5);
+  --shadow-glass-inset-soft: inset 0 15px 30px rgba(255, 255, 255, 0.2), inset 0 1px 1px rgba(255, 255, 255, 0.45);
+  --shadow-elevate: 0 6px 18px rgba(7, 32, 60, 0.08);
+  --shadow-elevate-soft: 0 6px 18px rgba(7, 32, 60, 0.06);
+  --shadow-elevate-lift: 0 10px 26px rgba(7, 32, 60, 0.12);
+
+  --space-2xs: 6px;
+  --space-xs: 10px;
+  --space-sm: 12px;
+  --space-md: 14px;
+  --space-lg: 16px;
+  --space-xl: 18px;
+
+  --font-size-caption: 12px;
+  --font-size-body: 14px;
+  --font-size-title: 18px;
+  --font-size-display: 32px;
+
+  --board-bg: linear-gradient(135deg, rgba(230, 242, 252, 0.75) 0%, rgba(181, 215, 241, 0.6) 60%, rgba(124, 187, 236, 0.45) 100%);
+  --board-ambient: radial-gradient(closest-side at 18% 55%, rgba(252, 96, 177, 0.28) 0%, rgba(240, 151, 139, 0.14) 45%, rgba(250, 140, 5, 0) 75%),
+    radial-gradient(closest-side at 58% 86%, rgba(96, 219, 252, 0.26) 0%, rgba(139, 240, 203, 0.12) 45%, rgba(250, 217, 5, 0) 75%),
+    radial-gradient(closest-side at 86% 30%, rgba(153, 175, 240, 0.24) 0%, rgba(32, 159, 250, 0.12) 50%, rgba(10, 250, 222, 0) 78%);
+}

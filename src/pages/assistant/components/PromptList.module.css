@@ -1,0 +1,20 @@
+.root {
+  display: grid;
+  gap: var(--space-sm);
+}
+
+.title {
+  font-weight: 900;
+  color: var(--color-text-strong);
+}
+
+.list {
+  display: grid;
+  gap: var(--space-xs);
+}
+
+.item {
+  height: 40px;
+  align-items: center;
+}
+

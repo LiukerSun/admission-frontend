@@ -1,0 +1,27 @@
+.root {
+  display: grid;
+  gap: var(--space-sm);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+}
+
+.title {
+  font-weight: 900;
+  color: var(--color-text-strong);
+}
+
+.list {
+  display: grid;
+  gap: var(--space-xs);
+}
+
+.item {
+  height: 40px;
+  align-items: center;
+}
+

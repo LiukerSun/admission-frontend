@@ -1,0 +1,47 @@
+.root {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+  min-height: 96px;
+}
+
+.left {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  min-width: 0;
+}
+
+.logo {
+  width: 46px;
+  height: 46px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-active-strong);
+  flex: 0 0 46px;
+}
+
+.meta {
+  min-width: 0;
+}
+
+.name {
+  font-weight: 900;
+  color: var(--color-text-strong);
+  line-height: 1.2;
+}
+
+.intro {
+  margin-top: 4px;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-caption);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 520px;
+}
+
+.action {
+  border-radius: var(--radius-md);
+}
+

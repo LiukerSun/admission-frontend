@@ -1,0 +1,28 @@
+.root {
+  min-height: 160px;
+}
+
+.title {
+  font-weight: 900;
+  color: rgba(255, 66, 66, 0.85);
+  margin-bottom: 12px;
+}
+
+.formGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.formGrid :global(.ant-input),
+.formGrid :global(.ant-select-selector),
+.formGrid :global(.ant-input-number) {
+  border-radius: 14px !important;
+}
+
+@media (max-width: 520px) {
+  .formGrid {
+    grid-template-columns: 1fr;
+  }
+}
+

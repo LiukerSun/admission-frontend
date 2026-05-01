@@ -1,0 +1,25 @@
+.root {
+  min-height: 160px;
+}
+
+.title {
+  font-weight: 900;
+  color: rgba(0, 170, 160, 0.9);
+  margin-bottom: 12px;
+}
+
+.box {
+  display: grid;
+  gap: 12px;
+}
+
+.placeholderTall {
+  height: 84px;
+}
+
+.placeholderBar {
+  height: 46px;
+  border-radius: 14px;
+  background: var(--surface-pill);
+}
+

@@ -1,0 +1,14 @@
+.root {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: var(--space-xs);
+  align-items: start;
+  background: rgba(255, 255, 255, 0.4);
+}
+
+@media (max-width: 1200px) {
+  .root {
+    grid-template-columns: 1fr;
+  }
+}
+

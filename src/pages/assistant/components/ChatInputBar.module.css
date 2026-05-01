@@ -1,0 +1,21 @@
+.root {
+  display: grid;
+  grid-template-columns: 1fr 44px;
+  gap: var(--space-sm);
+  align-items: center;
+}
+
+.root :global(.ant-input-affix-wrapper) {
+  height: 44px;
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.55);
+  border: none;
+}
+
+.sendBtn {
+  height: 44px;
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.55);
+  border: none;
+}
+

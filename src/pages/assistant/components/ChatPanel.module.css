@@ -1,0 +1,65 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.header {
+  height: 40px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.headerTitle {
+  font-weight: 900;
+  color: var(--color-text-strong);
+}
+
+.avatars {
+  margin-left: auto;
+  display: flex;
+  gap: var(--space-sm);
+  opacity: 0.9;
+}
+
+.avatarDot {
+  width: 42px;
+  height: 42px;
+  border-radius: var(--radius-pill);
+  background: var(--surface-active-strong);
+}
+
+.body {
+  flex: 1;
+  border-radius: var(--radius-lg);
+  background: var(--surface-glass-soft);
+  box-shadow: var(--shadow-glass-inset-soft);
+  backdrop-filter: blur(var(--blur-glass-soft));
+  overflow: auto;
+  min-height: 280px;
+}
+
+.messages {
+  padding: var(--space-md);
+  display: grid;
+  gap: var(--space-xs);
+}
+
+.empty {
+  padding: 38px 12px;
+  text-align: center;
+  color: var(--color-text-muted);
+}
+
+.emptyTitle {
+  font-weight: 900;
+  color: var(--color-text);
+  margin-bottom: 6px;
+}
+
+.emptySub {
+  font-size: var(--font-size-caption);
+  color: var(--color-text-muted);
+}
+

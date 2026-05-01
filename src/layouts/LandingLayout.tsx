@@ -1,8 +1,7 @@
-import { Outlet, NavLink, useNavigate } from 'react-router-dom'
+import { Outlet, useNavigate } from 'react-router-dom'
 import { Avatar, Badge, Button, Dropdown, Input } from 'antd'
 import {
   BellOutlined,
-  CalendarOutlined,
   HomeOutlined,
   LoginOutlined,
   SearchOutlined,
@@ -10,6 +9,7 @@ import {
 } from '@ant-design/icons'
 import { useAuthStore } from '@/stores/authStore'
 import type { MenuProps } from 'antd'
+import LandingSiderNav from './components/LandingSiderNav'
 import './landingLayout.css'
 
 export default function LandingLayout() {
@@ -20,9 +20,6 @@ export default function LandingLayout() {
     logout()
     navigate('/login')
   }
-
-  const navItemClass = ({ isActive }: { isActive: boolean }) =>
-    ['landingNavItem', isActive ? 'landingNavItemActive' : ''].filter(Boolean).join(' ')
 
   const userMenuItems: MenuProps['items'] = [
     {
@@ -41,34 +38,7 @@ export default function LandingLayout() {
     <div className="landingRoot">
       <div className="landingShell">
         <aside className="landingSider">
-          <div className="landingBrand">
-            <div className="landingBrandMark" />
-            智慧高考
-          </div>
-          <nav className="landingNav">
-            <NavLink to="/" end className={navItemClass}>
-              首页
-            </NavLink>
-            <NavLink to="/colleges" className={navItemClass}>
-              院校库
-            </NavLink>
-            <NavLink to="/analysis" className={navItemClass}>
-              数据中心
-            </NavLink>
-            <NavLink to="/bindings" className={navItemClass}>
-              志愿模拟
-            </NavLink>
-            <NavLink to="/assistant" className={navItemClass}>
-              AI助手
-            </NavLink>
-          </nav>
-          <div className="landingSideCard">
-            <div className="landingSideCardHeader">
-              <CalendarOutlined />
-              报考月历
-            </div>
-            <div className="landingSideCardGlass" />
-          </div>
+          <LandingSiderNav />
         </aside>
 
         <div className="landingMain">

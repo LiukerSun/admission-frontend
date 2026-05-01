@@ -22,16 +22,16 @@
    z-index: 1;
    max-width: 1560px;
    margin: 0 auto;
-   padding: 24px;
+  padding: clamp(14px, 2.2vw, 24px);
    display: flex;
-   gap: 24px;
+  gap: clamp(14px, 2.2vw, 24px);
  }
 
  .landingSider {
-   width: 355px;
-   flex: 0 0 355px;
+  width: clamp(240px, 22vw, 355px);
+  flex: 0 0 clamp(240px, 22vw, 355px);
    border-radius: 16px;
-   padding: 18px 18px 20px;
+  padding: clamp(14px, 1.8vw, 18px) clamp(14px, 1.8vw, 18px) clamp(16px, 2vw, 20px);
    background: rgba(232, 250, 250, 0.85);
    box-shadow: 0 10px 30px rgba(7, 32, 60, 0.06);
    backdrop-filter: blur(20px);
@@ -56,20 +56,20 @@
 
  .landingNav {
    display: grid;
-   gap: 12px;
-   padding: 0 10px;
+  gap: clamp(10px, 1.2vw, 12px);
+  padding: 0 clamp(8px, 1.1vw, 10px);
  }
 
  .landingNavItem {
    display: flex;
    align-items: center;
    gap: 12px;
-   height: 86px;
+  height: clamp(56px, 5.5vw, 86px);
    border-radius: 13px;
-   padding: 0 18px;
+  padding: 0 clamp(12px, 1.4vw, 18px);
    text-decoration: none;
    color: #000;
-   font-size: 22px;
+  font-size: clamp(16px, 1.4vw, 22px);
    font-weight: 600;
  }
 
@@ -111,14 +111,14 @@
  }
 
  .landingTopbar {
-   height: 117px;
+  height: clamp(88px, 8vw, 117px);
    border-radius: 13px;
    background: rgba(255, 255, 255, 0.85);
    box-shadow: 0 10px 30px rgba(7, 32, 60, 0.06);
    backdrop-filter: blur(20px);
    display: flex;
    align-items: center;
-   padding: 18px 22px;
+  padding: clamp(14px, 1.8vw, 18px) clamp(16px, 2vw, 22px);
    gap: 16px;
  }
 
@@ -162,3 +162,9 @@
      flex: 0 0 auto;
    }
  }
+
+@media (max-width: 1280px) {
+  .landingNavItem {
+    border-radius: 12px;
+  }
+}

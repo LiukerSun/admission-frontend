@@ -1,0 +1,25 @@
+.root {
+  position: relative;
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+  padding: var(--space-lg);
+  background: var(--board-bg);
+}
+
+.root::before {
+  content: '';
+  position: absolute;
+  inset: -170px;
+  background: var(--board-ambient);
+  filter: blur(var(--blur-ambient));
+  pointer-events: none;
+}
+
+.inner {
+  position: relative;
+  z-index: 1;
+}
+
+.toneDefault {
+}
+

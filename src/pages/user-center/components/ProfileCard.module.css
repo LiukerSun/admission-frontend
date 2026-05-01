@@ -1,0 +1,46 @@
+.root {
+  min-height: 140px;
+  display: grid;
+  grid-template-columns: 140px 1fr;
+  gap: var(--space-md);
+  align-items: center;
+}
+
+.avatar {
+  width: 140px;
+  height: 140px;
+  border-radius: var(--radius-pill);
+  background: var(--surface-active);
+  box-shadow: var(--shadow-glass-inset-soft);
+}
+
+.main {
+  min-width: 0;
+}
+
+.hello {
+  font-weight: 900;
+  font-size: 32px;
+  color: var(--color-text-strong);
+  line-height: 1.1;
+}
+
+.meta {
+  margin-top: 10px;
+  display: grid;
+  gap: 6px;
+  color: rgba(0, 0, 0, 0.7);
+  font-size: var(--font-size-caption);
+}
+
+@media (max-width: 1200px) {
+  .root {
+    grid-template-columns: 100px 1fr;
+  }
+
+  .avatar {
+    width: 100px;
+    height: 100px;
+  }
+}
+

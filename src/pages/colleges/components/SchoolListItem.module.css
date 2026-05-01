@@ -1,0 +1,18 @@
+.root {
+  height: 48px;
+  align-items: center;
+}
+
+.province {
+  color: var(--color-text-faint);
+  font-size: var(--font-size-caption);
+}
+
+.compareBtn {
+  opacity: 0.9;
+}
+
+.compareBtnSelected {
+  opacity: 1;
+}
+

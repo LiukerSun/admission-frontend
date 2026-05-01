@@ -1,0 +1,13 @@
+.root {
+  display: grid;
+  gap: var(--space-sm);
+}
+
+.title {
+  font-weight: 900;
+  color: rgba(255, 0, 0, 0.75);
+}
+
+.chips {
+}
+

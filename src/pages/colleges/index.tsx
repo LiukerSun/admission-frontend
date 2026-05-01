@@ -1,27 +1,42 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Button, Empty, Input, Select, Spin, Tabs, message } from 'antd'
-import { CheckOutlined, FilterOutlined, PlusOutlined, SearchOutlined } from '@ant-design/icons'
+import { Button, Select, Tabs, message } from 'antd'
 import { useSearchParams } from 'react-router-dom'
 import { useAuthStore } from '@/stores/authStore'
-import { getEnrollmentPlans, type EnrollmentPlan } from '@/services/colleges'
-import './colleges.css'
- 
-type PlanExt = EnrollmentPlan & {
-  school_type?: string
-  school_level?: string
+import { getEnrollmentPlans } from '@/services/colleges'
+import { GlassPanel, PageBoard } from '@/components/ui'
+import {
+  PROVINCE_OPTIONS,
+  SAMPLE_PLANS,
+  SCHOOL_LEVEL_OPTIONS,
+  SCHOOL_TYPE_OPTIONS,
+  type PlanExt,
+} from '@/fixtures/colleges'
+import CollegeDetailHeader from './components/CollegeDetailHeader'
+import CollegeFilterBar from './components/CollegeFilterBar'
+import MajorAdmissionList from './components/MajorAdmissionList'
+import SchoolList from './components/SchoolList'
+import styles from './colleges.module.css'
+
+type PlaceholderCardProps = {
+  title: string
+  children?: React.ReactNode
+  onClick?: () => void
 }
- 
-const SAMPLE_PLANS: PlanExt[] = [
-  { school_name: '清华大学', province: '北京', year: 2025, batch: '本科一批', major_name: '计算机科学与技术', min_score: 690, max_score: 705, plan_count: 12, school_type: '理工', school_level: '985' },
-  { school_name: '北京大学', province: '北京', year: 2025, batch: '本科一批', major_name: '经济学', min_score: 685, max_score: 702, plan_count: 10, school_type: '综合', school_level: '985' },
-  { school_name: '复旦大学', province: '上海', year: 2025, batch: '本科一批', major_name: '临床医学', min_score: 670, max_score: 690, plan_count: 18, school_type: '综合', school_level: '985' },
-  { school_name: '浙江大学', province: '浙江', year: 2025, batch: '本科一批', major_name: '软件工程', min_score: 665, max_score: 688, plan_count: 16, school_type: '理工', school_level: '985' },
-  { school_name: '南京大学', province: '江苏', year: 2025, batch: '本科一批', major_name: '数学与应用数学', min_score: 660, max_score: 684, plan_count: 14, school_type: '综合', school_level: '985' },
-  { school_name: '中山大学', province: '广东', year: 2025, batch: '本科一批', major_name: '法学', min_score: 645, max_score: 672, plan_count: 22, school_type: '综合', school_level: '211' },
-  { school_name: '武汉大学', province: '湖北', year: 2025, batch: '本科一批', major_name: '新闻传播学', min_score: 640, max_score: 668, plan_count: 20, school_type: '综合', school_level: '211' },
-  { school_name: '四川大学', province: '四川', year: 2025, batch: '本科一批', major_name: '口腔医学', min_score: 638, max_score: 666, plan_count: 12, school_type: '综合', school_level: '211' },
-]
- 
+
+function PlaceholderCard({ title, children, onClick }: PlaceholderCardProps) {
+  return (
+    <GlassPanel
+      variant="solid"
+      padding="none"
+      className={[styles.placeholderCard, onClick ? styles.clickable : ''].filter(Boolean).join(' ')}
+      onClick={onClick}
+    >
+      <div className={styles.placeholderTitle}>{title}</div>
+      {children}
+    </GlassPanel>
+  )
+}
+
 export default function CollegeLibraryPage() {
   const { isAuthenticated } = useAuthStore()
   const [searchParams, setSearchParams] = useSearchParams()
@@ -172,99 +187,45 @@ export default function CollegeLibraryPage() {
   }, [compareSchools, sourcePlans])
  
   return (
-    <div className="collegePageRoot">
-      <div className="collegeBoard">
-        <div className="collegeBoardInner">
-          <div className="glassPanel filterBar">
-            <div className="filterLabel">
-              <FilterOutlined />
-              筛选
-            </div>
-            <div className="filterFields">
-              <Input
-                allowClear
-                value={keyword}
-                onChange={(e) => setKeyword(e.target.value)}
-                prefix={<SearchOutlined />}
-                placeholder="搜索院校名称"
-                onPressEnter={() => {
-                  applyFiltersLocal()
-                  updateUrl({ keyword })
-                }}
-              />
-              <Select
-                allowClear
-                value={province}
-                onChange={(v) => setProvince(v)}
-                placeholder="所在地区"
-                options={[
-                  { value: '北京', label: '北京' },
-                  { value: '上海', label: '上海' },
-                  { value: '广东', label: '广东' },
-                  { value: '江苏', label: '江苏' },
-                  { value: '浙江', label: '浙江' },
-                  { value: '山东', label: '山东' },
-                  { value: '湖北', label: '湖北' },
-                  { value: '四川', label: '四川' },
-                ]}
-              />
-              <Select
-                allowClear
-                value={schoolType}
-                onChange={(v) => setSchoolType(v)}
-                placeholder="院校类别"
-                options={[
-                  { value: '综合', label: '综合' },
-                  { value: '理工', label: '理工' },
-                  { value: '师范', label: '师范' },
-                  { value: '财经', label: '财经' },
-                  { value: '医药', label: '医药' },
-                ]}
-              />
-              <Select
-                allowClear
-                value={schoolLevel}
-                onChange={(v) => setSchoolLevel(v)}
-                placeholder="院校层次"
-                options={[
-                  { value: '985', label: '985' },
-                  { value: '211', label: '211' },
-                  { value: '双一流', label: '双一流' },
-                  { value: '普通本科', label: '普通本科' },
-                  { value: '专科', label: '专科' },
-                ]}
-              />
-            </div>
-            <Button
-              onClick={() => {
-                setKeyword('')
-                setProvince(undefined)
-                setSchoolType(undefined)
-                setSchoolLevel(undefined)
-                setCompareSchools([])
-                setSourcePlans(SAMPLE_PLANS)
-                setPlans(SAMPLE_PLANS)
-                setActiveSchool(SAMPLE_PLANS[0]?.school_name)
-                setSearchParams({}, { replace: true })
-              }}
-            >
-              重置
-            </Button>
-            <Button
-              type="primary"
-              onClick={() => {
-                applyFiltersLocal()
-                updateUrl({ keyword })
-              }}
-            >
-              应用
-            </Button>
-            <Button disabled={!isAuthenticated} onClick={loadFromServer}>
-              从服务端加载
-            </Button>
-          </div>
- 
-          <div className="glassPanel tabsWrap">
+    <div className={styles.root}>
+      <PageBoard>
+        <div className={styles.inner}>
+          <CollegeFilterBar
+            keyword={keyword}
+            province={province}
+            schoolType={schoolType}
+            schoolLevel={schoolLevel}
+            provinceOptions={PROVINCE_OPTIONS}
+            schoolTypeOptions={SCHOOL_TYPE_OPTIONS}
+            schoolLevelOptions={SCHOOL_LEVEL_OPTIONS}
+            canLoadFromServer={isAuthenticated}
+            onKeywordChange={setKeyword}
+            onProvinceChange={setProvince}
+            onSchoolTypeChange={setSchoolType}
+            onSchoolLevelChange={setSchoolLevel}
+            onReset={() => {
+              setKeyword('')
+              setProvince(undefined)
+              setSchoolType(undefined)
+              setSchoolLevel(undefined)
+              setCompareSchools([])
+              setSourcePlans(SAMPLE_PLANS)
+              setPlans(SAMPLE_PLANS)
+              setActiveSchool(SAMPLE_PLANS[0]?.school_name)
+              setSearchParams({}, { replace: true })
+            }}
+            onApply={() => {
+              applyFiltersLocal()
+              updateUrl({ keyword })
+            }}
+            onLoadFromServer={loadFromServer}
+            onEnter={() => {
+              applyFiltersLocal()
+              updateUrl({ keyword })
+            }}
+          />
+
+          <GlassPanel padding="none" className={styles.tabsWrap}>
             <Tabs
               activeKey={tabKey}
               onChange={(k) => {
@@ -289,179 +250,106 @@ export default function CollegeLibraryPage() {
                 { key: 'more', label: '...' },
               ]}
             />
-          </div>
- 
-          <div className="contentGrid">
-            <div className="glassPanel leftList">
-              <div className="leftTitle">点击选择院校对比分析</div>
-              <Spin spinning={loading}>
-                {schools.length === 0 ? (
-                  <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="暂无院校数据" />
-                ) : (
-                  <div className="schoolList">
-                    {schools.map((s) => (
-                      <div
-                        key={s.name}
-                        className={['schoolItem', activeSchool === s.name ? 'schoolItemActive' : ''].filter(Boolean).join(' ')}
-                        onClick={() => selectSchool(s.name)}
-                        title={s.name}
-                        role="button"
-                        tabIndex={0}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') selectSchool(s.name)
-                        }}
-                      >
-                        <div style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                          {s.name}
-                        </div>
-                        <div style={{ color: 'rgba(0,0,0,0.55)', fontSize: 12 }}>{s.province || ''}</div>
-                        <Button
-                          type="text"
-                          size="small"
-                          className={[
-                            'compareBtn',
-                            compareSchools.includes(s.name) ? 'compareBtnSelected' : '',
-                          ]
-                            .filter(Boolean)
-                            .join(' ')}
-                          icon={compareSchools.includes(s.name) ? <CheckOutlined /> : <PlusOutlined />}
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            setCompareSchools((prev) => {
-                              if (prev.includes(s.name)) return prev.filter((x) => x !== s.name)
-                              if (prev.length >= 3) return prev
-                              return [...prev, s.name]
-                            })
-                          }}
-                        />
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </Spin>
-            </div>
- 
-            <div className="glassPanel mainCards">
-              {tabKey === 'recommend' && (
+          </GlassPanel>
+
+          <div className={styles.contentGrid}>
+            <SchoolList
+              title="点击选择院校对比分析"
+              loading={loading}
+              schools={schools}
+              activeSchool={activeSchool}
+              compareSchools={compareSchools}
+              onSelectSchool={selectSchool}
+              onToggleCompare={(name) => {
+                setCompareSchools((prev) => {
+                  if (prev.includes(name)) return prev.filter((x) => x !== name)
+                  if (prev.length >= 3) return prev
+                  return [...prev, name]
+                })
+              }}
+            />
+
+            <GlassPanel padding="sm" className={styles.mainCards}>
+              {tabKey === 'recommend' ? (
                 <>
-                  <div className="cardGridTop">
-                    <div className="placeholderCard placeholderCardClickable" onClick={() => setTabKey('detail')} role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === 'Enter') setTabKey('detail') }}>
-                      <div className="placeholderTitle">院校详情</div>
-                      <div className="hintText">{activeSchool ? `已选择：${activeSchool}` : '请选择一所院校'}</div>
-                      <div className="hintText" style={{ marginTop: 6 }}>
+                  <div className={styles.recommendGridTop}>
+                    <PlaceholderCard title="院校详情" onClick={() => setTabKey('detail')}>
+                      <div className={styles.hintText}>{activeSchool ? `已选择：${activeSchool}` : '请选择一所院校'}</div>
+                      <div className={styles.hintText} style={{ marginTop: 6 }}>
                         {activePlans.length ? `可用计划：${activePlans.length} 条` : '点击查看详情'}
                       </div>
-                    </div>
-                    <div className="placeholderCard placeholderCardClickable" onClick={() => setTabKey('trend')} role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === 'Enter') setTabKey('trend') }}>
-                      <div className="placeholderTitle">分数趋势</div>
-                      <div className="hintText">趋势图（按年份/批次/省份）</div>
-                    </div>
-                    <div className="placeholderCard placeholderCardClickable" onClick={() => setTabKey('compare')} role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === 'Enter') setTabKey('compare') }}>
-                      <div className="placeholderTitle">院校对比</div>
-                      <div className="hintText">已选：{compareSchools.length} / 3</div>
-                    </div>
+                    </PlaceholderCard>
+                    <PlaceholderCard title="分数趋势" onClick={() => setTabKey('trend')}>
+                      <div className={styles.hintText}>趋势图（按年份/批次/省份）</div>
+                    </PlaceholderCard>
+                    <PlaceholderCard title="院校对比" onClick={() => setTabKey('compare')}>
+                      <div className={styles.hintText}>已选：{compareSchools.length} / 3</div>
+                    </PlaceholderCard>
                   </div>
-                  <div className="cardGridBottom">
-                    <div className="placeholderCard placeholderCardClickable" onClick={() => setTabKey('detail')} role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === 'Enter') setTabKey('detail') }}>
-                      <div className="placeholderTitle">招生计划</div>
-                      <div className="hintText">
+                  <div className={styles.recommendGridBottom}>
+                    <PlaceholderCard title="招生计划" onClick={() => setTabKey('detail')}>
+                      <div className={styles.hintText}>
                         {activePlans.length
                           ? `热门专业：${activePlans.filter((p) => p.major_name).slice(0, 1).map((p) => p.major_name).join('') || '-'}`
                           : '展示热门专业/计划人数等'}
                       </div>
-                    </div>
-                    <div className="placeholderCard placeholderCardClickable" onClick={() => setTabKey('detail')} role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === 'Enter') setTabKey('detail') }}>
-                      <div className="placeholderTitle">专业热度</div>
-                      <div className="hintText">展示热门专业与录取分数区间</div>
-                    </div>
-                    <div className="placeholderCard">
-                      <div className="placeholderTitle">AI建议</div>
-                      <div className="hintText">基于分数位次给出策略建议（预留接口）</div>
-                    </div>
+                    </PlaceholderCard>
+                    <PlaceholderCard title="专业热度" onClick={() => setTabKey('detail')}>
+                      <div className={styles.hintText}>展示热门专业与录取分数区间</div>
+                    </PlaceholderCard>
+                    <PlaceholderCard title="AI建议">
+                      <div className={styles.hintText}>基于分数位次给出策略建议（预留接口）</div>
+                    </PlaceholderCard>
                   </div>
                 </>
-              )}
- 
-              {tabKey === 'detail' && (
-                <div className="detailWrap">
-                  <div className="detailHeader">
-                    <div className="detailHeaderLeft">
-                      <div className="detailLogo" />
-                      <div style={{ minWidth: 0 }}>
-                        <div className="detailName">{activeSchool || '院校详情'}</div>
-                        <div className="detailIntro">介绍……介绍</div>
-                      </div>
-                    </div>
-                    <Button
-                      className="detailAction"
-                      onClick={() => {
-                        if (!activeSchool) return
-                        setWishlist((prev) => {
-                          const next = prev.includes(activeSchool) ? prev.filter((x) => x !== activeSchool) : [activeSchool, ...prev]
-                          return next
-                        })
-                        message.success(activeSchool && !inWishlist ? '已加入填报清单' : '已从填报清单移除')
-                      }}
-                    >
-                      {inWishlist ? '已加入填报清单' : '加入填报清单'}
-                    </Button>
-                  </div>
+              ) : null}
 
-                  <div className="detailGrid">
-                    <div className="detailCardLarge">
-                      <div className="detailCardTitle">历年投档分数线趋势</div>
-                      <div className="detailCardBody">预留：后续接入趋势接口后绘制折线图/区间图</div>
-                    </div>
-                    <div className="detailCardLarge">
-                      <div className="detailCardTitle">优势专业录取详情</div>
-                      {activePlans.length === 0 ? (
-                        <div className="detailCardBody">暂无数据</div>
-                      ) : (
-                        <div className="detailList">
-                          {activePlans.slice(0, 5).map((p, idx) => (
-                            <div key={`${p.school_code || ''}-${p.major_name || ''}-${idx}`} className="detailListItem">
-                              <div style={{ minWidth: 0 }}>
-                                <div className="detailListItemTitle">{p.major_name || '专业'}</div>
-                                <div className="detailListItemMeta">
-                                  {p.province || '-'} · {p.year || '-'} · {p.batch || '-'}
-                                </div>
-                              </div>
-                              <div className="detailListItemRight">
-                                <div>计划：{p.plan_count ?? '-'}</div>
-                                <div>
-                                  分数：{p.min_score ?? '-'} ~ {p.max_score ?? '-'}
-                                </div>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
+              {tabKey === 'detail' ? (
+                <div className={styles.detailWrap}>
+                  <CollegeDetailHeader
+                    name={activeSchool || '院校详情'}
+                    inWishlist={inWishlist}
+                    onToggleWishlist={() => {
+                      if (!activeSchool) return
+                      setWishlist((prev) => {
+                        const next = prev.includes(activeSchool) ? prev.filter((x) => x !== activeSchool) : [activeSchool, ...prev]
+                        return next
+                      })
+                      message.success(activeSchool && !inWishlist ? '已加入填报清单' : '已从填报清单移除')
+                    }}
+                  />
 
-                    <div className="detailCardSmall">
-                      <div className="detailCardTitle">就业去向及薪资</div>
-                      <div className="detailCardBody">预留：后续接入就业数据接口</div>
-                    </div>
-                    <div className="detailCardSmall">
-                      <div className="detailCardTitle">招生计划概览</div>
-                      <div className="detailCardBody">
-                        {activePlans.length ? `当前已加载计划：${activePlans.length} 条` : '暂无计划数据'}
-                      </div>
-                    </div>
+                  <div className={styles.detailGrid}>
+                    <GlassPanel variant="solid" padding="md">
+                      <div className={styles.placeholderTitle}>历年投档分数线趋势</div>
+                      <div className={styles.hintText}>预留：后续接入趋势接口后绘制折线图/区间图</div>
+                    </GlassPanel>
+
+                    <MajorAdmissionList title="优势专业录取详情" plans={activePlans} />
+
+                    <GlassPanel variant="solid" padding="md">
+                      <div className={styles.placeholderTitle}>就业去向及薪资</div>
+                      <div className={styles.hintText}>预留：后续接入就业数据接口</div>
+                    </GlassPanel>
+
+                    <GlassPanel variant="solid" padding="md">
+                      <div className={styles.placeholderTitle}>招生计划概览</div>
+                      <div className={styles.hintText}>{activePlans.length ? `当前已加载计划：${activePlans.length} 条` : '暂无计划数据'}</div>
+                    </GlassPanel>
                   </div>
                 </div>
-              )}
- 
-              {tabKey === 'trend' && (
-                <div className="placeholderCard" style={{ minHeight: 360 }}>
-                  <div className="placeholderTitle">分数趋势</div>
-                  <div className="hintText">后续接入接口后展示折线图/区间图</div>
-                </div>
-              )}
- 
-              {tabKey === 'compare' && (
-                <div className="placeholderCard" style={{ minHeight: 360 }}>
-                  <div className="placeholderTitle">院校对比</div>
+              ) : null}
+
+              {tabKey === 'trend' ? (
+                <GlassPanel variant="solid" padding="md" className={[styles.placeholderCard, styles.minH360].join(' ')}>
+                  <div className={styles.placeholderTitle}>分数趋势</div>
+                  <div className={styles.hintText}>后续接入接口后展示折线图/区间图</div>
+                </GlassPanel>
+              ) : null}
+
+              {tabKey === 'compare' ? (
+                <GlassPanel variant="solid" padding="md" className={[styles.placeholderCard, styles.minH360].join(' ')}>
+                  <div className={styles.placeholderTitle}>院校对比</div>
                   <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
                     <Select
                       mode="multiple"
@@ -475,15 +363,15 @@ export default function CollegeLibraryPage() {
                       开始对比
                     </Button>
                   </div>
-                  <div style={{ marginTop: 14, color: 'rgba(0,0,0,0.7)' }}>
+                  <div className={styles.hintText} style={{ marginTop: 14 }}>
                     {compareSchools.length === 0 ? '选择院校后，将展示层次、地区、热门专业与分数区间。' : `已选：${compareSchools.join('、')}`}
                   </div>
-                  {compareSchools.length >= 2 && (
-                    <div className="compareGrid">
+                  {compareSchools.length >= 2 ? (
+                    <div className={styles.compareGrid}>
                       {compareStats.map((s) => (
-                        <div key={s.name} className="compareCard">
-                          <div className="compareTitle">{s.name}</div>
-                          <div className="compareMeta">
+                        <div key={s.name} className={styles.compareCard}>
+                          <div className={styles.compareTitle}>{s.name}</div>
+                          <div className={styles.compareMeta}>
                             <div>地区：{s.province || '-'}</div>
                             <div>计划条目：{s.plansCount}</div>
                             <div>专业覆盖：{s.majorsCount}</div>
@@ -492,20 +380,20 @@ export default function CollegeLibraryPage() {
                         </div>
                       ))}
                     </div>
-                  )}
-                </div>
-              )}
- 
-              {tabKey === 'more' && (
-                <div className="placeholderCard" style={{ minHeight: 360 }}>
-                  <div className="placeholderTitle">更多能力</div>
-                  <div className="hintText">可扩展：就业数据、专业画像、地区热力等</div>
-                </div>
-              )}
-            </div>
+                  ) : null}
+                </GlassPanel>
+              ) : null}
+
+              {tabKey === 'more' ? (
+                <GlassPanel variant="solid" padding="md" className={[styles.placeholderCard, styles.minH360].join(' ')}>
+                  <div className={styles.placeholderTitle}>更多能力</div>
+                  <div className={styles.hintText}>可扩展：就业数据、专业画像、地区热力等</div>
+                </GlassPanel>
+              ) : null}
+            </GlassPanel>
           </div>
         </div>
-      </div>
+      </PageBoard>
     </div>
   )
 }

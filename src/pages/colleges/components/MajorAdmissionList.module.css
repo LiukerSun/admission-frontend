@@ -1,0 +1,19 @@
+.root {
+  display: grid;
+  gap: var(--space-sm);
+  min-height: 220px;
+}
+
+.list {
+  display: grid;
+  gap: var(--space-xs);
+}
+
+.right {
+  text-align: right;
+  color: var(--color-text);
+  font-size: var(--font-size-caption);
+  display: grid;
+  gap: 4px;
+}
+

@@ -1,0 +1,38 @@
+.root {
+  padding: 10px 0 40px;
+}
+
+.inner {
+  display: grid;
+  gap: var(--space-md);
+}
+
+.topRow {
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: var(--space-md);
+  align-items: start;
+}
+
+.midRow {
+  display: grid;
+  grid-template-columns: 1fr 1.2fr;
+  gap: var(--space-md);
+  align-items: start;
+}
+
+.bottomRow {
+  display: grid;
+  grid-template-columns: 360px 1fr;
+  gap: var(--space-md);
+  align-items: start;
+}
+
+@media (max-width: 1200px) {
+  .topRow,
+  .midRow,
+  .bottomRow {
+    grid-template-columns: 1fr;
+  }
+}
+
