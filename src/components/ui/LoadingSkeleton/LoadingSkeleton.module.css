@@ -1,0 +1,66 @@
+.root {
+  width: 100%;
+  display: grid;
+  gap: var(--space-sm);
+}
+
+.block {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radius-md);
+  background: linear-gradient(90deg, var(--surface-glass) 0%, var(--surface-hover) 50%, var(--surface-glass) 100%);
+  background-size: 220% 100%;
+  animation: skeletonShimmer 1.35s ease-in-out infinite;
+}
+
+@keyframes skeletonShimmer {
+  0% {
+    background-position: 0% 50%;
+  }
+  100% {
+    background-position: 100% 50%;
+  }
+}
+
+.line {
+  height: 12px;
+}
+
+.variantText {
+}
+
+.variantCard {
+}
+
+.variantChart {
+}
+
+.variantTable {
+  gap: var(--space-xs);
+}
+
+.variantCustom {
+  height: 24px;
+  border-radius: var(--radius-md);
+  background: linear-gradient(90deg, var(--surface-glass) 0%, var(--surface-hover) 50%, var(--surface-glass) 100%);
+  background-size: 220% 100%;
+  animation: skeletonShimmer 1.35s ease-in-out infinite;
+}
+
+.cardBody {
+  height: 120px;
+}
+
+.chartArea {
+  height: 160px;
+}
+
+.tableRow {
+  display: grid;
+  grid-template-columns: 1.1fr 0.9fr 0.7fr;
+  gap: var(--space-sm);
+}
+
+.tableCell {
+  height: 12px;
+}

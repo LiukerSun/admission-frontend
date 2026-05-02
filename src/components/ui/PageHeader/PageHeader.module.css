@@ -1,0 +1,115 @@
+.root {
+  --pageHeader-accent: var(--color-brand-500);
+  width: 100%;
+  padding: var(--space-xl);
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--pageHeader-accent) 18%, var(--surface-glass)) 0%,
+    var(--surface-glass) 60%,
+    color-mix(in srgb, var(--pageHeader-accent) 12%, var(--surface-hover)) 100%
+  );
+  backdrop-filter: blur(var(--blur-glass-soft));
+  box-shadow: var(--shadow-elevate-soft);
+  container-type: inline-size;
+}
+
+.toneBrand {
+  --pageHeader-accent: var(--color-brand-500);
+}
+
+.toneInfo {
+  --pageHeader-accent: var(--color-info-500);
+}
+
+.toneSuccess {
+  --pageHeader-accent: var(--color-success-500);
+}
+
+.toneWarning {
+  --pageHeader-accent: var(--color-warning-500);
+}
+
+.toneDanger {
+  --pageHeader-accent: var(--color-danger-500);
+}
+
+.toneDefault {
+  --pageHeader-accent: var(--color-text-muted);
+}
+
+.content {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-lg);
+}
+
+.titles {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2xs);
+  min-width: 0;
+}
+
+.title {
+  font-size: var(--font-size-title);
+  font-weight: 700;
+  color: var(--color-text-strong);
+  line-height: 1.2;
+}
+
+.subtitle {
+  font-size: var(--font-size-body);
+  color: var(--color-text-muted);
+  line-height: 1.35;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-sm);
+  flex-shrink: 0;
+}
+
+.collapseSm {
+}
+
+.collapseMd {
+}
+
+.collapseLg {
+}
+
+@container (max-width: 640px) {
+  .collapseSm .content {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .collapseSm .actions {
+    justify-content: flex-start;
+  }
+}
+
+@container (max-width: 768px) {
+  .collapseMd .content {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .collapseMd .actions {
+    justify-content: flex-start;
+  }
+}
+
+@container (max-width: 1024px) {
+  .collapseLg .content {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .collapseLg .actions {
+    justify-content: flex-start;
+  }
+}
