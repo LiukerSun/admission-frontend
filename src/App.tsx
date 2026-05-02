@@ -24,6 +24,7 @@ import AdminDashboardPage from '@/pages/admin/AdminDashboardPage'
 import AdminUsersPage from '@/pages/admin/AdminUsersPage'
 import AdminBindingsPage from '@/pages/admin/AdminBindingsPage'
 import AdminPaymentOrdersPage from '@/pages/admin/AdminPaymentOrdersPage'
+import UiPersonAPreview from '@/pages/dev/UiPersonAPreview'
 import RequireAuth from '@/components/RequireAuth'
 import RequireAdmin from '@/components/RequireAdmin'
 import NoAuth from '@/components/NoAuth'
@@ -163,6 +164,14 @@ const router = createBrowserRouter([
       },
     ],
   },
+  ...(import.meta.env.DEV
+    ? [
+        {
+          path: '/dev/ui-person-a',
+          element: <UiPersonAPreview />,
+        },
+      ]
+    : []),
   {
     path: '*',
     element: <NotFoundPage />,
