@@ -1,0 +1,24 @@
+.root {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+}
+
+.left {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  font-weight: 900;
+  color: var(--color-text-strong);
+}
+
+.right {
+  display: flex;
+  gap: var(--space-sm);
+}
+
+.btnWrap :global(.ant-btn) {
+  border-radius: var(--radius-md);
+}
+

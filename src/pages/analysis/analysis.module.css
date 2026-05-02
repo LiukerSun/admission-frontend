@@ -1,0 +1,121 @@
+.root {
+  padding: 10px 0 40px;
+}
+
+.inner {
+  display: grid;
+  gap: var(--space-md);
+}
+
+.headerTitle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 900;
+  color: var(--color-text-strong);
+}
+
+.headerSub {
+  margin-top: 6px;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-caption);
+}
+
+.statsGrid {
+  margin-top: var(--space-sm);
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-sm);
+}
+
+.chartLarge {
+  height: 220px;
+}
+
+.chartMid {
+  height: 220px;
+}
+
+.scatter {
+  height: 240px;
+}
+
+.miniRow {
+  margin-top: 8px;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-sm);
+}
+
+.miniCard {
+  border-radius: var(--radius-md);
+  background: var(--surface-glass-soft);
+  box-shadow: var(--shadow-glass-inset-soft);
+  backdrop-filter: blur(var(--blur-glass-soft));
+  height: 64px;
+}
+
+.twoCol {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-md);
+}
+
+.radarWrap {
+  display: grid;
+  grid-template-rows: 220px auto;
+  gap: var(--space-sm);
+}
+
+.metricGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-sm);
+}
+
+.cityRow {
+  margin-top: var(--space-sm);
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-sm);
+}
+
+.cityCard {
+  border-radius: var(--radius-md);
+  background: var(--surface-pill);
+  padding: 10px 12px;
+}
+
+.cityName {
+  font-weight: 900;
+  color: var(--color-text);
+  margin-bottom: 4px;
+}
+
+.cityMeta {
+  font-size: var(--font-size-caption);
+  color: var(--color-text-muted);
+}
+
+.muted {
+  color: var(--color-text-faint);
+  font-size: var(--font-size-caption);
+}
+
+@media (max-width: 1200px) {
+  .statsGrid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .miniRow {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .twoCol {
+    grid-template-columns: 1fr;
+  }
+
+  .cityRow {
+    grid-template-columns: 1fr 1fr;
+  }
+}

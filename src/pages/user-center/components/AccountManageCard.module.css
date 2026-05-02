@@ -1,0 +1,14 @@
+.root {
+  min-height: 140px;
+  display: grid;
+  gap: var(--space-sm);
+}
+
+.header {
+}
+
+.list {
+  display: grid;
+  gap: var(--space-xs);
+}
+

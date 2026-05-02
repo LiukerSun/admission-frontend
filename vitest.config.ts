@@ -8,8 +8,14 @@ export default defineConfig({
     },
   },
   test: {
-    environment: 'node',
-    include: ['src/**/*.test.ts'],
+    environment: 'jsdom',
+    setupFiles: ['src/test/setup.ts'],
+    include: ['src/**/*.test.ts', 'src/**/*.test.tsx'],
+    css: {
+      modules: {
+        classNameStrategy: 'non-scoped',
+      },
+    },
     coverage: {
       reporter: ['text', 'html'],
     },

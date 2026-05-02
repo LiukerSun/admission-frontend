@@ -1,0 +1,40 @@
+.root {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-md);
+}
+
+.left {
+  min-width: 0;
+}
+
+.title {
+  font-weight: 900;
+  color: var(--color-text-strong);
+}
+
+.subtitle {
+  margin-top: 4px;
+  font-size: var(--font-size-caption);
+  color: var(--color-text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.actions {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-sm);
+  flex: 0 0 auto;
+}
+
+.sizeMd .title {
+  font-size: var(--font-size-body);
+}
+
+.sizeLg .title {
+  font-size: var(--font-size-title);
+}
+

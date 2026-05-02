@@ -1,0 +1,60 @@
+.root {
+  border: none;
+  text-align: left;
+  width: 100%;
+  border-radius: var(--radius-lg);
+}
+
+.variantDefault {
+  background: var(--surface-glass);
+  backdrop-filter: blur(var(--blur-glass));
+  box-shadow: var(--shadow-glass-inset);
+}
+
+.variantSoft {
+  background: var(--surface-glass-soft);
+  backdrop-filter: blur(var(--blur-glass-soft));
+  box-shadow: var(--shadow-glass-inset-soft);
+}
+
+.variantSolid {
+  border-radius: var(--radius-xl);
+  background: var(--surface-glass-strong);
+  backdrop-filter: blur(var(--blur-glass-soft));
+  box-shadow: var(--shadow-glass-inset-soft);
+}
+
+.padNone {
+  padding: 0;
+}
+
+.padSm {
+  padding: var(--space-sm);
+}
+
+.padMd {
+  padding: var(--space-lg);
+}
+
+.padLg {
+  padding: var(--space-xl);
+}
+
+.interactive {
+  cursor: pointer;
+  transition: box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.interactive:hover {
+  box-shadow: var(--shadow-elevate);
+}
+
+.active {
+  background: var(--surface-active);
+}
+
+.disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+

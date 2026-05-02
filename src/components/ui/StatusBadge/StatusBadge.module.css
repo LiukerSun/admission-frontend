@@ -1,0 +1,90 @@
+.root {
+  --statusBadge-accent: var(--color-text-muted);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2xs);
+  color: var(--color-text);
+  line-height: 1.25;
+  white-space: nowrap;
+}
+
+.label {
+  min-width: 0;
+}
+
+.toneBrand {
+  --statusBadge-accent: var(--color-brand-500);
+}
+
+.toneInfo {
+  --statusBadge-accent: var(--color-info-500);
+}
+
+.toneSuccess {
+  --statusBadge-accent: var(--color-success-500);
+}
+
+.toneWarning {
+  --statusBadge-accent: var(--color-warning-500);
+}
+
+.toneDanger {
+  --statusBadge-accent: var(--color-danger-500);
+}
+
+.toneDefault {
+  --statusBadge-accent: var(--color-text-muted);
+}
+
+.sizeSm {
+  font-size: var(--font-size-caption);
+}
+
+.sizeMd {
+  font-size: var(--font-size-body);
+}
+
+.variantText {
+  color: color-mix(in srgb, var(--statusBadge-accent) 78%, var(--color-text-strong));
+}
+
+.variantFilled {
+  padding: 6px 12px;
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--statusBadge-accent) 14%, var(--surface-pill));
+  color: var(--color-text-strong);
+  box-shadow: var(--shadow-elevate-soft);
+}
+
+.variantDot {
+  color: var(--color-text-strong);
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-pill);
+  background: var(--statusBadge-accent);
+  flex: 0 0 auto;
+}
+
+.sizeSm .dot {
+  width: 6px;
+  height: 6px;
+}
+
+.pulse {
+  animation: statusBadgePulse 1.6s ease-out infinite;
+}
+
+@keyframes statusBadgePulse {
+  0% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--statusBadge-accent) 40%, transparent);
+  }
+  70% {
+    box-shadow: 0 0 0 8px transparent;
+  }
+  100% {
+    box-shadow: 0 0 0 0 transparent;
+  }
+}

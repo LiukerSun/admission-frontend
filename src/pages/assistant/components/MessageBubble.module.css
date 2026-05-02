@@ -1,0 +1,30 @@
+.row {
+  display: flex;
+}
+
+.rowUser {
+  justify-content: flex-end;
+}
+
+.rowBot {
+  justify-content: flex-start;
+}
+
+.bubble {
+  max-width: min(520px, 86%);
+  padding: 10px 12px;
+  border-radius: var(--radius-md);
+  line-height: 1.6;
+  color: var(--color-text);
+  box-shadow: var(--shadow-elevate-soft);
+  white-space: pre-wrap;
+}
+
+.bubbleUser {
+  background: var(--surface-bubble-user);
+}
+
+.bubbleBot {
+  background: var(--surface-bubble-assistant);
+}
+

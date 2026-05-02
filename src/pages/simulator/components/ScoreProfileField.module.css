@@ -1,0 +1,32 @@
+.root {
+  min-height: 34px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-pill);
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: var(--space-xs);
+  padding: 0 10px;
+  color: rgba(0, 0, 0, 0.7);
+  font-size: var(--font-size-caption);
+}
+
+.label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.value {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.suffix {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-caption);
+}
+

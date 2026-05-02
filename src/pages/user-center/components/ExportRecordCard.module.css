@@ -1,0 +1,16 @@
+.root {
+  min-height: 160px;
+}
+
+.title {
+  font-weight: 900;
+  color: rgba(0, 120, 200, 0.9);
+  margin-bottom: 12px;
+}
+
+.placeholder {
+  height: 130px;
+  border-radius: var(--radius-lg);
+  background: var(--surface-pill-soft);
+}
+

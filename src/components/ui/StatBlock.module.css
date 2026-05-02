@@ -1,0 +1,70 @@
+.root {
+  border-radius: var(--radius-md);
+  background: var(--surface-pill);
+  padding: var(--space-sm) var(--space-sm);
+}
+
+.label {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-caption);
+  margin-bottom: 6px;
+  font-weight: 700;
+}
+
+.valueRow {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 8px;
+}
+
+.value {
+  font-weight: 900;
+  color: var(--color-text-strong);
+  line-height: 1;
+  font-size: 18px;
+}
+
+.unit {
+  font-weight: 900;
+  color: var(--color-text);
+}
+
+.skeleton {
+  width: 64px;
+  height: 18px;
+  border-radius: 9px;
+  background: rgba(0, 0, 0, 0.08);
+}
+
+.alignLeft .valueRow {
+  justify-content: flex-start;
+}
+
+.alignCenter .valueRow {
+  justify-content: center;
+}
+
+.alignRight .valueRow {
+  justify-content: flex-end;
+}
+
+.toneNeutral {
+}
+
+.toneBrand {
+  background: rgba(180, 232, 250, 0.55);
+}
+
+.toneSuccess {
+  background: rgba(176, 247, 234, 0.48);
+}
+
+.toneWarning {
+  background: rgba(255, 224, 182, 0.5);
+}
+
+.toneDanger {
+  background: rgba(255, 190, 190, 0.5);
+}
+

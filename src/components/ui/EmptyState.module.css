@@ -1,0 +1,43 @@
+.root {
+  border-radius: var(--radius-lg);
+  background: var(--surface-glass-soft);
+  box-shadow: var(--shadow-glass-inset-soft);
+  backdrop-filter: blur(var(--blur-glass-soft));
+  text-align: center;
+  color: var(--color-text-muted);
+}
+
+.title {
+  font-weight: 900;
+  color: var(--color-text);
+}
+
+.desc {
+  margin-top: 6px;
+  font-size: var(--font-size-caption);
+  color: var(--color-text-muted);
+}
+
+.actions {
+  margin-top: var(--space-sm);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.sizeSm {
+  padding: 18px 12px;
+}
+
+.sizeSm .title {
+  font-size: var(--font-size-body);
+}
+
+.sizeMd {
+  padding: 38px 12px;
+}
+
+.sizeMd .title {
+  font-size: var(--font-size-title);
+}
+

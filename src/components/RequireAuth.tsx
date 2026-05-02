@@ -8,12 +8,13 @@ interface Props {
 export default function RequireAuth({ children }: Props) {
   const { isAuthenticated, isRestoring } = useAuthStore()
   const location = useLocation()
+  const bypassAuth = import.meta.env.DEV && import.meta.env.VITE_BYPASS_AUTH === 'true'
 
-  if (isRestoring) {
+  if (isRestoring && !bypassAuth) {
     return null
   }
 
-  if (!isAuthenticated) {
+  if (!isAuthenticated && !bypassAuth) {
     return <Navigate to="/login" state={{ from: location }} replace />
   }
 

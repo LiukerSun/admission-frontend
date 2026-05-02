@@ -1,0 +1,14 @@
+.root {
+  min-height: 160px;
+  display: grid;
+  gap: var(--space-sm);
+}
+
+.header :global(.ant-typography) {
+}
+
+.list {
+  display: grid;
+  gap: var(--space-xs);
+}
+

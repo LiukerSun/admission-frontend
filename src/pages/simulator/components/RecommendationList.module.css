@@ -1,0 +1,16 @@
+.root {
+  display: grid;
+  gap: var(--space-sm);
+}
+
+.list {
+  display: grid;
+  gap: var(--space-sm);
+}
+
+.item {
+  height: 54px;
+  border-radius: var(--radius-md);
+  background: var(--surface-pill);
+}
+

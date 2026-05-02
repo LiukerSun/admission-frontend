@@ -27,10 +27,10 @@ const { Header, Sider, Content } = Layout
 
 const ROUTE_TITLE_MAP: Record<string, string> = {
   '/dashboard': '控制台',
-  '/analysis': '数据分析',
+  '/analysis': '数据中心',
   '/membership': '会员中心',
   '/orders': '我的订单',
-  '/bindings': '绑定管理',
+  '/bindings-manage': '绑定管理',
   '/profile': '个人中心',
   '/admin/dashboard': '统计看板',
   '/admin/users': '用户管理',
@@ -68,7 +68,7 @@ export default function BasicLayout() {
     {
       key: '/analysis',
       icon: <BarChartOutlined />,
-      label: <Link to="/analysis">数据分析</Link>,
+      label: <Link to="/analysis">数据中心</Link>,
     },
     {
       key: '/membership',
@@ -81,9 +81,9 @@ export default function BasicLayout() {
       label: <Link to="/orders">我的订单</Link>,
     },
     {
-      key: '/bindings',
+      key: '/bindings-manage',
       icon: <LinkOutlined />,
-      label: <Link to="/bindings">绑定管理</Link>,
+      label: <Link to="/bindings-manage">绑定管理</Link>,
     },
     {
       key: '/profile',
@@ -150,10 +150,10 @@ export default function BasicLayout() {
 
   const quickNavItems: MenuProps['items'] = [
     { key: 'dashboard', icon: <HomeOutlined />, label: '控制台', onClick: () => navigate('/dashboard') },
-    { key: 'analysis', icon: <BarChartOutlined />, label: '数据分析', onClick: () => navigate('/analysis') },
+    { key: 'analysis', icon: <BarChartOutlined />, label: '数据中心', onClick: () => navigate('/analysis') },
     { key: 'membership', icon: <CrownOutlined />, label: '会员中心', onClick: () => navigate('/membership') },
     { key: 'orders', icon: <ShoppingOutlined />, label: '我的订单', onClick: () => navigate('/orders') },
-    { key: 'bindings', icon: <LinkOutlined />, label: '绑定管理', onClick: () => navigate('/bindings') },
+    { key: 'bindings-manage', icon: <LinkOutlined />, label: '绑定管理', onClick: () => navigate('/bindings-manage') },
     { type: 'divider' as const },
     { key: 'help', icon: <QuestionCircleOutlined />, label: '使用帮助', onClick: () => navigate('/dashboard') },
     { key: 'feedback', icon: <FileTextOutlined />, label: '意见反馈', onClick: () => navigate('/profile') },

@@ -1,0 +1,6 @@
+.root {
+  aspect-ratio: 1;
+  width: 32px;
+  min-width: 0;
+  padding: 0;
+}
