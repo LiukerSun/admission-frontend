@@ -61,7 +61,8 @@ describe('useAuthStore', () => {
           email: 'admin@example.com',
           phone: '13800138000',
           phone_verified: true,
-          role: 'admin',
+          role: 'premium',
+          is_admin: true,
           user_type: 'parent',
           created_at: '2026-04-21T00:00:00Z',
         },
@@ -80,7 +81,8 @@ describe('useAuthStore', () => {
     expect(state.user?.email).toBe('admin@example.com')
     expect(state.user?.phone).toBe('13800138000')
     expect(state.user?.phone_verified).toBe(true)
-    expect(state.user?.role).toBe('admin')
+    expect(state.user?.role).toBe('premium')
+    expect(state.isAdmin).toBe(true)
     expect(localStorage.getItem('refresh_token')).toBe('refresh-token-next')
   })
 

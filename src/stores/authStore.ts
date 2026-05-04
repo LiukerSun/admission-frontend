@@ -6,6 +6,7 @@ export type User = CurrentUser & {
   id: number
   email: string
   role: string
+  is_admin: boolean
   user_type: 'parent' | 'student'
   created_at: string
 }
@@ -29,7 +30,7 @@ interface AuthState {
 const REFRESH_TOKEN_KEY = 'refresh_token'
 
 function applyUser(set: (state: Partial<AuthState>) => void, user: User) {
-  set({ user, isAdmin: user.role === 'admin' })
+  set({ user, isAdmin: user.is_admin })
 }
 
 export const useAuthStore = create<AuthState>((set, get) => ({

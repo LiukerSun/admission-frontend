@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from 'react'
-import { Card, Statistic, Row, Col, Spin, Divider } from 'antd'
+import { type ReactNode, useEffect, useRef, useState } from 'react'
+import { Button, Card, Statistic, Row, Col, Spin, Divider } from 'antd'
 import {
   BarChartOutlined,
   LineChartOutlined,
@@ -9,9 +9,17 @@ import {
   LinkOutlined,
   RiseOutlined,
   FallOutlined,
+  CheckCircleOutlined,
+  CrownOutlined,
+  MobileOutlined,
+  RocketOutlined,
 } from '@ant-design/icons'
+import { Link } from 'react-router-dom'
 import { useAuthStore } from '@/stores/authStore'
 import { adminApi, type StatsResponse } from '@/services/admin'
+import { bindingsApi, type BindingListResponse } from '@/services/bindings'
+import { membershipApi } from '@/services/membership'
+import { buildDashboardNextActions, type DashboardNextAction } from '@/utils/nextActions'
 import * as echarts from 'echarts'
 
 function Sparkline({ data, color }: { data: number[]; color: string }) {
@@ -61,8 +69,10 @@ function TrendTag({ value }: { value: number }) {
 }
 
 export default function DashboardPage() {
-  const { isAdmin } = useAuthStore()
+  const { isAdmin, user } = useAuthStore()
   const [stats, setStats] = useState<StatsResponse | null>(null)
+  const [bindingCount, setBindingCount] = useState(0)
+  const [membershipActive, setMembershipActive] = useState(false)
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
@@ -87,9 +97,51 @@ export default function DashboardPage() {
     }
   }, [isAdmin])
 
+  useEffect(() => {
+    if (isAdmin || !user) return
+
+    let cancelled = false
+    const run = async () => {
+      const [bindingsRes, membershipRes] = await Promise.allSettled([
+        bindingsApi.list(),
+        membershipApi.getCurrent(),
+      ])
+
+      if (cancelled) return
+
+      if (bindingsRes.status === 'fulfilled') {
+        const data = bindingsRes.value.data.data as BindingListResponse | undefined
+        setBindingCount(data?.bindings?.length ?? 0)
+      }
+
+      if (membershipRes.status === 'fulfilled') {
+        setMembershipActive(Boolean(membershipRes.value.data.data?.active))
+      }
+    }
+
+    void run()
+    return () => {
+      cancelled = true
+    }
+  }, [isAdmin, user])
+
   const sparkData = [12, 18, 15, 25, 22, 30, 35]
   const sparkData2 = [8, 12, 10, 14, 18, 16, 20]
   const sparkData3 = [3, 2, 4, 3, 5, 4, 6]
+  const nextActions = user
+    ? buildDashboardNextActions({
+        phoneVerified: Boolean(user.phone_verified),
+        userType: user.user_type,
+        bindingCount,
+        membershipActive,
+      })
+    : []
+  const nextActionIcons: Record<DashboardNextAction['key'], ReactNode> = {
+    'verify-phone': <MobileOutlined />,
+    'bind-student': <LinkOutlined />,
+    'review-membership': <CrownOutlined />,
+    'continue-analysis': <RocketOutlined />,
+  }
 
   if (isAdmin && loading) {
     return (
@@ -156,7 +208,7 @@ export default function DashboardPage() {
             </Col>
           </Row>
           {stats?.users_by_role && (
-            <Card title="角色分布" style={{ marginTop: 24 }}>
+            <Card title="会员等级分布" style={{ marginTop: 24 }}>
               <Row gutter={[24, 24]}>
                 {Object.entries(stats.users_by_role).map(([role, count]) => (
                   <Col xs={12} sm={8} lg={6} key={role}>
@@ -252,23 +304,50 @@ export default function DashboardPage() {
               </Card>
             </Col>
             <Col xs={24} lg={8}>
-              <Card title="快捷入口">
+              <Card title="下一步建议">
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                  <a href="/analysis" style={{ display: 'block', padding: '12px 16px', background: '#EFF6FF', borderRadius: 6, color: '#1E40AF', textDecoration: 'none', fontWeight: 500 }}>
-                    查看数据分析 &rarr;
-                  </a>
-                  <a href="/membership" style={{ display: 'block', padding: '12px 16px', background: '#FDF2F8', borderRadius: 6, color: '#BE185D', textDecoration: 'none', fontWeight: 500 }}>
-                    开通会员服务 &rarr;
-                  </a>
-                  <a href="/orders" style={{ display: 'block', padding: '12px 16px', background: '#F8FAFC', borderRadius: 6, color: '#334155', textDecoration: 'none', fontWeight: 500 }}>
-                    查看我的订单 &rarr;
-                  </a>
-                  <a href="/bindings" style={{ display: 'block', padding: '12px 16px', background: '#FEF3C7', borderRadius: 6, color: '#D97706', textDecoration: 'none', fontWeight: 500 }}>
-                    管理绑定关系 &rarr;
-                  </a>
-                  <a href="/profile" style={{ display: 'block', padding: '12px 16px', background: '#ECFDF5', borderRadius: 6, color: '#16A34A', textDecoration: 'none', fontWeight: 500 }}>
-                    完善个人资料 &rarr;
-                  </a>
+                  {nextActions.map((action) => (
+                    <Card
+                      key={action.key}
+                      size="small"
+                      bodyStyle={{ padding: 16 }}
+                      style={{ borderRadius: 8 }}
+                    >
+                      <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+                        <span
+                          style={{
+                            width: 32,
+                            height: 32,
+                            borderRadius: 6,
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            color: '#1E40AF',
+                            background: '#EFF6FF',
+                            flex: '0 0 auto',
+                          }}
+                        >
+                          {nextActionIcons[action.key]}
+                        </span>
+                        <div style={{ minWidth: 0, flex: 1 }}>
+                          <div style={{ fontWeight: 600, color: '#0F172A', marginBottom: 4 }}>
+                            {action.title}
+                          </div>
+                          <div style={{ color: '#64748B', fontSize: 13, lineHeight: 1.6 }}>
+                            {action.description}
+                          </div>
+                          <Button
+                            type="link"
+                            size="small"
+                            icon={<CheckCircleOutlined />}
+                            style={{ padding: 0, marginTop: 8, height: 'auto' }}
+                          >
+                            <Link to={action.href}>去处理</Link>
+                          </Button>
+                        </div>
+                      </div>
+                    </Card>
+                  ))}
                 </div>
               </Card>
             </Col>

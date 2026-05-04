@@ -222,8 +222,10 @@ export interface paths {
                     email?: string;
                     /** @description username 模糊搜索 */
                     username?: string;
-                    /** @description 角色过滤 (user/premium/admin) */
+                    /** @description 角色过滤 (user/premium) */
                     role?: string;
+                    /** @description 管理员权限过滤 */
+                    is_admin?: boolean;
                     /** @description 状态过滤 (active/banned) */
                     status?: string;
                 };
@@ -750,6 +752,393 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/analysis/admission-score-trends": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 查询录取分趋势
+         * @description 查询学校或专业层级录取分年份趋势，并返回数据质量说明
+         */
+        get: {
+            parameters: {
+                query: {
+                    /** @description 趋势层级：school 或 major */
+                    level: string;
+                    /** @description 省份ID，逗号分隔 */
+                    province_id?: string;
+                    /** @description 省份名称，逗号分隔 */
+                    province?: string;
+                    /** @description 学校ID */
+                    school_id: number;
+                    /** @description 专业名称关键词，level=major 时可用 */
+                    major_name?: string;
+                    /** @description 专业代码前缀，level=major 时可用 */
+                    major_code?: string;
+                    /** @description 批次 */
+                    batch?: string;
+                    /** @description 科类 */
+                    section?: string;
+                    /** @description 年份最小值 */
+                    year_min?: number;
+                    /** @description 年份最大值 */
+                    year_max?: number;
+                    /** @description 指标名称，预留字段 */
+                    metric?: string;
+                    /** @description 是否保留为0的平均分/最高分 */
+                    include_zero_scores?: boolean;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"] & {
+                            data?: components["schemas"]["analysis.ScoreTrendResponse"];
+                        };
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+                /** @description Internal Server Error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/analysis/admission-scores/majors": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 查询专业录取分
+         * @description 查询专业层级历史录取分，不要求 major_id 完整，优先匹配 school_major_name 和 major_code
+         */
+        get: {
+            parameters: {
+                query?: {
+                    /** @description 学校或专业关键词 */
+                    q?: string;
+                    /** @description 省份ID，逗号分隔 */
+                    province_id?: string;
+                    /** @description 省份名称，逗号分隔 */
+                    province?: string;
+                    /** @description 年份，逗号分隔 */
+                    year?: string;
+                    /** @description 年份最小值 */
+                    year_min?: number;
+                    /** @description 年份最大值 */
+                    year_max?: number;
+                    /** @description 学校ID，逗号分隔 */
+                    school_id?: string;
+                    /** @description 学校名称关键词 */
+                    school_name?: string;
+                    /** @description 学校标签，逗号分隔 */
+                    school_tags?: string;
+                    /** @description 专业ID，逗号分隔 */
+                    major_id?: string;
+                    /** @description 专业名称关键词 */
+                    major_name?: string;
+                    /** @description 专业代码前缀 */
+                    major_code?: string;
+                    /** @description 批次，逗号分隔 */
+                    batch?: string;
+                    /** @description 科类，逗号分隔 */
+                    section?: string;
+                    /** @description 录取类型，逗号分隔 */
+                    admission_type?: string;
+                    /** @description 专业组名称关键词 */
+                    major_group?: string;
+                    /** @description 选科要求关键词 */
+                    subject_req?: string;
+                    /** @description 最低分最小值 */
+                    score_min?: number;
+                    /** @description 最低分最大值 */
+                    score_max?: number;
+                    /** @description 最低位次最小值 */
+                    rank_min?: number;
+                    /** @description 最低位次最大值 */
+                    rank_max?: number;
+                    /** @description 线差最小值 */
+                    line_deviation_min?: number;
+                    /** @description 线差最大值 */
+                    line_deviation_max?: number;
+                    /** @description 是否仅返回有位次记录 */
+                    has_rank?: boolean;
+                    /** @description 是否仅返回有平均分记录 */
+                    has_average_score?: boolean;
+                    /** @description 是否保留为0的平均分/最高分 */
+                    include_zero_scores?: boolean;
+                    /** @description 扩展字段：school,major,policy,group,tags */
+                    include?: string;
+                    /** @description 返回 facets：province,year,batch,section,major_name,source_system */
+                    facets?: string;
+                    /** @description 排序：year,lowest_score,lowest_rank,line_deviation,school_name,major_name，前缀 - 表示降序 */
+                    sort?: string;
+                    /** @description 来源系统 */
+                    source_system?: string;
+                    /** @description 页码，默认1 */
+                    page?: number;
+                    /** @description 每页数量，默认20，最大100 */
+                    per_page?: number;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"] & {
+                            data?: components["schemas"]["analysis.ListResponse-analysis_MajorAdmissionScore"];
+                        };
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+                /** @description Internal Server Error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/analysis/admission-scores/schools": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 查询学校录取分
+         * @description 查询学校层级历史录取分，支持分数、位次、线差、学校标签、include、facets 和排序
+         */
+        get: {
+            parameters: {
+                query?: {
+                    /** @description 关键词 */
+                    q?: string;
+                    /** @description 省份ID，逗号分隔 */
+                    province_id?: string;
+                    /** @description 省份名称，逗号分隔 */
+                    province?: string;
+                    /** @description 年份，逗号分隔 */
+                    year?: string;
+                    /** @description 年份最小值 */
+                    year_min?: number;
+                    /** @description 年份最大值 */
+                    year_max?: number;
+                    /** @description 学校ID，逗号分隔 */
+                    school_id?: string;
+                    /** @description 学校名称关键词 */
+                    school_name?: string;
+                    /** @description 学校标签，逗号分隔 */
+                    school_tags?: string;
+                    /** @description 批次，逗号分隔 */
+                    batch?: string;
+                    /** @description 科类，逗号分隔 */
+                    section?: string;
+                    /** @description 录取类型，逗号分隔 */
+                    admission_type?: string;
+                    /** @description 专业组名称关键词 */
+                    major_group?: string;
+                    /** @description 选科要求关键词 */
+                    subject_req?: string;
+                    /** @description 最低分最小值 */
+                    score_min?: number;
+                    /** @description 最低分最大值 */
+                    score_max?: number;
+                    /** @description 最低位次最小值 */
+                    rank_min?: number;
+                    /** @description 最低位次最大值 */
+                    rank_max?: number;
+                    /** @description 线差最小值 */
+                    line_deviation_min?: number;
+                    /** @description 线差最大值 */
+                    line_deviation_max?: number;
+                    /** @description 是否仅返回有位次记录 */
+                    has_rank?: boolean;
+                    /** @description 是否保留为0的平均分/最高分 */
+                    include_zero_scores?: boolean;
+                    /** @description 扩展字段：school,policy,group,tags */
+                    include?: string;
+                    /** @description 返回 facets：province,year,batch,section,source_system */
+                    facets?: string;
+                    /** @description 排序：year,lowest_score,lowest_rank,line_deviation,school_name，前缀 - 表示降序 */
+                    sort?: string;
+                    /** @description 来源系统 */
+                    source_system?: string;
+                    /** @description 页码，默认1 */
+                    page?: number;
+                    /** @description 每页数量，默认20，最大100 */
+                    per_page?: number;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"] & {
+                            data?: components["schemas"]["analysis.ListResponse-analysis_SchoolAdmissionScore"];
+                        };
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+                /** @description Internal Server Error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/analysis/dataset-overview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 获取高考数据集概览 */
+        get: {
+            parameters: {
+                query?: {
+                    /** @description 是否返回核心表行数 */
+                    include_tables?: boolean;
+                    /** @description 是否返回覆盖范围 */
+                    include_coverage?: boolean;
+                    /** @description 是否返回导入日志 */
+                    include_imports?: boolean;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"] & {
+                            data?: components["schemas"]["analysis.DatasetOverviewResponse"];
+                        };
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+                /** @description Internal Server Error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/analysis/employment-data": {
         parameters: {
             query?: never;
@@ -758,23 +1147,23 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * 获取就业情况数据
-         * @description 获取模拟的专业就业情况数据，支持分页和筛选
+         * 获取就业兼容数据
+         * @description 兼容旧 employment-data 路由，当前基于 major_profile 的薪资和就业方向数据返回
          */
         get: {
             parameters: {
                 query?: {
-                    /** @description 专业名称 */
+                    /** @description 专业名称关键词 */
                     major_name?: string;
-                    /** @description 省份 */
+                    /** @description 省份，兼容参数 */
                     province?: string;
-                    /** @description 年份 */
+                    /** @description 年份，兼容参数 */
                     year?: number;
-                    /** @description 行业 */
+                    /** @description 行业关键词 */
                     industry?: string;
                     /** @description 页码，默认1 */
                     page?: number;
-                    /** @description 每页数量，默认10 */
+                    /** @description 每页数量，默认20，最大100 */
                     per_page?: number;
                 };
                 header?: never;
@@ -831,24 +1220,68 @@ export interface paths {
         };
         /**
          * 获取招生计划数据
-         * @description 获取模拟的招生计划数据，支持分页和筛选
+         * @description 查询真实高考招生计划数据，支持分页和灵活筛选
          */
         get: {
             parameters: {
                 query?: {
-                    /** @description 学校名称 */
-                    school_name?: string;
-                    /** @description 专业名称 */
-                    major_name?: string;
-                    /** @description 省份 */
+                    /** @description 学校或专业关键词 */
+                    q?: string;
+                    /** @description 省份ID，逗号分隔 */
+                    province_id?: string;
+                    /** @description 省份名称，逗号分隔 */
                     province?: string;
-                    /** @description 年份 */
-                    year?: number;
-                    /** @description 批次 */
+                    /** @description 年份，逗号分隔 */
+                    year?: string;
+                    /** @description 年份最小值 */
+                    year_min?: number;
+                    /** @description 年份最大值 */
+                    year_max?: number;
+                    /** @description 学校ID，逗号分隔 */
+                    school_id?: string;
+                    /** @description 学校名称关键词 */
+                    school_name?: string;
+                    /** @description 学校标签，逗号分隔 */
+                    school_tags?: string;
+                    /** @description 专业ID，逗号分隔 */
+                    major_id?: string;
+                    /** @description 专业名称关键词 */
+                    major_name?: string;
+                    /** @description 专业代码前缀 */
+                    major_code?: string;
+                    /** @description 批次，逗号分隔 */
                     batch?: string;
+                    /** @description 科类，逗号分隔 */
+                    section?: string;
+                    /** @description 录取类型，逗号分隔 */
+                    admission_type?: string;
+                    /** @description 专业组名称关键词 */
+                    major_group?: string;
+                    /** @description 选科要求关键词 */
+                    subject_req?: string;
+                    /** @description 首选科目 */
+                    first_subject?: string;
+                    /** @description 再选科目关键词 */
+                    second_subjects?: string;
+                    /** @description 计划人数最小值 */
+                    plan_count_min?: number;
+                    /** @description 计划人数最大值 */
+                    plan_count_max?: number;
+                    /** @description 学费最小值 */
+                    tuition_min?: number;
+                    /** @description 学费最大值 */
+                    tuition_max?: number;
+                    /** @description 扩展字段：school,major,policy,group,tags */
+                    include?: string;
+                    /** @description 返回 facets：province,year,batch,section,source_system */
+                    facets?: string;
+                    /** @description 排序：year,plan_count,tuition_fee,school_name,major_name，前缀 - 表示降序 */
+                    sort?: string;
+                    /** @description 来源系统 */
+                    source_system?: string;
                     /** @description 页码，默认1 */
                     page?: number;
-                    /** @description 每页数量，默认10 */
+                    /** @description 每页数量，默认20，最大100 */
                     per_page?: number;
                 };
                 header?: never;
@@ -865,6 +1298,886 @@ export interface paths {
                     content: {
                         "application/json": components["schemas"]["web.Response"] & {
                             data?: components["schemas"]["analysis.EnrollmentPlanResponse"];
+                        };
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+                /** @description Internal Server Error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/analysis/facets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 获取分析筛选项
+         * @description 按 scope 返回可用于前端筛选面板的实时枚举值
+         */
+        get: {
+            parameters: {
+                query: {
+                    /** @description 筛选范围：schools、majors、enrollment_plans、school_scores、major_scores、batch_lines */
+                    scope: string;
+                    /** @description 筛选字段，逗号分隔 */
+                    fields?: string;
+                    /** @description 省份名称，逗号分隔 */
+                    province?: string;
+                    /** @description 省份ID，逗号分隔 */
+                    province_id?: string;
+                    /** @description 年份，逗号分隔 */
+                    year?: string;
+                    /** @description 学校ID，逗号分隔 */
+                    school_id?: string;
+                    /** @description 专业名称关键词 */
+                    major_name?: string;
+                    /** @description 批次 */
+                    batch?: string;
+                    /** @description 科类 */
+                    section?: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"] & {
+                            data?: components["schemas"]["analysis.FacetsResponse"];
+                        };
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+                /** @description Internal Server Error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/analysis/majors": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 查询专业列表
+         * @description 支持分类、学位、学制、标签、薪资、就业 JSON 文本、include、facets 和排序筛选
+         */
+        get: {
+            parameters: {
+                query?: {
+                    /** @description 专业名称关键词 */
+                    q?: string;
+                    /** @description 专业ID，逗号分隔 */
+                    major_id?: string;
+                    /** @description 专业代码前缀 */
+                    major_code?: string;
+                    /** @description 专业门类，逗号分隔 */
+                    major_subject?: string;
+                    /** @description 专业类，逗号分隔 */
+                    major_category?: string;
+                    /** @description 授予学位，逗号分隔 */
+                    degree_name?: string;
+                    /** @description 学制，逗号分隔 */
+                    study_years?: string;
+                    /** @description 专业标签，逗号分隔 */
+                    tags?: string;
+                    /** @description 平均薪资最小值 */
+                    salary_min?: number;
+                    /** @description 平均薪资最大值 */
+                    salary_max?: number;
+                    /** @description 应届平均薪资最小值 */
+                    fresh_salary_min?: number;
+                    /** @description 应届平均薪资最大值 */
+                    fresh_salary_max?: number;
+                    /** @description 就业地区文本搜索 */
+                    work_area?: string;
+                    /** @description 就业行业文本搜索 */
+                    work_industry?: string;
+                    /** @description 就业岗位文本搜索 */
+                    work_job?: string;
+                    /** @description 扩展字段：profile,tags,employment */
+                    include?: string;
+                    /** @description 返回 facets：major_subject,major_category,degree_name,study_years */
+                    facets?: string;
+                    /** @description 排序：major_name,major_code,average_salary,fresh_average_salary，前缀 - 表示降序 */
+                    sort?: string;
+                    /** @description 来源系统 */
+                    source_system?: string;
+                    /** @description 页码，默认1 */
+                    page?: number;
+                    /** @description 每页数量，默认20，最大100 */
+                    per_page?: number;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"] & {
+                            data?: components["schemas"]["analysis.ListResponse-analysis_Major"];
+                        };
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+                /** @description Internal Server Error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/analysis/majors/{major_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 获取专业详情
+         * @description 返回专业基础信息，可按 include 扩展 profile、tags、schools、score_summary、plan_summary
+         */
+        get: {
+            parameters: {
+                query?: {
+                    /** @description 扩展字段：profile,tags,schools,score_summary,plan_summary */
+                    include?: string;
+                    /** @description 汇总筛选省份名称 */
+                    province?: string;
+                    /** @description 汇总筛选省份ID */
+                    province_id?: string;
+                    /** @description 汇总筛选年份 */
+                    year?: number;
+                };
+                header?: never;
+                path: {
+                    /** @description 专业ID */
+                    major_id: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"] & {
+                            data?: components["schemas"]["analysis.Major"];
+                        };
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+                /** @description Internal Server Error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/analysis/province-batch-line-trends": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 查询省控线趋势
+         * @description 按省份和批次返回升序年份序列
+         */
+        get: {
+            parameters: {
+                query: {
+                    /** @description 省份ID，逗号分隔 */
+                    province_id?: string;
+                    /** @description 省份名称，逗号分隔 */
+                    province?: string;
+                    /** @description 批次 */
+                    batch: string;
+                    /** @description 类别 */
+                    category?: string;
+                    /** @description 科类 */
+                    section?: string;
+                    /** @description 年份最小值 */
+                    year_min?: number;
+                    /** @description 年份最大值 */
+                    year_max?: number;
+                    /** @description 来源系统 */
+                    source_system?: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"] & {
+                            data?: components["schemas"]["analysis.BatchLineTrendResponse"];
+                        };
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+                /** @description Internal Server Error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/analysis/province-batch-lines": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 查询省控线列表
+         * @description 查询省份批次线数据，支持省份、年份、批次、科类、分数区间和 facets
+         */
+        get: {
+            parameters: {
+                query?: {
+                    /** @description 省份ID，逗号分隔 */
+                    province_id?: string;
+                    /** @description 省份名称，逗号分隔 */
+                    province?: string;
+                    /** @description 年份，逗号分隔 */
+                    year?: string;
+                    /** @description 年份最小值 */
+                    year_min?: number;
+                    /** @description 年份最大值 */
+                    year_max?: number;
+                    /** @description 批次，逗号分隔 */
+                    batch?: string;
+                    /** @description 类别，逗号分隔 */
+                    category?: string;
+                    /** @description 科类，逗号分隔 */
+                    section?: string;
+                    /** @description 分数最小值 */
+                    score_min?: number;
+                    /** @description 分数最大值 */
+                    score_max?: number;
+                    /** @description 来源系统 */
+                    source_system?: string;
+                    /** @description 返回 facets：province,year,batch,category,section */
+                    facets?: string;
+                    /** @description 排序：year,province,score_value，前缀 - 表示降序 */
+                    sort?: string;
+                    /** @description 页码，默认1 */
+                    page?: number;
+                    /** @description 每页数量，默认20，最大100 */
+                    per_page?: number;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"] & {
+                            data?: components["schemas"]["analysis.ListResponse-analysis_ProvinceBatchLine"];
+                        };
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+                /** @description Internal Server Error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/analysis/schools": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 查询学校列表
+         * @description 支持地区、标签、排名、就业率、综合评分、include、facets 和排序筛选
+         */
+        get: {
+            parameters: {
+                query?: {
+                    /** @description 学校名称关键词 */
+                    q?: string;
+                    /** @description 学校ID，逗号分隔 */
+                    school_id?: string;
+                    /** @description 省份ID，逗号分隔 */
+                    province_id?: string;
+                    /** @description 省份名称，逗号分隔 */
+                    province?: string;
+                    /** @description 城市编码，逗号分隔 */
+                    city_code?: string;
+                    /** @description 城市名称，逗号分隔 */
+                    city?: string;
+                    /** @description 学校类型标签，逗号分隔 */
+                    school_type?: string;
+                    /** @description 办学层次标签，逗号分隔 */
+                    school_level?: string;
+                    /** @description 办学性质标签，逗号分隔 */
+                    school_nature?: string;
+                    /** @description 主管部门标签，逗号分隔 */
+                    department?: string;
+                    /** @description 学校标签，逗号分隔，例如 985,211 */
+                    tags?: string;
+                    /** @description 排名来源 */
+                    ranking_source?: string;
+                    /** @description 排名最小值 */
+                    ranking_min?: number;
+                    /** @description 排名最大值 */
+                    ranking_max?: number;
+                    /** @description 就业率最小值 */
+                    employment_rate_min?: number;
+                    /** @description 就业率最大值 */
+                    employment_rate_max?: number;
+                    /** @description 综合评分最小值 */
+                    composite_score_min?: number;
+                    /** @description 综合评分最大值 */
+                    composite_score_max?: number;
+                    /** @description 扩展字段：profile,tags,rankings */
+                    include?: string;
+                    /** @description 返回 facets：province,city,ranking_source */
+                    facets?: string;
+                    /** @description 排序：school_name,province,city,ranking,employment_rate,composite_score，前缀 - 表示降序 */
+                    sort?: string;
+                    /** @description 来源系统 */
+                    source_system?: string;
+                    /** @description 页码，默认1 */
+                    page?: number;
+                    /** @description 每页数量，默认20，最大100 */
+                    per_page?: number;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"] & {
+                            data?: components["schemas"]["analysis.ListResponse-analysis_School"];
+                        };
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+                /** @description Internal Server Error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/analysis/schools/{school_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 获取学校详情
+         * @description 返回学校基础信息，可按 include 扩展 profile、tags、rankings、majors、score_summary、plan_summary
+         */
+        get: {
+            parameters: {
+                query?: {
+                    /** @description 扩展字段：profile,tags,rankings,majors,score_summary,plan_summary */
+                    include?: string;
+                    /** @description 汇总筛选省份名称 */
+                    province?: string;
+                    /** @description 汇总筛选省份ID */
+                    province_id?: string;
+                    /** @description 汇总筛选年份 */
+                    year?: number;
+                };
+                header?: never;
+                path: {
+                    /** @description 学校ID */
+                    school_id: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"] & {
+                            data?: components["schemas"]["analysis.School"];
+                        };
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+                /** @description Internal Server Error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/analysis/schools/{school_id}/majors": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 查询学校开设专业
+         * @description 查询指定学校的专业目录，可按专业名称、代码、年份、学位、门类筛选
+         */
+        get: {
+            parameters: {
+                query?: {
+                    /** @description 专业名称关键词 */
+                    q?: string;
+                    /** @description 专业代码前缀 */
+                    major_code?: string;
+                    /** @description 观测年份 */
+                    observed_year?: number;
+                    /** @description 授予学位 */
+                    degree_name?: string;
+                    /** @description 专业门类 */
+                    major_subject?: string;
+                    /** @description 省份名称，用于 latest_plan/latest_score */
+                    province?: string;
+                    /** @description 省份ID，用于 latest_plan/latest_score */
+                    province_id?: string;
+                    /** @description 年份，用于 latest_plan/latest_score */
+                    year?: number;
+                    /** @description 扩展字段：major_profile,latest_plan,latest_score */
+                    include?: string;
+                    /** @description 排序：school_major_name,major_code,observed_year，前缀 - 表示降序 */
+                    sort?: string;
+                    /** @description 页码，默认1 */
+                    page?: number;
+                    /** @description 每页数量，默认20，最大100 */
+                    per_page?: number;
+                };
+                header?: never;
+                path: {
+                    /** @description 学校ID */
+                    school_id: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"] & {
+                            data?: components["schemas"]["analysis.ListResponse-analysis_SchoolMajorItem"];
+                        };
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+                /** @description Internal Server Error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/analysis/schools/compare": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 对比多个学校
+         * @description 最多对比 10 个学校，返回结果按输入 school_ids 顺序排列
+         */
+        get: {
+            parameters: {
+                query: {
+                    /** @description 学校ID，逗号分隔，最多10个 */
+                    school_ids: string;
+                    /** @description 汇总筛选省份名称 */
+                    province?: string;
+                    /** @description 汇总筛选省份ID */
+                    province_id?: string;
+                    /** @description 汇总筛选年份 */
+                    year?: number;
+                    /** @description 排名来源 */
+                    ranking_source?: string;
+                    /** @description 扩展字段：profile,tags,rankings */
+                    include?: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"] & {
+                            data?: {
+                                [key: string]: unknown;
+                            };
+                        };
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+                /** @description Internal Server Error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/analysis/score-match": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 历史分数/位次匹配
+         * @description 基于历史录取分和位次返回冲稳保参考结果，不代表录取概率
+         */
+        get: {
+            parameters: {
+                query: {
+                    /** @description 省份ID */
+                    province_id?: string;
+                    /** @description 省份名称 */
+                    province?: string;
+                    /** @description 年份 */
+                    year: number;
+                    /** @description 科类 */
+                    section?: string;
+                    /** @description 分数，score 或 rank 至少传一个 */
+                    score?: number;
+                    /** @description 位次，优先用于匹配 */
+                    rank?: number;
+                    /** @description 匹配目标：school 或 major，默认 major */
+                    target?: string;
+                    /** @description 策略：rush,stable,safe,all，默认 all */
+                    strategy?: string;
+                    /** @description 分数窗口，预留字段 */
+                    score_window?: number;
+                    /** @description 位次窗口比例，预留字段 */
+                    rank_window_ratio?: number;
+                    /** @description 学校标签，逗号分隔 */
+                    school_tags?: string;
+                    /** @description 院校省份过滤，预留字段 */
+                    province_filter?: string;
+                    /** @description 专业名称关键词，target=major 时可用 */
+                    major_name?: string;
+                    /** @description 最高学费，预留字段 */
+                    tuition_max?: number;
+                    /** @description 扩展字段，预留字段 */
+                    include?: string;
+                    /** @description 排序，预留字段 */
+                    sort?: string;
+                    /** @description 页码，默认1 */
+                    page?: number;
+                    /** @description 每页数量，默认20，最大100 */
+                    per_page?: number;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"] & {
+                            data?: components["schemas"]["analysis.ScoreMatchResponse"];
                         };
                     };
                 };
@@ -1461,6 +2774,480 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/membership": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 获取当前会员状态
+         * @description 返回当前用户的 premium 会员状态和有效期
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"] & {
+                            data?: components["schemas"]["membership.CurrentMembershipResponse"];
+                        };
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+                /** @description Internal Server Error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/membership/plans": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 获取会员套餐列表
+         * @description 返回当前可购买的 premium 月卡、季卡、年卡套餐
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"] & {
+                            data?: components["schemas"]["membership.PlanResponse"][];
+                        };
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+                /** @description Internal Server Error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/payment/callbacks/mock": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** mock 支付回调 */
+        post: {
+            parameters: {
+                query?: never;
+                header?: {
+                    /** @description 非开发环境下必填的内部 mock 回调密钥 */
+                    "X-Mock-Callback-Secret"?: string;
+                };
+                path?: never;
+                cookie?: never;
+            };
+            /** @description mock 回调 */
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["payment.MockCallbackRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"] & {
+                            data?: components["schemas"]["payment.OrderResponse"];
+                        };
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/payment/orders": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 查询我的支付订单 */
+        get: {
+            parameters: {
+                query?: {
+                    /** @description 页码 */
+                    page?: number;
+                    /** @description 每页数量 */
+                    page_size?: number;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"] & {
+                            data?: components["schemas"]["payment.OrderListResponse"];
+                        };
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        /** 创建会员支付订单 */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            /** @description 订单信息 */
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["payment.CreateOrderRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"] & {
+                            data?: components["schemas"]["payment.OrderResponse"];
+                        };
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/payment/orders/{order_no}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 查询我的支付订单详情 */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description 订单号 */
+                    order_no: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"] & {
+                            data?: components["schemas"]["payment.OrderResponse"];
+                        };
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/payment/orders/{order_no}/detect": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** 主动检测订单支付状态 */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description 订单号 */
+                    order_no: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"] & {
+                            data?: components["schemas"]["payment.OrderResponse"];
+                        };
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/payment/orders/{order_no}/pay": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** mock 支付会员订单 */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description 订单号 */
+                    order_no: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"] & {
+                            data?: components["schemas"]["payment.OrderResponse"];
+                        };
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/health": {
         parameters: {
             query?: never;
@@ -1562,16 +3349,18 @@ export interface components {
              * @example premium
              * @enum {string}
              */
-            role: "user" | "premium" | "admin";
+            role: "user" | "premium";
         };
         "admin.UpdateUserRequest": {
             /** @example user@example.com */
             email?: string;
+            /** @example false */
+            is_admin?: boolean;
             /**
              * @example premium
              * @enum {string}
              */
-            role?: "user" | "premium" | "admin";
+            role?: "user" | "premium";
             /**
              * @example active
              * @enum {string}
@@ -1592,6 +3381,8 @@ export interface components {
             email?: string;
             /** @example 1 */
             id?: number;
+            /** @example false */
+            is_admin?: boolean;
             /** @example 13800138000 */
             phone?: string;
             /** @example true */
@@ -1621,6 +3412,8 @@ export interface components {
             email?: string;
             /** @example 1 */
             id?: number;
+            /** @example false */
+            is_admin?: boolean;
             /** @example 13800138000 */
             phone?: string;
             /** @example true */
@@ -1636,84 +3429,505 @@ export interface components {
             /** @example johndoe */
             username?: string;
         };
+        "analysis.BatchLineTrendPoint": {
+            rank_value?: number;
+            score_value?: number;
+            source_system?: string;
+            year?: number;
+        };
+        "analysis.BatchLineTrendResponse": {
+            batch?: string;
+            category?: string;
+            province_id?: number;
+            province_name?: string;
+            section?: string;
+            series?: components["schemas"]["analysis.BatchLineTrendPoint"][];
+        };
+        "analysis.DataQuality": {
+            disclaimer?: string;
+            has_zero_scores?: boolean;
+            missing_years?: number[];
+            note?: string;
+        };
+        "analysis.DatasetCoverage": {
+            major_count?: number;
+            province_count?: number;
+            school_count?: number;
+            year_count?: number;
+            year_max?: number;
+            year_min?: number;
+        };
+        "analysis.DatasetOverviewResponse": {
+            coverage?: {
+                [key: string]: components["schemas"]["analysis.DatasetCoverage"];
+            };
+            latest_imported_at?: string;
+            latest_imports?: components["schemas"]["analysis.ImportLogItem"][];
+            summary?: components["schemas"]["analysis.DatasetSummary"];
+            table_counts?: {
+                [key: string]: number;
+            };
+        };
+        "analysis.DatasetSummary": {
+            enrollment_plan_count?: number;
+            major_admission_score_count?: number;
+            major_count?: number;
+            major_profile_count?: number;
+            province_batch_line_count?: number;
+            province_count?: number;
+            school_admission_score_count?: number;
+            school_count?: number;
+            school_profile_count?: number;
+        };
         "analysis.EmploymentData": {
-            /** @description 平均薪资 */
             average_salary?: number;
-            /** @description 就业省份 */
             employment_province?: string;
-            /** @description 就业率 */
             employment_rate?: number;
-            /** @description 深造率 */
             further_study_rate?: number;
-            /** @description 毕业生总数 */
             graduates_count?: number;
-            /** @description 最高薪资 */
             highest_salary?: number;
-            /** @description 数据ID */
             id?: number;
-            /** @description 主要就业行业 */
             industry?: string;
-            /** @description 主要职位 */
             job_title?: string;
-            /** @description 最低薪资 */
             lowest_salary?: number;
-            /** @description 专业代码 */
             major_code?: string;
-            /** @description 专业名称 */
             major_name?: string;
-            /** @description 省份 */
             province?: string;
-            /** @description 年份 */
             year?: number;
         };
         "analysis.EmploymentDataResponse": {
-            /** @description 就业情况列表 */
             data?: components["schemas"]["analysis.EmploymentData"][];
-            /** @description 当前页码 */
             page?: number;
-            /** @description 每页数量 */
             per_page?: number;
-            /** @description 总数据量 */
             total?: number;
         };
         "analysis.EnrollmentPlan": {
-            /** @description 实际招生人数 */
-            actual_count?: number;
-            /** @description 平均分数线 */
-            average_score?: number;
-            /** @description 批次（一本、二本等） */
             batch?: string;
+            enrollment_plan_id?: number;
             id?: number;
-            /** @description 专业代码 */
             major_code?: string;
-            /** @description 专业名称 */
+            major_id?: number;
             major_name?: string;
-            /** @description 最高分数线 */
-            max_score?: number;
-            /** @description 最低分数线 */
-            min_score?: number;
-            /** @description 计划招生人数 */
+            major_plan_code?: string;
             plan_count?: number;
-            /** @description 省份 */
+            plan_year?: number;
+            policy_id?: number;
             province?: string;
-            /** @description 学校代码 */
+            province_id?: number;
+            province_name?: string;
+            raw_admission_type?: string;
+            raw_batch_name?: string;
+            raw_elective_req?: string;
+            raw_major_group_name?: string;
+            raw_section_name?: string;
             school_code?: string;
-            /** @description 学校名称 */
+            school_id?: number;
+            school_major_group_id?: number;
+            school_major_id?: number;
+            school_major_name?: string;
             school_name?: string;
-            /** @description 科目要求 */
+            source_system?: string;
+            source_table?: string;
+            study_years_text?: string;
             subject_require?: string;
-            /** @description 年份 */
+            tags?: components["schemas"]["analysis.PolicyTag"][];
+            tuition_fee?: number;
             year?: number;
         };
         "analysis.EnrollmentPlanResponse": {
-            /** @description 当前页码 */
+            data?: components["schemas"]["analysis.EnrollmentPlan"][];
+            facets?: {
+                [key: string]: unknown;
+            };
+            has_more?: boolean;
+            items?: components["schemas"]["analysis.EnrollmentPlan"][];
             page?: number;
-            /** @description 每页数量 */
             per_page?: number;
-            /** @description 招生计划列表 */
-            plans?: components["schemas"]["analysis.EnrollmentPlan"][];
-            /** @description 总数据量 */
             total?: number;
+        };
+        "analysis.FacetValue": {
+            count?: number;
+            label?: string;
+            value?: unknown;
+        };
+        "analysis.FacetsResponse": {
+            facets?: {
+                [key: string]: components["schemas"]["analysis.FacetValue"][];
+            };
+            scope?: string;
+        };
+        "analysis.ImportLogItem": {
+            file_name?: string;
+            imported_at?: string;
+            remark?: string;
+            row_count?: number;
+            source_system?: string;
+            source_table?: string;
+        };
+        "analysis.ListResponse-analysis_Major": {
+            facets?: {
+                [key: string]: unknown;
+            };
+            has_more?: boolean;
+            items?: components["schemas"]["analysis.Major"][];
+            page?: number;
+            per_page?: number;
+            total?: number;
+        };
+        "analysis.ListResponse-analysis_MajorAdmissionScore": {
+            facets?: {
+                [key: string]: unknown;
+            };
+            has_more?: boolean;
+            items?: components["schemas"]["analysis.MajorAdmissionScore"][];
+            page?: number;
+            per_page?: number;
+            total?: number;
+        };
+        "analysis.ListResponse-analysis_ProvinceBatchLine": {
+            facets?: {
+                [key: string]: unknown;
+            };
+            has_more?: boolean;
+            items?: components["schemas"]["analysis.ProvinceBatchLine"][];
+            page?: number;
+            per_page?: number;
+            total?: number;
+        };
+        "analysis.ListResponse-analysis_School": {
+            facets?: {
+                [key: string]: unknown;
+            };
+            has_more?: boolean;
+            items?: components["schemas"]["analysis.School"][];
+            page?: number;
+            per_page?: number;
+            total?: number;
+        };
+        "analysis.ListResponse-analysis_SchoolAdmissionScore": {
+            facets?: {
+                [key: string]: unknown;
+            };
+            has_more?: boolean;
+            items?: components["schemas"]["analysis.SchoolAdmissionScore"][];
+            page?: number;
+            per_page?: number;
+            total?: number;
+        };
+        "analysis.ListResponse-analysis_SchoolMajorItem": {
+            facets?: {
+                [key: string]: unknown;
+            };
+            has_more?: boolean;
+            items?: components["schemas"]["analysis.SchoolMajorItem"][];
+            page?: number;
+            per_page?: number;
+            total?: number;
+        };
+        "analysis.Major": {
+            degree_name?: string;
+            employment?: components["schemas"]["analysis.MajorEmployment"];
+            major_category?: string;
+            major_code?: string;
+            major_id?: number;
+            major_name?: string;
+            major_subject?: string;
+            plan_summary?: components["schemas"]["analysis.PlanSummary"];
+            profile?: components["schemas"]["analysis.MajorProfile"];
+            school_summary?: components["schemas"]["analysis.SchoolMajorSummary"];
+            score_summary?: components["schemas"]["analysis.ScoreSummary"];
+            study_years_text?: string;
+            tags?: components["schemas"]["analysis.PolicyTag"][];
+        };
+        "analysis.MajorAdmissionScore": {
+            admission_year?: number;
+            average_score?: number;
+            highest_score?: number;
+            line_deviation?: number;
+            lowest_rank?: number;
+            lowest_score?: number;
+            major_admission_score_id?: number;
+            major_code?: string;
+            major_id?: number;
+            policy_id?: number;
+            province_id?: number;
+            province_name?: string;
+            raw_admission_type?: string;
+            raw_batch_name?: string;
+            raw_elective_req?: string;
+            raw_major_group_name?: string;
+            raw_section_name?: string;
+            school_id?: number;
+            school_major_group_id?: number;
+            school_major_id?: number;
+            school_major_name?: string;
+            school_name?: string;
+            source_system?: string;
+            source_table?: string;
+            tags?: components["schemas"]["analysis.PolicyTag"][];
+        };
+        "analysis.MajorEmployment": {
+            salary_infos?: unknown;
+            work_areas?: unknown;
+            work_industries?: unknown;
+            work_jobs?: unknown;
+        };
+        "analysis.MajorProfile": {
+            average_salary?: number;
+            course_text?: string;
+            fresh_average_salary?: number;
+            intro_text?: string;
+            job_text?: string;
+            select_suggests?: string;
+        };
+        "analysis.PlanSummary": {
+            available_provinces?: string[];
+            available_years?: number[];
+            plan_count_total?: number;
+        };
+        "analysis.PolicyTag": {
+            effective_year?: number;
+            expire_year?: number;
+            tag_type?: string;
+            tag_value?: string;
+        };
+        "analysis.ProvinceBatchLine": {
+            policy_id?: number;
+            province_batch_line_id?: number;
+            province_id?: number;
+            province_name?: string;
+            rank_value?: number;
+            raw_batch_name?: string;
+            raw_category_name?: string;
+            raw_section_name?: string;
+            score_value?: number;
+            score_year?: number;
+            source_system?: string;
+            source_table?: string;
+        };
+        "analysis.School": {
+            city_code?: number;
+            city_name?: string;
+            logo_url?: string;
+            major_summary?: components["schemas"]["analysis.SchoolMajorSummary"];
+            plan_summary?: components["schemas"]["analysis.PlanSummary"];
+            profile?: components["schemas"]["analysis.SchoolProfile"];
+            province_id?: number;
+            province_name?: string;
+            rankings?: components["schemas"]["analysis.SchoolRanking"][];
+            school_code?: string;
+            school_id?: number;
+            school_name?: string;
+            score_summary?: components["schemas"]["analysis.ScoreSummary"];
+            tags?: components["schemas"]["analysis.PolicyTag"][];
+        };
+        "analysis.SchoolAdmissionScore": {
+            admission_year?: number;
+            average_score?: number;
+            highest_score?: number;
+            line_deviation?: number;
+            lowest_rank?: number;
+            lowest_score?: number;
+            policy_id?: number;
+            province_control_score?: number;
+            province_id?: number;
+            province_name?: string;
+            raw_admission_type?: string;
+            raw_batch_name?: string;
+            raw_elective_req?: string;
+            raw_major_group_name?: string;
+            raw_section_name?: string;
+            school_admission_score_id?: number;
+            school_id?: number;
+            school_major_group_id?: number;
+            school_name?: string;
+            source_system?: string;
+            source_table?: string;
+            tags?: components["schemas"]["analysis.PolicyTag"][];
+        };
+        "analysis.SchoolMajorItem": {
+            latest_plan?: components["schemas"]["analysis.EnrollmentPlan"];
+            latest_score?: components["schemas"]["analysis.MajorAdmissionScore"];
+            major_code?: string;
+            major_id?: number;
+            major_name?: string;
+            major_profile?: components["schemas"]["analysis.MajorProfile"];
+            observed_year?: number;
+            school_id?: number;
+            school_major_id?: number;
+            school_major_name?: string;
+            study_years_text?: string;
+        };
+        "analysis.SchoolMajorSummary": {
+            school_count?: number;
+            top_schools?: components["schemas"]["analysis.School"][];
+        };
+        "analysis.SchoolProfile": {
+            abroad_rate?: number;
+            address?: string;
+            admission_site_url?: string;
+            alias_name?: string;
+            china_rate?: number;
+            composite_score?: number;
+            description?: string;
+            email?: string;
+            employment_index?: number;
+            employment_rate?: number;
+            female_ratio?: number;
+            former_name?: string;
+            founded_year?: number;
+            learning_index?: number;
+            life_index?: number;
+            male_ratio?: number;
+            phone?: string;
+            website_url?: string;
+        };
+        "analysis.SchoolRanking": {
+            rank_value?: number;
+            ranking_source?: string;
+            ranking_year?: number;
+        };
+        "analysis.ScoreMatchInput": {
+            province_name?: string;
+            rank?: number;
+            score?: number;
+            section?: string;
+            target?: string;
+            year?: number;
+        };
+        "analysis.ScoreMatchItem": {
+            lowest_rank?: number;
+            lowest_score?: number;
+            match_distance?: number;
+            reason?: string;
+            risk_level?: string;
+            school_id?: number;
+            school_major_name?: string;
+            school_name?: string;
+        };
+        "analysis.ScoreMatchResponse": {
+            buckets?: {
+                [key: string]: components["schemas"]["analysis.ScoreMatchItem"][];
+            };
+            data_quality?: components["schemas"]["analysis.DataQuality"];
+            input?: components["schemas"]["analysis.ScoreMatchInput"];
+        };
+        "analysis.ScoreSummary": {
+            available_provinces?: string[];
+            available_years?: number[];
+            data_quality?: components["schemas"]["analysis.DataQuality"];
+            lowest_rank_max?: number;
+            lowest_rank_min?: number;
+            lowest_score_max?: number;
+            lowest_score_min?: number;
+        };
+        "analysis.ScoreTrendPoint": {
+            average_score?: number;
+            batch?: string;
+            highest_score?: number;
+            line_deviation?: number;
+            lowest_rank?: number;
+            lowest_score?: number;
+            section?: string;
+            year?: number;
+        };
+        "analysis.ScoreTrendResponse": {
+            data_quality?: components["schemas"]["analysis.DataQuality"];
+            level?: string;
+            major_name?: string;
+            province_id?: number;
+            province_name?: string;
+            school_id?: number;
+            school_name?: string;
+            series?: components["schemas"]["analysis.ScoreTrendPoint"][];
+        };
+        "membership.CurrentMembershipResponse": {
+            /** @example true */
+            active?: boolean;
+            /** @example 2026-05-23T10:00:00Z */
+            ends_at?: string;
+            /** @example premium */
+            membership_level?: string;
+            /** @example 2026-04-23T10:00:00Z */
+            started_at?: string;
+            /** @example active */
+            status?: string;
+        };
+        "membership.PlanResponse": {
+            /** @example CNY */
+            currency?: string;
+            /** @example 30 */
+            duration_days?: number;
+            /** @example 1 */
+            id?: number;
+            /** @example premium */
+            membership_level?: string;
+            /** @example monthly */
+            plan_code?: string;
+            /** @example 月度会员 */
+            plan_name?: string;
+            /** @example 990 */
+            price_amount?: number;
+            /** @example active */
+            status?: string;
+        };
+        "payment.CreateOrderRequest": {
+            /** @example checkout-123 */
+            idempotency_key?: string;
+            /**
+             * @example monthly
+             * @enum {string}
+             */
+            plan_code: "monthly" | "quarterly" | "yearly";
+        };
+        "payment.MockCallbackRequest": {
+            /** @example mock-callback-1 */
+            callback_id: string;
+            /** @example MOCK202604231200000001 */
+            channel_trade_no: string;
+            /** @example MO202604231200000001 */
+            order_no: string;
+            /** @example true */
+            success?: boolean;
+        };
+        "payment.OrderListResponse": {
+            items?: components["schemas"]["payment.OrderResponse"][];
+            /** @example 1 */
+            page?: number;
+            /** @example 20 */
+            page_size?: number;
+            /** @example 1 */
+            total?: number;
+        };
+        "payment.OrderResponse": {
+            /** @example 990 */
+            amount?: number;
+            /** @example 2026-04-23T10:15:00Z */
+            closed_at?: string;
+            /** @example 2026-04-23T10:00:00Z */
+            created_at?: string;
+            /** @example CNY */
+            currency?: string;
+            /** @example pending */
+            entitlement_status?: string;
+            /** @example 2026-04-23T10:15:00Z */
+            expires_at?: string;
+            /** @example MO202604231200000001 */
+            order_no?: string;
+            /** @example awaiting_payment */
+            order_status?: string;
+            /** @example 2026-04-23T10:01:00Z */
+            paid_at?: string;
+            /** @example mock */
+            payment_channel?: string;
+            /** @example unpaid */
+            payment_status?: string;
+            /** @example monthly */
+            plan_code?: string;
+            /** @example 月度会员 */
+            subject?: string;
+            /** @example 1 */
+            user_id?: number;
         };
         "user.BindingListResponse": {
             bindings?: components["schemas"]["user.BindingWithUserDetail"][];
@@ -1773,6 +3987,8 @@ export interface components {
             email?: string;
             /** @example 1 */
             id?: number;
+            /** @example false */
+            is_admin?: boolean;
             /** @example 13800138000 */
             phone?: string;
             /** @example true */

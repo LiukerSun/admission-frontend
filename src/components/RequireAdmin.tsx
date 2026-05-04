@@ -7,12 +7,12 @@ interface Props {
 }
 
 export default function RequireAdmin({ children }: Props) {
-  const { user } = useAuthStore()
+  const { isAdmin } = useAuthStore()
   const location = useLocation()
 
   return (
     <RequireAuth>
-      {user?.role === 'admin' ? (
+      {isAdmin ? (
         <>{children}</>
       ) : (
         <Navigate to="/dashboard" state={{ from: location }} replace />

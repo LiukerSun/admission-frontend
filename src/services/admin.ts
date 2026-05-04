@@ -16,7 +16,8 @@ export interface AdminUserDetail {
   id: number
   email: string
   username?: string
-  role: 'user' | 'premium' | 'admin'
+  role: 'user' | 'premium'
+  is_admin?: boolean
   user_type: 'parent' | 'student'
   status: 'active' | 'banned'
   created_at: string
@@ -26,7 +27,8 @@ export interface AdminUserDetail {
 export interface UpdateUserRequest {
   email?: string
   username?: string
-  role?: 'user' | 'premium' | 'admin'
+  role?: 'user' | 'premium'
+  is_admin?: boolean
   user_type?: 'parent' | 'student'
   status?: 'active' | 'banned'
 }
@@ -37,6 +39,7 @@ export interface UserListQuery {
   email?: string
   username?: string
   role?: string
+  is_admin?: boolean
   status?: string
 }
 

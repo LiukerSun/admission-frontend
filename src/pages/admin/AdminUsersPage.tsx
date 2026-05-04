@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import {
   Table, Input, Select, Button, Space, Tag, message, Modal, Form,
-  Card, Row, Col, Statistic, Dropdown, Popconfirm, Tooltip,
+  Card, Row, Col, Statistic, Dropdown, Popconfirm, Tooltip, Switch,
 } from 'antd'
 import {
   SearchOutlined, DownloadOutlined, ReloadOutlined,
@@ -10,6 +10,7 @@ import {
 } from '@ant-design/icons'
 import { adminApi, type UserListItem, type AdminUserDetail, type UpdateUserRequest } from '@/services/admin'
 import { useAuthStore } from '@/stores/authStore'
+import { buildAdminUserUpdatePayload, canChangeAdminPermission } from '@/utils/adminUsers'
 import type { MenuProps } from 'antd'
 
 const { Option } = Select
@@ -17,7 +18,8 @@ const { Option } = Select
 interface EditUserFormValues {
   email: string
   username?: string
-  role: 'user' | 'premium' | 'admin'
+  role: 'user' | 'premium'
+  is_admin: boolean
   user_type: 'parent' | 'student'
   status: 'active' | 'banned'
 }
@@ -48,6 +50,7 @@ export default function AdminUsersPage() {
     email: '',
     username: '',
     role: '',
+    is_admin: undefined as boolean | undefined,
     status: '',
   })
 
@@ -103,6 +106,7 @@ export default function AdminUsersPage() {
         email: detail.email,
         username: detail.username || '',
         role: detail.role,
+        is_admin: Boolean(detail.is_admin),
         user_type: detail.user_type,
         status: detail.status,
       })
@@ -135,18 +139,8 @@ export default function AdminUsersPage() {
     passwordForm.resetFields()
   }
 
-  const buildUpdatePayload = (values: EditUserFormValues): UpdateUserRequest => {
-    if (!editingUser) return {}
-    const payload: UpdateUserRequest = {}
-    const email = values.email.trim()
-    const username = values.username?.trim()
-    if (email !== editingUser.email) payload.email = email
-    if ((username || '') !== (editingUser.username || '')) payload.username = username || undefined
-    if (values.role !== editingUser.role) payload.role = values.role
-    if (values.user_type !== editingUser.user_type) payload.user_type = values.user_type
-    if (values.status !== editingUser.status) payload.status = values.status
-    return payload
-  }
+  const buildUpdatePayload = (values: EditUserFormValues): UpdateUserRequest =>
+    editingUser ? buildAdminUserUpdatePayload(editingUser, values, currentUser?.id) : {}
 
   const handleEditSubmit = async () => {
     if (!editingUser) return
@@ -227,9 +221,9 @@ export default function AdminUsersPage() {
       ? users.filter(u => selectedRowKeys.includes(u.id!))
       : users
     const csv = [
-      ['ID', '用户名', '邮箱', '角色', '身份类型', '状态', '注册时间'].join(','),
+      ['ID', '用户名', '邮箱', '会员等级', '管理员权限', '身份类型', '状态', '注册时间'].join(','),
       ...exportData.map(u => [
-        u.id, u.username, u.email, u.role, u.user_type,
+        u.id, u.username, u.email, u.role, u.is_admin ? '管理员' : '普通用户', u.user_type,
         u.status === 'banned' ? '已封禁' : '正常',
         u.created_at ? new Date(u.created_at).toLocaleString() : '-',
       ].join(',')),
@@ -244,7 +238,6 @@ export default function AdminUsersPage() {
   const isEditingSelf = editingUser?.id === currentUser?.id
 
   const roleTagColor: Record<string, string> = {
-    admin: 'red',
     premium: 'orange',
     user: 'blue',
   }
@@ -264,16 +257,28 @@ export default function AdminUsersPage() {
     },
     { title: '邮箱', dataIndex: 'email', key: 'email' },
     {
-      title: '角色',
+      title: '会员等级',
       dataIndex: 'role',
       key: 'role',
       filters: [
         { text: 'user', value: 'user' },
         { text: 'premium', value: 'premium' },
-        { text: 'admin', value: 'admin' },
       ],
       onFilter: (value: string, record: UserListItem) => record.role === value,
       render: (v: string) => <Tag color={roleTagColor[v] || 'default'}>{v}</Tag>,
+    },
+    {
+      title: '管理员权限',
+      dataIndex: 'is_admin',
+      key: 'is_admin',
+      filters: [
+        { text: '管理员', value: true },
+        { text: '普通用户', value: false },
+      ],
+      onFilter: (value: boolean, record: UserListItem) => Boolean(record.is_admin) === value,
+      render: (v: boolean) => (
+        v ? <Tag color="red">管理员</Tag> : <Tag>普通用户</Tag>
+      ),
     },
     {
       title: '身份类型',
@@ -423,7 +428,7 @@ export default function AdminUsersPage() {
             allowClear
           />
           <Select
-            placeholder="角色"
+            placeholder="会员等级"
             value={filters.role || undefined}
             style={{ width: 120 }}
             onChange={(value) => setFilters({ ...filters, role: value })}
@@ -431,7 +436,16 @@ export default function AdminUsersPage() {
           >
             <Option value="user">user</Option>
             <Option value="premium">premium</Option>
-            <Option value="admin">admin</Option>
+          </Select>
+          <Select
+            placeholder="管理员权限"
+            value={filters.is_admin}
+            style={{ width: 140 }}
+            onChange={(value) => setFilters({ ...filters, is_admin: value })}
+            allowClear
+          >
+            <Option value={true}>管理员</Option>
+            <Option value={false}>普通用户</Option>
           </Select>
           <Select
             placeholder="状态"
@@ -446,7 +460,7 @@ export default function AdminUsersPage() {
           <Button type="primary" onClick={fetchUsers}>
             搜索
           </Button>
-          <Button onClick={() => { setFilters({ email: '', username: '', role: '', status: '' }); setPage(1) }}>
+          <Button onClick={() => { setFilters({ email: '', username: '', role: '', is_admin: undefined, status: '' }); setPage(1) }}>
             重置
           </Button>
         </Space>
@@ -517,15 +531,26 @@ export default function AdminUsersPage() {
             <Input placeholder="留空则不修改用户名" disabled={editLoading} />
           </Form.Item>
           <Form.Item
-            label="角色"
+            label="会员等级"
             name="role"
-            rules={[{ required: true, message: '请选择角色' }]}
+            rules={[{ required: true, message: '请选择会员等级' }]}
           >
-            <Select disabled={editLoading || isEditingSelf}>
+            <Select disabled={editLoading}>
               <Option value="user">user</Option>
               <Option value="premium">premium</Option>
-              <Option value="admin">admin</Option>
             </Select>
+          </Form.Item>
+          <Form.Item
+            label="管理员权限"
+            name="is_admin"
+            valuePropName="checked"
+            tooltip={isEditingSelf ? '不能在前端撤销自己的管理员权限' : undefined}
+          >
+            <Switch
+              disabled={editLoading || !canChangeAdminPermission(editingUser?.id, currentUser?.id)}
+              checkedChildren="管理员"
+              unCheckedChildren="普通用户"
+            />
           </Form.Item>
           <Form.Item
             label="身份类型"
