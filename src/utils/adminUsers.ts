@@ -1,4 +1,4 @@
-import type { UpdateUserRequest } from '@/services/admin'
+﻿import type { UpdateUserRequest } from '@/services/admin'
 
 export interface EditableAdminUser {
   id: number
@@ -6,7 +6,6 @@ export interface EditableAdminUser {
   username?: string
   role: 'user' | 'premium'
   is_admin?: boolean
-  user_type: 'parent' | 'student'
   status: 'active' | 'banned'
 }
 
@@ -15,7 +14,6 @@ export interface AdminUserEditValues {
   username?: string
   role: 'user' | 'premium'
   is_admin: boolean
-  user_type: 'parent' | 'student'
   status: 'active' | 'banned'
 }
 
@@ -41,7 +39,6 @@ export function buildAdminUserUpdatePayload(
   ) {
     payload.is_admin = values.is_admin
   }
-  if (values.user_type !== original.user_type) payload.user_type = values.user_type
   if (values.status !== original.status) payload.status = values.status
 
   return payload

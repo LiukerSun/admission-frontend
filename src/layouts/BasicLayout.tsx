@@ -1,12 +1,10 @@
 import { useState } from 'react'
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom'
-import { Avatar, Badge, Breadcrumb, Button, Drawer, Dropdown, Grid, Layout, Menu, Spin } from 'antd'
+import { Avatar, Breadcrumb, Button, Drawer, Dropdown, Grid, Layout, Menu, Spin } from 'antd'
 import {
   BarChartOutlined,
-  BellOutlined,
   DashboardOutlined,
   HomeOutlined,
-  LinkOutlined,
   LogoutOutlined,
   MenuOutlined,
   SettingOutlined,
@@ -22,12 +20,10 @@ const { Header, Content } = Layout
 const { useBreakpoint } = Grid
 
 const ROUTE_TITLE_MAP: Record<string, string> = {
-  '/dashboard': '控制台',
-  '/analysis': '数据分析',
-  '/profile': '账户中心',
-  '/admin/dashboard': '统计看板',
+  '/dashboard': '工作台',
+  '/profile': '账号中心',
+  '/admin/dashboard': '管理概览',
   '/admin/users': '用户管理',
-  '/admin/bindings': '绑定管理',
   '/admin/payment/orders': '支付订单',
 }
 
@@ -35,7 +31,7 @@ function buildBreadcrumbItems(pathname: string) {
   const items: { title: string }[] = []
 
   if (pathname.startsWith('/admin')) {
-    items.push({ title: '系统管理' })
+    items.push({ title: '管理后台' })
     const sub = ROUTE_TITLE_MAP[pathname]
     if (sub) items.push({ title: sub })
   } else {
@@ -58,12 +54,7 @@ export default function BasicLayout() {
     {
       key: '/dashboard',
       icon: <DashboardOutlined />,
-      label: <Link to="/dashboard">控制台</Link>,
-    },
-    {
-      key: '/analysis',
-      icon: <BarChartOutlined />,
-      label: <Link to="/analysis">数据分析</Link>,
+      label: <Link to="/dashboard">工作台</Link>,
     },
   ]
 
@@ -71,22 +62,17 @@ export default function BasicLayout() {
     {
       key: '/admin/dashboard',
       icon: <BarChartOutlined />,
-      label: <Link to="/admin/dashboard">统计看板</Link>,
+      label: <Link to="/admin/dashboard">概览</Link>,
     },
     {
       key: '/admin/users',
       icon: <TeamOutlined />,
-      label: <Link to="/admin/users">用户管理</Link>,
-    },
-    {
-      key: '/admin/bindings',
-      icon: <LinkOutlined />,
-      label: <Link to="/admin/bindings">绑定管理</Link>,
+      label: <Link to="/admin/users">用户</Link>,
     },
     {
       key: '/admin/payment/orders',
       icon: <WalletOutlined />,
-      label: <Link to="/admin/payment/orders">支付订单</Link>,
+      label: <Link to="/admin/payment/orders">订单</Link>,
     },
   ]
 
@@ -94,7 +80,7 @@ export default function BasicLayout() {
     {
       key: 'profile',
       icon: <UserOutlined />,
-      label: '账户中心',
+      label: '账号中心',
       onClick: () => navigate(toAccountCenterPath('profile-security')),
     },
     ...(isAdmin
@@ -102,7 +88,7 @@ export default function BasicLayout() {
           {
             key: 'admin',
             icon: <SettingOutlined />,
-            label: '系统管理',
+            label: '管理后台',
             onClick: () => navigate('/admin/dashboard'),
           },
         ]
@@ -118,20 +104,11 @@ export default function BasicLayout() {
     },
   ]
 
-  const notificationItems: MenuProps['items'] = [
-    { key: '1', label: '系统通知：数据分析模块已更新', disabled: true },
-    { key: '2', label: '志愿模拟功能上线', disabled: true },
-    { type: 'divider' as const },
-    { key: 'all', label: '查看全部通知', onClick: () => navigate('/dashboard') },
-  ]
-
   const breadcrumbItems = buildBreadcrumbItems(location.pathname)
   const isAdminRoute = location.pathname.startsWith('/admin')
   const currentMenuItems = isAdminRoute ? adminMenuItems : primaryMenuItems
   const selectedMenuKeys = [location.pathname]
   const userName = user?.email?.split('@')[0]
-
-  const closeMobileMenu = () => setMobileMenuOpen(false)
 
   if (isRestoring) {
     return (
@@ -165,7 +142,7 @@ export default function BasicLayout() {
             icon={<MenuOutlined />}
             onClick={() => setMobileMenuOpen(true)}
             style={{ width: 40, height: 40, flex: '0 0 auto' }}
-            aria-label="打开导航菜单"
+            aria-label="打开导航"
           />
         )}
 
@@ -178,10 +155,10 @@ export default function BasicLayout() {
             whiteSpace: 'nowrap',
             flex: '0 0 auto',
           }}
-          onClick={() => navigate('/')}
-          title="AI志愿填报助手"
+          onClick={() => navigate('/dashboard')}
+          title="志愿填报助手"
         >
-          AI志愿填报助手
+          志愿填报助手
         </div>
 
         {isDesktop && (
@@ -194,18 +171,8 @@ export default function BasicLayout() {
         )}
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginLeft: 'auto', flex: '0 0 auto' }}>
-          <Dropdown menu={{ items: notificationItems }} placement="bottomRight">
-            <Badge count={2} size="small" offset={[0, 2]}>
-              <Button
-                type="text"
-                icon={<BellOutlined style={{ fontSize: 18, color: '#64748B' }} />}
-                style={{ width: 40, height: 40 }}
-              />
-            </Badge>
-          </Dropdown>
-
           <Dropdown menu={{ items: accountMenuItems }} placement="bottomRight" trigger={['click']}>
-            <span style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, padding: '4px 8px', borderRadius: 6, transition: 'background 0.2s' }}>
+            <span style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, padding: '4px 8px', borderRadius: 6 }}>
               <Avatar icon={<UserOutlined />} style={{ backgroundColor: '#1E40AF' }} size="small" />
               {isDesktop && userName && (
                 <span style={{ color: '#1E3A8A', fontWeight: 500, fontSize: 14 }}>
@@ -230,10 +197,12 @@ export default function BasicLayout() {
               { title: <Link to="/dashboard" style={{ color: '#64748B' }}><HomeOutlined /></Link> },
               ...breadcrumbItems.map((item, idx) => ({
                 title: (
-                  <span style={{
-                    color: idx === breadcrumbItems.length - 1 ? '#1E3A8A' : '#64748B',
-                    fontWeight: idx === breadcrumbItems.length - 1 ? 600 : 400,
-                  }}>
+                  <span
+                    style={{
+                      color: idx === breadcrumbItems.length - 1 ? '#1E3A8A' : '#64748B',
+                      fontWeight: idx === breadcrumbItems.length - 1 ? 600 : 400,
+                    }}
+                  >
                     {item.title}
                   </span>
                 ),
@@ -250,17 +219,17 @@ export default function BasicLayout() {
       </Content>
 
       <Drawer
-        title="导航菜单"
+        title="导航"
         placement="left"
         open={mobileMenuOpen}
-        onClose={closeMobileMenu}
+        onClose={() => setMobileMenuOpen(false)}
         width={288}
       >
         <Menu
           mode="inline"
           selectedKeys={selectedMenuKeys}
           items={currentMenuItems}
-          onClick={closeMobileMenu}
+          onClick={() => setMobileMenuOpen(false)}
           style={{ borderRight: 0 }}
         />
       </Drawer>

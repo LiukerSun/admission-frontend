@@ -1,11 +1,9 @@
-import api from './api'
+﻿import api from './api'
 import type { components } from '@/types/api'
 
 export type StatsResponse = components['schemas']['admin.StatsResponse']
 export type UserListResponse = components['schemas']['admin.UserListResponse']
 export type UserListItem = components['schemas']['admin.UserListItem']
-export type BindingListResponse = components['schemas']['admin.BindingListResponse']
-export type BindingListItem = components['schemas']['admin.BindingListItem']
 export type UpdateRoleRequest = components['schemas']['admin.UpdateRoleRequest']
 
 export interface ResetPasswordRequest {
@@ -18,7 +16,6 @@ export interface AdminUserDetail {
   username?: string
   role: 'user' | 'premium'
   is_admin?: boolean
-  user_type: 'parent' | 'student'
   status: 'active' | 'banned'
   created_at: string
   updated_at: string
@@ -29,7 +26,6 @@ export interface UpdateUserRequest {
   username?: string
   role?: 'user' | 'premium'
   is_admin?: boolean
-  user_type?: 'parent' | 'student'
   status?: 'active' | 'banned'
 }
 
@@ -43,10 +39,6 @@ export interface UserListQuery {
   status?: string
 }
 
-export interface BindingListQuery {
-  page?: number
-  page_size?: number
-}
 
 export const adminApi = {
   getStats: () =>
@@ -72,10 +64,4 @@ export const adminApi = {
 
   updateUserRole: (id: number, data: UpdateRoleRequest) =>
     api.put(`/api/v1/admin/users/${id}/role`, data),
-
-  getBindings: (params?: BindingListQuery) =>
-    api.get<{ data: BindingListResponse }>('/api/v1/admin/bindings', { params }),
-
-  deleteBinding: (id: number) =>
-    api.delete(`/api/v1/admin/bindings/${id}`),
 }

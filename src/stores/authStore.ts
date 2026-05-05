@@ -7,7 +7,6 @@ export type User = CurrentUser & {
   email: string
   role: string
   is_admin: boolean
-  user_type: 'parent' | 'student'
   created_at: string
 }
 
@@ -19,7 +18,7 @@ interface AuthState {
   isAdmin: boolean
 
   login: (email: string, password: string) => Promise<void>
-  register: (email: string, password: string, userType: 'parent' | 'student') => Promise<void>
+  register: (email: string, password: string) => Promise<void>
   logout: () => void
   restore: () => Promise<void>
   refreshUser: () => Promise<User>
@@ -69,8 +68,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
   },
 
-  register: async (email: string, password: string, userType: 'parent' | 'student') => {
-    await authApi.register({ email, password, user_type: userType })
+  register: async (email: string, password: string) => {
+    await authApi.register({ email, password })
     await get().login(email, password)
   },
 

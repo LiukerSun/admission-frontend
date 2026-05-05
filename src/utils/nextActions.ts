@@ -1,12 +1,10 @@
 export interface DashboardNextActionInput {
   phoneVerified: boolean
-  userType: 'parent' | 'student'
-  bindingCount: number
   membershipActive: boolean
 }
 
 export interface DashboardNextAction {
-  key: 'verify-phone' | 'bind-student' | 'review-membership' | 'continue-analysis'
+  key: 'verify-phone' | 'review-membership'
   title: string
   description: string
   href: string
@@ -24,15 +22,6 @@ export function buildDashboardNextActions(input: DashboardNextActionInput): Dash
     })
   }
 
-  if (input.userType === 'parent' && input.bindingCount === 0) {
-    actions.push({
-      key: 'bind-student',
-      title: '绑定学生',
-      description: '建立家长与学生关系，便于共同管理填报信息。',
-      href: '/profile?tab=family-bindings',
-    })
-  }
-
   if (!input.membershipActive) {
     actions.push({
       key: 'review-membership',
@@ -41,13 +30,6 @@ export function buildDashboardNextActions(input: DashboardNextActionInput): Dash
       href: '/profile?tab=membership-orders',
     })
   }
-
-  actions.push({
-    key: 'continue-analysis',
-    title: '继续数据分析',
-    description: '回到院校、专业和分数相关分析流程。',
-    href: '/analysis',
-  })
 
   return actions
 }

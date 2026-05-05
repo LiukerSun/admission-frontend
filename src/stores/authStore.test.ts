@@ -63,7 +63,6 @@ describe('useAuthStore', () => {
           phone_verified: true,
           role: 'premium',
           is_admin: true,
-          user_type: 'parent',
           created_at: '2026-04-21T00:00:00Z',
         },
       },

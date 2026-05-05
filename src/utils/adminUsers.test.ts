@@ -10,7 +10,6 @@ describe('admin user editing', () => {
         username: 'Old',
         role: 'user',
         is_admin: false,
-        user_type: 'parent',
         status: 'active',
       },
       {
@@ -18,7 +17,6 @@ describe('admin user editing', () => {
         username: 'New',
         role: 'premium',
         is_admin: true,
-        user_type: 'parent',
         status: 'active',
       },
       1,
@@ -40,7 +38,6 @@ describe('admin user editing', () => {
         username: 'Admin',
         role: 'premium',
         is_admin: true,
-        user_type: 'parent',
         status: 'active',
       },
       {
@@ -48,7 +45,6 @@ describe('admin user editing', () => {
         username: 'Admin',
         role: 'premium',
         is_admin: false,
-        user_type: 'parent',
         status: 'active',
       },
       10,

@@ -21,7 +21,6 @@ const { useBreakpoint } = Grid
 export default function OrdersPage() {
   const screens = useBreakpoint()
   const [searchParams, setSearchParams] = useSearchParams()
-
   const [orders, setOrders] = useState<OrderResponse[]>([])
   const [selectedOrder, setSelectedOrder] = useState<OrderResponse | null>(null)
   const [detailOpen, setDetailOpen] = useState(false)
@@ -31,7 +30,6 @@ export default function OrdersPage() {
   const [page, setPage] = useState(() => Number(searchParams.get('page')) || 1)
   const [pageSize, setPageSize] = useState(() => Number(searchParams.get('pageSize')) || 20)
   const [total, setTotal] = useState(0)
-
   const drawerWidth = useMemo(() => (screens.md ? 640 : '90vw'), [screens.md])
 
   const fetchOrders = useCallback(async () => {
@@ -82,16 +80,10 @@ export default function OrdersPage() {
 
   useEffect(() => {
     const params = new URLSearchParams(searchParams)
-    if (page > 1) {
-      params.set('page', String(page))
-    } else {
-      params.delete('page')
-    }
-    if (pageSize !== 20) {
-      params.set('pageSize', String(pageSize))
-    } else {
-      params.delete('pageSize')
-    }
+    if (page > 1) params.set('page', String(page))
+    else params.delete('page')
+    if (pageSize !== 20) params.set('pageSize', String(pageSize))
+    else params.delete('pageSize')
     setSearchParams(params, { replace: true })
   }, [page, pageSize, searchParams, setSearchParams])
 
@@ -153,13 +145,7 @@ export default function OrdersPage() {
         </Button>
       ),
     },
-    {
-      title: '商品',
-      dataIndex: 'subject',
-      key: 'subject',
-      ellipsis: true,
-      minWidth: 120,
-    },
+    { title: '商品', dataIndex: 'subject', key: 'subject', ellipsis: true, minWidth: 120 },
     {
       title: '金额',
       key: 'amount',
@@ -202,12 +188,7 @@ export default function OrdersPage() {
       render: (_, record) => {
         const acting = isOrderActing(record.order_no)
         const items = [
-          {
-            key: 'detail',
-            label: '查看详情',
-            disabled: acting,
-            onClick: () => void openDetail(record.order_no),
-          },
+          { key: 'detail', label: '查看详情', disabled: acting, onClick: () => void openDetail(record.order_no) },
           {
             key: 'detect',
             label: '检测状态',
@@ -216,15 +197,13 @@ export default function OrdersPage() {
             onClick: () => void handleDetect(record),
           },
           ...(canPayOrder(record)
-            ? [
-                {
-                  key: 'pay',
-                  label: 'Mock 支付',
-                  icon: <WalletOutlined />,
-                  disabled: acting,
-                  onClick: () => handlePay(record),
-                },
-              ]
+            ? [{
+                key: 'pay',
+                label: 'Mock 支付',
+                icon: <WalletOutlined />,
+                disabled: acting,
+                onClick: () => handlePay(record),
+              }]
             : []),
         ]
 
@@ -326,34 +305,15 @@ export default function OrdersPage() {
                   value={<Tag color={ORDER_STATUS_COLORS[selectedOrder.order_status]}>{orderStatusLabel(selectedOrder.order_status)}</Tag>}
                 />
                 <DetailRow label="支付通道" value={paymentChannelLabel(selectedOrder.payment_channel)} />
-                <DetailRow
-                  label="创建时间"
-                  value={
-                    <Tooltip title={formatRelativeTime(selectedOrder.created_at)}>
-                      <span>{formatDateTime(selectedOrder.created_at)}</span>
-                    </Tooltip>
-                  }
-                />
+                <DetailRow label="创建时间" value={formatDateTime(selectedOrder.created_at)} />
                 <DetailRow label="过期时间" value={formatDateTime(selectedOrder.expires_at)} />
                 <DetailRow label="支付时间" value={formatDateTime(selectedOrder.paid_at)} />
                 <DetailRow label="关闭时间" value={formatDateTime(selectedOrder.closed_at)} />
               </Space>
             </div>
 
-            <div
-              style={{
-                padding: '12px 24px',
-                borderTop: '1px solid #E2E8F0',
-                display: 'flex',
-                gap: 8,
-                justifyContent: 'flex-end',
-              }}
-            >
-              <Button
-                icon={<ReloadOutlined />}
-                loading={actionLoading === `detect:${selectedOrder.order_no}`}
-                onClick={() => void handleDetect(selectedOrder)}
-              >
+            <div style={{ padding: '12px 24px', borderTop: '1px solid #E2E8F0', display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+              <Button icon={<ReloadOutlined />} loading={actionLoading === `detect:${selectedOrder.order_no}`} onClick={() => void handleDetect(selectedOrder)}>
                 检测状态
               </Button>
               <Button

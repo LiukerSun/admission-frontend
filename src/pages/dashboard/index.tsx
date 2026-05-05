@@ -1,121 +1,30 @@
-import { type ReactNode, useEffect, useRef, useState } from 'react'
-import { Button, Card, Statistic, Row, Col, Spin, Divider } from 'antd'
+import { type ReactNode, useEffect, useState } from 'react'
+import { Button, Card, Col, Divider, Row, Statistic, Typography } from 'antd'
 import {
-  BarChartOutlined,
-  LineChartOutlined,
-  PieChartOutlined,
-  TeamOutlined,
-  UserAddOutlined,
-  LinkOutlined,
-  RiseOutlined,
-  FallOutlined,
   CheckCircleOutlined,
   CrownOutlined,
+  DashboardOutlined,
   MobileOutlined,
-  RocketOutlined,
 } from '@ant-design/icons'
 import { Link } from 'react-router-dom'
 import { useAuthStore } from '@/stores/authStore'
-import { adminApi, type StatsResponse } from '@/services/admin'
-import { bindingsApi, type BindingListResponse } from '@/services/bindings'
 import { membershipApi } from '@/services/membership'
 import { buildDashboardNextActions, type DashboardNextAction } from '@/utils/nextActions'
-import * as echarts from 'echarts'
-
-function Sparkline({ data, color }: { data: number[]; color: string }) {
-  const chartRef = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    if (!chartRef.current) return
-    const chart = echarts.init(chartRef.current)
-    chart.setOption({
-      grid: { top: 4, right: 4, bottom: 4, left: 4 },
-      xAxis: { show: false, type: 'category', data: data.map((_, i) => i) },
-      yAxis: { show: false, type: 'value' },
-      series: [{
-        type: 'line',
-        data,
-        smooth: true,
-        symbol: 'none',
-        lineStyle: { width: 2, color },
-        areaStyle: {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          color: new (echarts as any).graphic.LinearGradient(0, 0, 0, 1, [
-            { offset: 0, color: color + '33' },
-            { offset: 1, color: color + '05' },
-          ]),
-        },
-      }],
-    })
-    const handleResize = () => chart.resize()
-    window.addEventListener('resize', handleResize)
-    return () => {
-      window.removeEventListener('resize', handleResize)
-      chart.dispose()
-    }
-  }, [data, color])
-
-  return <div ref={chartRef} style={{ width: '100%', height: 48 }} />
-}
-
-function TrendTag({ value }: { value: number }) {
-  const isUp = value >= 0
-  return (
-    <span style={{ color: isUp ? '#16A34A' : '#DC2626', fontSize: 12, display: 'inline-flex', alignItems: 'center', gap: 2 }}>
-      {isUp ? <RiseOutlined /> : <FallOutlined />}
-      {Math.abs(value)}%
-    </span>
-  )
-}
 
 export default function DashboardPage() {
-  const { isAdmin, user } = useAuthStore()
-  const [stats, setStats] = useState<StatsResponse | null>(null)
-  const [bindingCount, setBindingCount] = useState(0)
+  const { user } = useAuthStore()
   const [membershipActive, setMembershipActive] = useState(false)
-  const [loading, setLoading] = useState(false)
 
   useEffect(() => {
-    if (!isAdmin) return
+    if (!user) return
+
     let cancelled = false
     const run = async () => {
-      setLoading(true)
       try {
-        const res = await adminApi.getStats()
-        if (!cancelled) setStats(res.data.data)
+        const membershipRes = await membershipApi.getCurrent()
+        if (!cancelled) setMembershipActive(Boolean(membershipRes.data.data?.active))
       } catch {
-        // ignore
-      } finally {
-        if (!cancelled) setLoading(false)
-      }
-    }
-    void run()
-    return () => {
-      cancelled = true
-      setStats(null)
-      setLoading(false)
-    }
-  }, [isAdmin])
-
-  useEffect(() => {
-    if (isAdmin || !user) return
-
-    let cancelled = false
-    const run = async () => {
-      const [bindingsRes, membershipRes] = await Promise.allSettled([
-        bindingsApi.list(),
-        membershipApi.getCurrent(),
-      ])
-
-      if (cancelled) return
-
-      if (bindingsRes.status === 'fulfilled') {
-        const data = bindingsRes.value.data.data as BindingListResponse | undefined
-        setBindingCount(data?.bindings?.length ?? 0)
-      }
-
-      if (membershipRes.status === 'fulfilled') {
-        setMembershipActive(Boolean(membershipRes.value.data.data?.active))
+        if (!cancelled) setMembershipActive(false)
       }
     }
 
@@ -123,237 +32,108 @@ export default function DashboardPage() {
     return () => {
       cancelled = true
     }
-  }, [isAdmin, user])
+  }, [user])
 
-  const sparkData = [12, 18, 15, 25, 22, 30, 35]
-  const sparkData2 = [8, 12, 10, 14, 18, 16, 20]
-  const sparkData3 = [3, 2, 4, 3, 5, 4, 6]
   const nextActions = user
     ? buildDashboardNextActions({
         phoneVerified: Boolean(user.phone_verified),
-        userType: user.user_type,
-        bindingCount,
         membershipActive,
       })
     : []
+
   const nextActionIcons: Record<DashboardNextAction['key'], ReactNode> = {
     'verify-phone': <MobileOutlined />,
-    'bind-student': <LinkOutlined />,
     'review-membership': <CrownOutlined />,
-    'continue-analysis': <RocketOutlined />,
-  }
-
-  if (isAdmin && loading) {
-    return (
-      <div style={{ display: 'flex', justifyContent: 'center', padding: 64 }}>
-        <Spin size="large" />
-      </div>
-    )
   }
 
   return (
     <div>
-      <h2 style={{ marginBottom: 4 }}>{isAdmin ? '平台控制台' : '我的控制台'}</h2>
-      <p style={{ color: '#64748B', marginBottom: 24 }}>
-        {isAdmin ? '查看平台整体运行数据和用户活跃度' : '查看你的志愿填报进度和收藏数据'}
-      </p>
+      <Typography.Title level={2} style={{ marginBottom: 4, fontSize: 24 }}>
+        我的工作台
+      </Typography.Title>
+      <Typography.Text type="secondary">
+        账号已可正常使用，你也可以继续完善安全验证和会员权益。
+      </Typography.Text>
 
-      {isAdmin ? (
-        <>
-          <Row gutter={[24, 24]}>
-            <Col xs={24} sm={12} lg={8}>
-              <Card bodyStyle={{ paddingBottom: 12 }}>
-                <Statistic
-                  title={<span style={{ fontSize: 13, color: '#64748B' }}>总用户数</span>}
-                  value={stats?.total_users ?? 0}
-                  prefix={<TeamOutlined style={{ color: '#1E40AF' }} />}
-                  valueStyle={{ fontSize: 28, fontWeight: 600 }}
-                />
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 }}>
-                  <TrendTag value={12.5} />
-                  <span style={{ fontSize: 12, color: '#94A3B8' }}>较上月</span>
-                </div>
-                <Sparkline data={sparkData} color="#1E40AF" />
-              </Card>
-            </Col>
-            <Col xs={24} sm={12} lg={8}>
-              <Card bodyStyle={{ paddingBottom: 12 }}>
-                <Statistic
-                  title={<span style={{ fontSize: 13, color: '#64748B' }}>活跃用户</span>}
-                  value={stats?.active_users ?? 0}
-                  prefix={<UserAddOutlined style={{ color: '#D97706' }} />}
-                  valueStyle={{ fontSize: 28, fontWeight: 600 }}
-                />
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 }}>
-                  <TrendTag value={8.3} />
-                  <span style={{ fontSize: 12, color: '#94A3B8' }}>较上月</span>
-                </div>
-                <Sparkline data={sparkData2} color="#D97706" />
-              </Card>
-            </Col>
-            <Col xs={24} sm={12} lg={8}>
-              <Card bodyStyle={{ paddingBottom: 12 }}>
-                <Statistic
-                  title={<span style={{ fontSize: 13, color: '#64748B' }}>绑定总数</span>}
-                  value={stats?.total_bindings ?? 0}
-                  prefix={<LinkOutlined style={{ color: '#16A34A' }} />}
-                  valueStyle={{ fontSize: 28, fontWeight: 600 }}
-                />
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 }}>
-                  <TrendTag value={-2.1} />
-                  <span style={{ fontSize: 12, color: '#94A3B8' }}>较上月</span>
-                </div>
-                <Sparkline data={sparkData3} color="#16A34A" />
-              </Card>
-            </Col>
-          </Row>
-          {stats?.users_by_role && (
-            <Card title="会员等级分布" style={{ marginTop: 24 }}>
-              <Row gutter={[24, 24]}>
-                {Object.entries(stats.users_by_role).map(([role, count]) => (
-                  <Col xs={12} sm={8} lg={6} key={role}>
-                    <Statistic title={role} value={count} />
-                  </Col>
-                ))}
-              </Row>
-            </Card>
+      <Row gutter={[24, 24]} style={{ marginTop: 24 }}>
+        <Col xs={24} md={8}>
+          <Card>
+            <Statistic
+              title="账号"
+              value="正常"
+              prefix={<DashboardOutlined />}
+              valueStyle={{ color: '#16A34A' }}
+            />
+          </Card>
+        </Col>
+        <Col xs={24} md={8}>
+          <Card>
+            <Statistic
+              title="手机号验证"
+              value={user?.phone_verified ? '已验证' : '待验证'}
+              prefix={<MobileOutlined />}
+              valueStyle={{ color: user?.phone_verified ? '#16A34A' : '#D97706' }}
+            />
+          </Card>
+        </Col>
+        <Col xs={24} md={8}>
+          <Card>
+            <Statistic
+              title="会员"
+              value={membershipActive ? '有效' : '普通'}
+              prefix={<CrownOutlined />}
+              valueStyle={{ color: membershipActive ? '#D97706' : '#64748B' }}
+            />
+          </Card>
+        </Col>
+      </Row>
+
+      <Divider style={{ margin: '32px 0' }} />
+
+      <Card title="推荐下一步">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          {nextActions.length === 0 && (
+            <Typography.Text type="secondary">暂无待处理事项，可以直接开始使用系统。</Typography.Text>
           )}
-        </>
-      ) : (
-        <>
-          <Row gutter={[24, 24]}>
-            <Col xs={24} sm={12} lg={8}>
-              <Card bodyStyle={{ paddingBottom: 12 }}>
-                <Statistic
-                  title={<span style={{ fontSize: 13, color: '#64748B' }}>已完成分析</span>}
-                  value={12}
-                  prefix={<BarChartOutlined style={{ color: '#1E40AF' }} />}
-                  valueStyle={{ fontSize: 28, fontWeight: 600 }}
-                />
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 }}>
-                  <TrendTag value={20} />
-                  <span style={{ fontSize: 12, color: '#94A3B8' }}>较上周</span>
-                </div>
-                <Sparkline data={[5, 8, 6, 10, 12, 11, 12]} color="#1E40AF" />
-              </Card>
-            </Col>
-            <Col xs={24} sm={12} lg={8}>
-              <Card bodyStyle={{ paddingBottom: 12 }}>
-                <Statistic
-                  title={<span style={{ fontSize: 13, color: '#64748B' }}>收藏院校</span>}
-                  value={5}
-                  prefix={<LineChartOutlined style={{ color: '#D97706' }} />}
-                  valueStyle={{ fontSize: 28, fontWeight: 600 }}
-                />
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 }}>
-                  <TrendTag value={0} />
-                  <span style={{ fontSize: 12, color: '#94A3B8' }}>较上周</span>
-                </div>
-                <Sparkline data={[3, 4, 4, 5, 5, 5, 5]} color="#D97706" />
-              </Card>
-            </Col>
-            <Col xs={24} sm={12} lg={8}>
-              <Card bodyStyle={{ paddingBottom: 12 }}>
-                <Statistic
-                  title={<span style={{ fontSize: 13, color: '#64748B' }}>对比方案</span>}
-                  value={3}
-                  prefix={<PieChartOutlined style={{ color: '#16A34A' }} />}
-                  valueStyle={{ fontSize: 28, fontWeight: 600 }}
-                />
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 }}>
-                  <TrendTag value={50} />
-                  <span style={{ fontSize: 12, color: '#94A3B8' }}>较上周</span>
-                </div>
-                <Sparkline data={[1, 1, 2, 2, 3, 3, 3]} color="#16A34A" />
-              </Card>
-            </Col>
-          </Row>
-
-          <Divider style={{ margin: '32px 0' }} />
-
-          <Row gutter={[24, 24]}>
-            <Col xs={24} lg={16}>
-              <Card title="志愿填报进度">
-                <div style={{ padding: '24px 0' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                    <span>院校调研</span>
-                    <span style={{ color: '#1E40AF', fontWeight: 600 }}>80%</span>
+          {nextActions.map((action) => (
+            <Card key={action.key} size="small" bodyStyle={{ padding: 16 }} style={{ borderRadius: 8 }}>
+              <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+                <span
+                  style={{
+                    width: 32,
+                    height: 32,
+                    borderRadius: 6,
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: '#1E40AF',
+                    background: '#EFF6FF',
+                    flex: '0 0 auto',
+                  }}
+                >
+                  {nextActionIcons[action.key]}
+                </span>
+                <div style={{ minWidth: 0, flex: 1 }}>
+                  <div style={{ fontWeight: 600, color: '#0F172A', marginBottom: 4 }}>
+                    {action.title}
                   </div>
-                  <div style={{ height: 8, background: '#E9EEF6', borderRadius: 4, overflow: 'hidden' }}>
-                    <div style={{ width: '80%', height: '100%', background: '#1E40AF', borderRadius: 4 }} />
+                  <div style={{ color: '#64748B', fontSize: 13, lineHeight: 1.6 }}>
+                    {action.description}
                   </div>
+                  <Button
+                    type="link"
+                    size="small"
+                    icon={<CheckCircleOutlined />}
+                    style={{ padding: 0, marginTop: 8, height: 'auto' }}
+                  >
+                    <Link to={action.href}>打开</Link>
+                  </Button>
                 </div>
-                <div style={{ padding: '24px 0' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                    <span>专业分析</span>
-                    <span style={{ color: '#D97706', fontWeight: 600 }}>60%</span>
-                  </div>
-                  <div style={{ height: 8, background: '#E9EEF6', borderRadius: 4, overflow: 'hidden' }}>
-                    <div style={{ width: '60%', height: '100%', background: '#D97706', borderRadius: 4 }} />
-                  </div>
-                </div>
-                <div style={{ padding: '24px 0' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                    <span>志愿模拟</span>
-                    <span style={{ color: '#16A34A', fontWeight: 600 }}>40%</span>
-                  </div>
-                  <div style={{ height: 8, background: '#E9EEF6', borderRadius: 4, overflow: 'hidden' }}>
-                    <div style={{ width: '40%', height: '100%', background: '#16A34A', borderRadius: 4 }} />
-                  </div>
-                </div>
-              </Card>
-            </Col>
-            <Col xs={24} lg={8}>
-              <Card title="下一步建议">
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                  {nextActions.map((action) => (
-                    <Card
-                      key={action.key}
-                      size="small"
-                      bodyStyle={{ padding: 16 }}
-                      style={{ borderRadius: 8 }}
-                    >
-                      <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
-                        <span
-                          style={{
-                            width: 32,
-                            height: 32,
-                            borderRadius: 6,
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            color: '#1E40AF',
-                            background: '#EFF6FF',
-                            flex: '0 0 auto',
-                          }}
-                        >
-                          {nextActionIcons[action.key]}
-                        </span>
-                        <div style={{ minWidth: 0, flex: 1 }}>
-                          <div style={{ fontWeight: 600, color: '#0F172A', marginBottom: 4 }}>
-                            {action.title}
-                          </div>
-                          <div style={{ color: '#64748B', fontSize: 13, lineHeight: 1.6 }}>
-                            {action.description}
-                          </div>
-                          <Button
-                            type="link"
-                            size="small"
-                            icon={<CheckCircleOutlined />}
-                            style={{ padding: 0, marginTop: 8, height: 'auto' }}
-                          >
-                            <Link to={action.href}>去处理</Link>
-                          </Button>
-                        </div>
-                      </div>
-                    </Card>
-                  ))}
-                </div>
-              </Card>
-            </Col>
-          </Row>
-        </>
-      )}
+              </div>
+            </Card>
+          ))}
+        </div>
+      </Card>
     </div>
   )
 }

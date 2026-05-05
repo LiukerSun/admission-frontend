@@ -1,19 +1,5 @@
 import { useEffect, useState } from 'react'
-import {
-  Alert,
-  Button,
-  Card,
-  Col,
-  Empty,
-  Modal,
-  Row,
-  Skeleton,
-  Space,
-  Statistic,
-  Tag,
-  Typography,
-  message,
-} from 'antd'
+import { Alert, Button, Card, Col, Empty, Modal, Row, Skeleton, Space, Statistic, Tag, Typography, message } from 'antd'
 import { CheckCircleOutlined, CrownOutlined, ShoppingCartOutlined } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
 import { createOrderIdempotencyKey, showOrderCreatedSuccess } from '@/components/orders'
@@ -50,14 +36,13 @@ export default function MembershipPage() {
     const timer = window.setTimeout(() => {
       void loadData()
     }, 0)
-
     return () => window.clearTimeout(timer)
   }, [])
 
   const handleCreateOrder = (plan: MembershipPlan) => {
     Modal.confirm({
       title: `确认购买${plan.plan_name}？`,
-      content: `应付金额 ${formatMoney(plan.price_amount, plan.currency)}，订单将在后端指定时间后过期。`,
+      content: `应付金额 ${formatMoney(plan.price_amount, plan.currency)}，订单未支付会在过期后关闭。`,
       okText: '创建订单',
       cancelText: '取消',
       onOk: async () => {
@@ -71,7 +56,7 @@ export default function MembershipPage() {
           message.success('订单已创建')
           showOrderCreatedSuccess(order, (orderNo) => navigate(`/orders?orderNo=${orderNo}`))
         } catch (err: unknown) {
-          const axiosErr = err as { response?: { status?: number; data?: { message?: string } } }
+          const axiosErr = err as { response?: { data?: { message?: string } } }
           message.error(axiosErr.response?.data?.message || '创建订单失败')
         } finally {
           setCreatingPlanCode('')
@@ -107,7 +92,7 @@ export default function MembershipPage() {
             />
           </Col>
           <Col xs={24} md={8}>
-            <Statistic title="会员等级" value={membership?.membership_level || 'premium'} />
+            <Statistic title="会员等级" value={membership?.membership_level || '普通'} />
           </Col>
           <Col xs={24} md={8}>
             <Statistic title="有效期至" value={formatDateTime(membership?.ends_at)} />

@@ -26,8 +26,6 @@ export const PAYMENT_CHANNEL_LABELS: Record<string, string> = {
   mock: 'Mock 支付',
 }
 
-// Colors aligned with Design System
-// Primary #1E40AF, Secondary #3B82F6, Accent #D97706, Destructive #DC2626
 export const ORDER_STATUS_COLORS: Record<string, string> = {
   created: '#94A3B8',
   awaiting_payment: '#D97706',
@@ -58,10 +56,8 @@ export function formatMoney(amount: number, currency = 'CNY') {
 }
 
 export function formatDateTime(value?: string | null) {
-  if (!value) {
-    return '-'
-  }
-  return new Date(value).toLocaleString()
+  if (!value) return '-'
+  return new Date(value).toLocaleString('zh-CN')
 }
 
 export function formatRelativeTime(value?: string | null) {
@@ -78,7 +74,7 @@ export function formatRelativeTime(value?: string | null) {
   if (diffMin < 60) return `${diffMin} 分钟前`
   if (diffHour < 24) return `${diffHour} 小时前`
   if (diffDay < 7) return `${diffDay} 天前`
-  return date.toLocaleDateString()
+  return date.toLocaleDateString('zh-CN')
 }
 
 export function orderStatusLabel(status?: OrderStatus | string) {

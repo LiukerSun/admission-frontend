@@ -13,7 +13,6 @@ interface LoginRequest {
 interface RegisterRequest {
   email: string
   password: string
-  user_type: 'parent' | 'student'
 }
 
 interface RefreshRequest {

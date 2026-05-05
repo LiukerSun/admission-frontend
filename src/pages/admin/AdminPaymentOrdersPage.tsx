@@ -57,6 +57,20 @@ interface FilterValues {
   order_status?: string
 }
 
+const planOptions = [
+  { value: 'monthly', label: '月度会员' },
+  { value: 'quarterly', label: '季度会员' },
+  { value: 'yearly', label: '年度会员' },
+]
+
+const orderStatusOptions = [
+  { value: 'awaiting_payment', label: '待支付' },
+  { value: 'paid', label: '已支付' },
+  { value: 'fulfilled', label: '已完成' },
+  { value: 'closed', label: '已关闭' },
+  { value: 'failed', label: '失败' },
+]
+
 export default function AdminPaymentOrdersPage() {
   const screens = useBreakpoint()
   const [searchParams, setSearchParams] = useSearchParams()
@@ -74,15 +88,13 @@ export default function AdminPaymentOrdersPage() {
   const [page, setPage] = useState(() => Number(searchParams.get('page')) || 1)
   const [pageSize, setPageSize] = useState(() => Number(searchParams.get('pageSize')) || 20)
   const [total, setTotal] = useState(0)
-  const [filters, setFilters] = useState<FilterValues>(() => {
-    return {
-      order_no: searchParams.get('order_no') || undefined,
-      user_id: searchParams.get('user_id') ? Number(searchParams.get('user_id')) : undefined,
-      plan_code: searchParams.get('plan_code') || undefined,
-      channel: searchParams.get('channel') || undefined,
-      order_status: searchParams.get('order_status') || undefined,
-    }
-  })
+  const [filters, setFilters] = useState<FilterValues>(() => ({
+    order_no: searchParams.get('order_no') || undefined,
+    user_id: searchParams.get('user_id') ? Number(searchParams.get('user_id')) : undefined,
+    plan_code: searchParams.get('plan_code') || undefined,
+    channel: searchParams.get('channel') || undefined,
+    order_status: searchParams.get('order_status') || undefined,
+  }))
 
   const drawerWidth = useMemo(() => (screens.md ? 720 : '90vw'), [screens.md])
 
@@ -93,11 +105,7 @@ export default function AdminPaymentOrdersPage() {
   const fetchOrders = useCallback(async () => {
     setLoading(true)
     try {
-      const params: AdminOrderListQuery = {
-        page,
-        page_size: pageSize,
-        ...filters,
-      }
+      const params: AdminOrderListQuery = { page, page_size: pageSize, ...filters }
       const res = await paymentApi.adminListOrders(params)
       setOrders(res.data.data.items ?? [])
       setTotal(res.data.data.total ?? 0)
@@ -117,22 +125,13 @@ export default function AdminPaymentOrdersPage() {
 
   useEffect(() => {
     const params = new URLSearchParams(searchParams)
-    if (page > 1) {
-      params.set('page', String(page))
-    } else {
-      params.delete('page')
-    }
-    if (pageSize !== 20) {
-      params.set('pageSize', String(pageSize))
-    } else {
-      params.delete('pageSize')
-    }
+    if (page > 1) params.set('page', String(page))
+    else params.delete('page')
+    if (pageSize !== 20) params.set('pageSize', String(pageSize))
+    else params.delete('pageSize')
     Object.entries(filters).forEach(([key, value]) => {
-      if (value !== undefined && value !== null && value !== '') {
-        params.set(key, String(value))
-      } else {
-        params.delete(key)
-      }
+      if (value !== undefined && value !== null && value !== '') params.set(key, String(value))
+      else params.delete(key)
     })
     setSearchParams(params, { replace: true })
   }, [filters, page, pageSize, searchParams, setSearchParams])
@@ -193,9 +192,7 @@ export default function AdminPaymentOrdersPage() {
           applyUpdatedOrder(res.data.data)
           message.success(`${actionText}成功`)
           void fetchOrders()
-          if (drawerOpen) {
-            void openDetail(order.order_no)
-          }
+          if (drawerOpen) void openDetail(order.order_no)
         } catch (err: unknown) {
           const axiosErr = err as { response?: { data?: { message?: string } } }
           message.error(axiosErr.response?.data?.message || `${actionText}失败`)
@@ -245,24 +242,10 @@ export default function AdminPaymentOrdersPage() {
           <Button type="link" style={{ padding: 0 }} onClick={() => void openUserOrders(value)}>
             {value}
           </Button>
-        ) : (
-          '-'
-        ),
+        ) : '-',
     },
-    {
-      title: '套餐',
-      dataIndex: 'plan_code',
-      key: 'plan_code',
-      width: 100,
-      render: (value) => value || '-',
-    },
-    {
-      title: '商品',
-      dataIndex: 'subject',
-      key: 'subject',
-      ellipsis: true,
-      minWidth: 120,
-    },
+    { title: '套餐', dataIndex: 'plan_code', key: 'plan_code', width: 100, render: (value) => value || '-' },
+    { title: '商品', dataIndex: 'subject', key: 'subject', ellipsis: true, minWidth: 120 },
     {
       title: '金额',
       key: 'amount',
@@ -284,14 +267,7 @@ export default function AdminPaymentOrdersPage() {
         />
       ),
     },
-    {
-      title: '通道',
-      dataIndex: 'payment_channel',
-      key: 'payment_channel',
-      width: 100,
-      responsive: ['md'],
-      render: paymentChannelLabel,
-    },
+    { title: '通道', dataIndex: 'payment_channel', key: 'payment_channel', width: 100, responsive: ['md'], render: paymentChannelLabel },
     {
       title: '创建时间',
       dataIndex: 'created_at',
@@ -313,38 +289,13 @@ export default function AdminPaymentOrdersPage() {
       render: (_, record) => {
         const acting = isOrderActing(record.order_no)
         const items = [
-          {
-            key: 'detail',
-            label: '查看详情',
-            disabled: acting,
-            onClick: () => void openDetail(record.order_no),
-          },
-          {
-            key: 'redetect',
-            label: '重新检测',
-            disabled: acting,
-            onClick: () => runOrderAction(record, 'redetect'),
-          },
+          { key: 'detail', label: '查看详情', disabled: acting, onClick: () => void openDetail(record.order_no) },
+          { key: 'redetect', label: '重新检测', disabled: acting, onClick: () => runOrderAction(record, 'redetect') },
           ...(canPayOrder(record)
-            ? [
-                {
-                  key: 'close',
-                  label: '关闭订单',
-                  danger: true,
-                  disabled: acting,
-                  onClick: () => runOrderAction(record, 'close'),
-                },
-              ]
+            ? [{ key: 'close', label: '关闭订单', danger: true, disabled: acting, onClick: () => runOrderAction(record, 'close') }]
             : []),
           ...(isPaidOrder(record)
-            ? [
-                {
-                  key: 'regrant',
-                  label: '补发会员',
-                  disabled: acting,
-                  onClick: () => runOrderAction(record, 'regrant'),
-                },
-              ]
+            ? [{ key: 'regrant', label: '补发会员', disabled: acting, onClick: () => runOrderAction(record, 'regrant') }]
             : []),
         ]
 
@@ -368,73 +319,21 @@ export default function AdminPaymentOrdersPage() {
     { title: 'ID', dataIndex: 'id', key: 'id', width: 60 },
     { title: '次数', dataIndex: 'attempt_no', key: 'attempt_no', width: 70 },
     { title: '通道', dataIndex: 'channel', key: 'channel', width: 90 },
-    {
-      title: '通道交易号',
-      dataIndex: 'channel_trade_no',
-      key: 'channel_trade_no',
-      ellipsis: true,
-      render: (value) => value || '-',
-    },
+    { title: '通道交易号', dataIndex: 'channel_trade_no', key: 'channel_trade_no', ellipsis: true, render: (value) => value || '-' },
     { title: '状态', dataIndex: 'channel_status', key: 'channel_status', width: 90 },
-    {
-      title: '金额',
-      key: 'amount',
-      width: 100,
-      align: 'right',
-      render: (_, record) => formatMoney(record.amount),
-    },
-    {
-      title: '成功时间',
-      dataIndex: 'success_at',
-      key: 'success_at',
-      width: 160,
-      responsive: ['md'],
-      render: formatDateTime,
-    },
-    {
-      title: '创建时间',
-      dataIndex: 'created_at',
-      key: 'created_at',
-      width: 160,
-      responsive: ['lg'],
-      render: formatDateTime,
-    },
+    { title: '金额', key: 'amount', width: 100, align: 'right', render: (_, record) => formatMoney(record.amount) },
+    { title: '成功时间', dataIndex: 'success_at', key: 'success_at', width: 160, responsive: ['md'], render: formatDateTime },
+    { title: '创建时间', dataIndex: 'created_at', key: 'created_at', width: 160, responsive: ['lg'], render: formatDateTime },
   ]
 
   const callbackColumns: ColumnsType<PaymentCallback> = [
     { title: 'ID', dataIndex: 'id', key: 'id', width: 60 },
     { title: '回调 ID', dataIndex: 'callback_id', key: 'callback_id', ellipsis: true },
     { title: '通道', dataIndex: 'channel', key: 'channel', width: 90 },
-    {
-      title: '通道交易号',
-      dataIndex: 'channel_trade_no',
-      key: 'channel_trade_no',
-      ellipsis: true,
-      render: (value) => value || '-',
-    },
-    {
-      title: '已处理',
-      dataIndex: 'processed',
-      key: 'processed',
-      width: 80,
-      render: (value: boolean) => (value ? <Tag color="success">是</Tag> : <Tag>否</Tag>),
-    },
-    {
-      title: '处理时间',
-      dataIndex: 'processed_at',
-      key: 'processed_at',
-      width: 160,
-      responsive: ['md'],
-      render: formatDateTime,
-    },
-    {
-      title: '错误',
-      dataIndex: 'process_error',
-      key: 'process_error',
-      ellipsis: true,
-      responsive: ['lg'],
-      render: (value) => value || '-',
-    },
+    { title: '通道交易号', dataIndex: 'channel_trade_no', key: 'channel_trade_no', ellipsis: true, render: (value) => value || '-' },
+    { title: '已处理', dataIndex: 'processed', key: 'processed', width: 80, render: (value: boolean) => (value ? <Tag color="success">是</Tag> : <Tag>否</Tag>) },
+    { title: '处理时间', dataIndex: 'processed_at', key: 'processed_at', width: 160, responsive: ['md'], render: formatDateTime },
+    { title: '错误', dataIndex: 'process_error', key: 'process_error', ellipsis: true, responsive: ['lg'], render: (value) => value || '-' },
   ]
 
   return (
@@ -454,11 +353,7 @@ export default function AdminPaymentOrdersPage() {
       </Space>
 
       <Card style={{ marginBottom: 16 }}>
-        <Form
-          form={form}
-          layout={screens.md ? 'inline' : 'vertical'}
-          className="admin-filter-form"
-        >
+        <Form form={form} layout={screens.md ? 'inline' : 'vertical'} className="admin-filter-form">
           <Form.Item name="order_no" label="订单号" style={{ marginBottom: 8 }}>
             <Input placeholder="订单号" allowClear style={{ width: 160 }} />
           </Form.Item>
@@ -466,37 +361,17 @@ export default function AdminPaymentOrdersPage() {
             <InputNumber min={1} style={{ width: 120 }} />
           </Form.Item>
           <Form.Item name="plan_code" label="套餐" style={{ marginBottom: 8 }}>
-            <Select
-              allowClear
-              style={{ width: 120 }}
-              options={[
-                { value: 'monthly', label: 'monthly' },
-                { value: 'quarterly', label: 'quarterly' },
-                { value: 'yearly', label: 'yearly' },
-              ]}
-            />
+            <Select allowClear style={{ width: 120 }} options={planOptions} />
           </Form.Item>
           <Form.Item name="channel" label="通道" style={{ marginBottom: 8 }}>
-            <Select allowClear style={{ width: 120 }} options={[{ value: 'mock', label: 'mock' }]} />
+            <Select allowClear style={{ width: 120 }} options={[{ value: 'mock', label: 'Mock 支付' }]} />
           </Form.Item>
           <Form.Item name="order_status" label="订单状态" style={{ marginBottom: 8 }}>
-            <Select
-              allowClear
-              style={{ width: 140 }}
-              options={[
-                { value: 'awaiting_payment', label: '待支付' },
-                { value: 'paid', label: '已支付' },
-                { value: 'fulfilled', label: '已完成' },
-                { value: 'closed', label: '已关闭' },
-                { value: 'failed', label: '失败' },
-              ]}
-            />
+            <Select allowClear style={{ width: 140 }} options={orderStatusOptions} />
           </Form.Item>
           <Form.Item style={{ marginBottom: 8 }}>
             <Space>
-              <Button type="primary" onClick={() => void handleSearch()}>
-                搜索
-              </Button>
+              <Button type="primary" onClick={() => void handleSearch()}>搜索</Button>
               <Button onClick={handleReset}>重置</Button>
             </Space>
           </Form.Item>
@@ -544,27 +419,9 @@ export default function AdminPaymentOrdersPage() {
         extra={
           detail && (
             <Space>
-              <Button
-                loading={actionLoading === `close:${detail.order.order_no}`}
-                disabled={!canPayOrder(detail.order)}
-                onClick={() => runOrderAction(detail.order, 'close')}
-              >
-                关闭订单
-              </Button>
-              <Button
-                loading={actionLoading === `redetect:${detail.order.order_no}`}
-                onClick={() => runOrderAction(detail.order, 'redetect')}
-              >
-                重新检测
-              </Button>
-              <Button
-                type="primary"
-                loading={actionLoading === `regrant:${detail.order.order_no}`}
-                disabled={!isPaidOrder(detail.order)}
-                onClick={() => runOrderAction(detail.order, 'regrant')}
-              >
-                补发会员
-              </Button>
+              <Button loading={actionLoading === `close:${detail.order.order_no}`} disabled={!canPayOrder(detail.order)} onClick={() => runOrderAction(detail.order, 'close')}>关闭订单</Button>
+              <Button loading={actionLoading === `redetect:${detail.order.order_no}`} onClick={() => runOrderAction(detail.order, 'redetect')}>重新检测</Button>
+              <Button type="primary" loading={actionLoading === `regrant:${detail.order.order_no}`} disabled={!isPaidOrder(detail.order)} onClick={() => runOrderAction(detail.order, 'regrant')}>补发会员</Button>
             </Space>
           )
         }
@@ -574,39 +431,23 @@ export default function AdminPaymentOrdersPage() {
             <div style={{ padding: '16px 24px', background: '#F8FAFC', borderBottom: '1px solid #E2E8F0' }}>
               <Space direction="vertical" size={8} style={{ width: '100%' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
-                  <Typography.Text strong style={{ fontSize: 16 }}>
-                    {detail.order.subject}
-                  </Typography.Text>
+                  <Typography.Text strong style={{ fontSize: 16 }}>{detail.order.subject}</Typography.Text>
                   <Tag color="blue">{formatMoney(detail.order.amount, detail.order.currency)}</Tag>
                 </div>
-                <OrderStatusBadge
-                  orderStatus={detail.order.order_status}
-                  paymentStatus={detail.order.payment_status}
-                  entitlementStatus={detail.order.entitlement_status}
-                />
+                <OrderStatusBadge orderStatus={detail.order.order_status} paymentStatus={detail.order.payment_status} entitlementStatus={detail.order.entitlement_status} />
               </Space>
             </div>
 
             <div style={{ padding: '16px 24px' }}>
-              <Descriptions
-                column={{ xs: 1, sm: 2 }}
-                labelStyle={{ color: '#64748B', width: 90 }}
-                contentStyle={{ fontWeight: 500 }}
-              >
+              <Descriptions column={{ xs: 1, sm: 2 }} labelStyle={{ color: '#64748B', width: 90 }} contentStyle={{ fontWeight: 500 }}>
                 <Descriptions.Item label="订单号">{detail.order.order_no}</Descriptions.Item>
                 <Descriptions.Item label="用户 ID">{detail.user_id ?? detail.order.user_id ?? '-'}</Descriptions.Item>
                 <Descriptions.Item label="套餐">{detail.order.plan_code || '-'}</Descriptions.Item>
                 <Descriptions.Item label="商品">{detail.order.subject}</Descriptions.Item>
                 <Descriptions.Item label="金额">{formatMoney(detail.order.amount, detail.order.currency)}</Descriptions.Item>
-                <Descriptions.Item label="订单状态">
-                  <Tag color={ORDER_STATUS_COLORS[detail.order.order_status]}>{orderStatusLabel(detail.order.order_status)}</Tag>
-                </Descriptions.Item>
-                <Descriptions.Item label="支付状态">
-                  <Tag color={PAYMENT_STATUS_COLORS[detail.order.payment_status]}>{paymentStatusLabel(detail.order.payment_status)}</Tag>
-                </Descriptions.Item>
-                <Descriptions.Item label="权益状态">
-                  <Tag color={ENTITLEMENT_STATUS_COLORS[detail.order.entitlement_status]}>{entitlementStatusLabel(detail.order.entitlement_status)}</Tag>
-                </Descriptions.Item>
+                <Descriptions.Item label="订单状态"><Tag color={ORDER_STATUS_COLORS[detail.order.order_status]}>{orderStatusLabel(detail.order.order_status)}</Tag></Descriptions.Item>
+                <Descriptions.Item label="支付状态"><Tag color={PAYMENT_STATUS_COLORS[detail.order.payment_status]}>{paymentStatusLabel(detail.order.payment_status)}</Tag></Descriptions.Item>
+                <Descriptions.Item label="权益状态"><Tag color={ENTITLEMENT_STATUS_COLORS[detail.order.entitlement_status]}>{entitlementStatusLabel(detail.order.entitlement_status)}</Tag></Descriptions.Item>
                 <Descriptions.Item label="通道">{paymentChannelLabel(detail.order.payment_channel)}</Descriptions.Item>
                 <Descriptions.Item label="创建时间">
                   <Tooltip title={formatRelativeTime(detail.order.created_at)}>
@@ -620,38 +461,11 @@ export default function AdminPaymentOrdersPage() {
             </div>
 
             <Divider style={{ margin: 0 }} />
-
             <div style={{ padding: '16px 24px' }}>
               <Tabs
                 items={[
-                  {
-                    key: 'attempts',
-                    label: '支付尝试',
-                    children: (
-                      <Table
-                        rowKey="id"
-                        columns={attemptColumns}
-                        dataSource={detail.attempts ?? []}
-                        pagination={false}
-                        scroll={{ x: 'max-content' }}
-                        locale={{ emptyText: '暂无支付尝试记录' }}
-                      />
-                    ),
-                  },
-                  {
-                    key: 'callbacks',
-                    label: '回调记录',
-                    children: (
-                      <Table
-                        rowKey="id"
-                        columns={callbackColumns}
-                        dataSource={detail.callbacks ?? []}
-                        pagination={false}
-                        scroll={{ x: 'max-content' }}
-                        locale={{ emptyText: '暂无回调记录' }}
-                      />
-                    ),
-                  },
+                  { key: 'attempts', label: '支付尝试', children: <Table rowKey="id" columns={attemptColumns} dataSource={detail.attempts ?? []} pagination={false} scroll={{ x: 'max-content' }} locale={{ emptyText: '暂无支付尝试记录' }} /> },
+                  { key: 'callbacks', label: '回调记录', children: <Table rowKey="id" columns={callbackColumns} dataSource={detail.callbacks ?? []} pagination={false} scroll={{ x: 'max-content' }} locale={{ emptyText: '暂无回调记录' }} /> },
                 ]}
               />
             </div>
@@ -672,13 +486,7 @@ export default function AdminPaymentOrdersPage() {
           loading={userOrdersLoading}
           scroll={{ x: 'max-content' }}
           pagination={false}
-          locale={{
-            emptyText: (
-              <div style={{ padding: '40px 0', textAlign: 'center' }}>
-                <Typography.Text type="secondary">该用户暂无订单</Typography.Text>
-              </div>
-            ),
-          }}
+          locale={{ emptyText: <div style={{ padding: '40px 0', textAlign: 'center' }}><Typography.Text type="secondary">该用户暂无订单</Typography.Text></div> }}
         />
       </Drawer>
     </div>

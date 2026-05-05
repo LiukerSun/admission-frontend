@@ -1,6 +1,5 @@
-export const ACCOUNT_CENTER_TABS = [
+﻿export const ACCOUNT_CENTER_TABS = [
   'profile-security',
-  'family-bindings',
   'membership-orders',
 ] as const
 
@@ -11,7 +10,6 @@ export const DEFAULT_ACCOUNT_CENTER_TAB: AccountCenterTab = 'profile-security'
 const legacyRedirects: Record<string, AccountCenterTab> = {
   '/membership': 'membership-orders',
   '/orders': 'membership-orders',
-  '/bindings': 'family-bindings',
 }
 
 export function isAccountCenterTab(value: string | null | undefined): value is AccountCenterTab {

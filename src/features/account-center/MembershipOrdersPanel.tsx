@@ -31,7 +31,7 @@ export default function MembershipOrdersPanel() {
       const res = await paymentApi.listMyOrders({ page: 1, page_size: 5 })
       setOrders(res.data.data.items ?? [])
     } catch {
-      message.error('加载订单列表失败')
+      message.error('加载订单失败')
     } finally {
       setOrdersLoading(false)
     }
@@ -42,7 +42,7 @@ export default function MembershipOrdersPanel() {
     try {
       await Promise.all([loadMembership(), loadOrders()])
     } catch {
-      message.error('加载会员与订单信息失败')
+      message.error('加载会员和订单数据失败')
     } finally {
       setLoading(false)
     }
@@ -57,8 +57,8 @@ export default function MembershipOrdersPanel() {
 
   const handleCreateOrder = (plan: MembershipPlan) => {
     Modal.confirm({
-      title: `确认购买${plan.plan_name}？`,
-      content: `应付金额 ${formatMoney(plan.price_amount, plan.currency)}，订单将在后端指定时间后过期。`,
+      title: `购买${plan.plan_name}？`,
+      content: `应付金额 ${formatMoney(plan.price_amount, plan.currency)}，未支付订单将在过期后关闭。`,
       okText: '创建订单',
       cancelText: '取消',
       onOk: async () => {
@@ -88,8 +88,8 @@ export default function MembershipOrdersPanel() {
 
   const handlePay = (order: OrderResponse) => {
     Modal.confirm({
-      title: '确认执行 Mock 支付？',
-      content: `订单 ${order.order_no} 将调用本地 Mock 支付接口完成支付和会员权益发放。`,
+      title: '执行 Mock 支付？',
+      content: `订单 ${order.order_no} 将通过本地 Mock 支付接口完成支付。`,
       okText: 'Mock 支付',
       cancelText: '取消',
       onOk: async () => {
@@ -97,7 +97,7 @@ export default function MembershipOrdersPanel() {
         try {
           const res = await paymentApi.payMock(order.order_no)
           applyUpdatedOrder(res.data.data)
-          message.success('Mock 支付成功')
+          message.success('Mock 支付完成')
           await Promise.all([loadMembership(), loadOrders()])
         } catch {
           message.error('Mock 支付失败')
@@ -176,14 +176,14 @@ export default function MembershipOrdersPanel() {
         <Row gutter={[24, 24]} align="middle">
           <Col xs={24} md={8}>
             <Statistic
-              title="当前会员状态"
-              value={membership?.active ? '已开通' : '未开通'}
+              title="会员状态"
+              value={membership?.active ? '有效' : '未开通'}
               prefix={<CrownOutlined />}
               valueStyle={{ color: membership?.active ? '#16A34A' : '#64748B' }}
             />
           </Col>
           <Col xs={24} md={8}>
-            <Statistic title="会员等级" value={membership?.membership_level || 'premium'} />
+            <Statistic title="会员等级" value={membership?.membership_level || '普通'} />
           </Col>
           <Col xs={24} md={8}>
             <Statistic title="有效期至" value={formatDateTime(membership?.ends_at)} />
@@ -195,7 +195,7 @@ export default function MembershipOrdersPanel() {
         <h3 style={{ marginTop: 0 }}>可购买套餐</h3>
         {plans.length === 0 ? (
           <Card>
-            <Empty description="暂无可购买会员套餐" />
+            <Empty description="暂无可购买套餐" />
           </Card>
         ) : (
           <Row gutter={[16, 16]}>
@@ -222,7 +222,7 @@ export default function MembershipOrdersPanel() {
                   ]}
                 >
                   <Space direction="vertical" size={12} style={{ width: '100%' }}>
-                    <Statistic value={formatMoney(plan.price_amount, plan.currency)} title="套餐价格" />
+                    <Statistic value={formatMoney(plan.price_amount, plan.currency)} title="价格" />
                     <div>
                       <CheckCircleOutlined style={{ color: '#16A34A', marginRight: 8 }} />
                       有效期 {plan.duration_days} 天
@@ -251,7 +251,7 @@ export default function MembershipOrdersPanel() {
           loading={ordersLoading}
           pagination={false}
           scroll={{ x: 'max-content' }}
-          locale={{ emptyText: '暂无订单数据' }}
+          locale={{ emptyText: '暂无订单' }}
         />
       </Card>
     </Space>

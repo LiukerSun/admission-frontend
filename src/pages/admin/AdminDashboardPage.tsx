@@ -1,38 +1,19 @@
 import { useEffect, useState } from 'react'
-import { Card, Statistic, Row, Col, Spin, Alert, Typography } from 'antd'
-import {
-  BarChartOutlined,
-  TeamOutlined,
-  UserAddOutlined,
-  StopOutlined,
-  LinkOutlined,
-  WalletOutlined,
-} from '@ant-design/icons'
+import { Alert, Card, Col, Row, Spin, Statistic, Typography } from 'antd'
+import { BarChartOutlined, StopOutlined, TeamOutlined, UserAddOutlined, WalletOutlined } from '@ant-design/icons'
 import { Link } from 'react-router-dom'
 import { adminApi, type StatsResponse } from '@/services/admin'
 
 const adminEntryItems = [
   {
-    title: '统计看板',
-    description: '查看平台用户、绑定关系和会员等级分布。',
-    href: '/admin/dashboard',
-    icon: <BarChartOutlined />,
-  },
-  {
     title: '用户管理',
-    description: '筛选用户、编辑会员等级和管理员权限。',
+    description: '搜索、编辑、启用、禁用用户，并管理会员等级和管理员权限。',
     href: '/admin/users',
     icon: <TeamOutlined />,
   },
   {
-    title: '绑定管理',
-    description: '查看和处理家长与学生绑定关系。',
-    href: '/admin/bindings',
-    icon: <LinkOutlined />,
-  },
-  {
     title: '支付订单',
-    description: '查看订单、处理支付状态和权益发放。',
+    description: '查看订单、Mock 支付、关闭订单和补发会员权益。',
     href: '/admin/payment/orders',
     icon: <WalletOutlined />,
   },
@@ -46,7 +27,7 @@ export default function AdminDashboardPage() {
   useEffect(() => {
     adminApi.getStats()
       .then((res) => setStats(res.data.data))
-      .catch(() => setError('加载统计数据失败'))
+      .catch(() => setError('加载系统统计失败'))
       .finally(() => setLoading(false))
   }, [])
 
@@ -64,19 +45,18 @@ export default function AdminDashboardPage() {
 
   return (
     <div>
-      <h2 style={{ marginBottom: 4 }}>系统管理</h2>
+      <Typography.Title level={2} style={{ marginBottom: 4, fontSize: 24 }}>
+        管理概览
+      </Typography.Title>
       <Typography.Text type="secondary">
-        进入后台管理功能，处理用户、绑定关系、支付订单和平台统计。
+        管理用户账号、会员权益和支付订单。
       </Typography.Text>
 
       <Row gutter={[16, 16]} style={{ marginTop: 24, marginBottom: 24 }}>
         {adminEntryItems.map((item) => (
-          <Col xs={24} sm={12} lg={6} key={item.href}>
+          <Col xs={24} sm={12} lg={8} key={item.href}>
             <Link to={item.href} style={{ display: 'block', height: '100%' }}>
-              <Card
-                hoverable
-                bodyStyle={{ minHeight: 132, display: 'flex', gap: 14, alignItems: 'flex-start' }}
-              >
+              <Card hoverable bodyStyle={{ minHeight: 132, display: 'flex', gap: 14, alignItems: 'flex-start' }}>
                 <span
                   style={{
                     width: 36,
@@ -107,47 +87,36 @@ export default function AdminDashboardPage() {
         ))}
       </Row>
 
-      <h2>系统统计</h2>
-      <Row gutter={[24, 24]} style={{ marginTop: 24 }}>
-        <Col xs={24} sm={12} lg={6}>
+      <Row gutter={[24, 24]}>
+        <Col xs={24} md={8}>
           <Card>
-            <Statistic
-              title="总用户数"
-              value={stats?.total_users ?? 0}
-              prefix={<TeamOutlined />}
-            />
+            <Statistic title="用户总数" value={stats?.total_users ?? 0} prefix={<TeamOutlined />} />
           </Card>
         </Col>
-        <Col xs={24} sm={12} lg={6}>
+        <Col xs={24} md={8}>
           <Card>
             <Statistic
-              title="活跃用户"
+              title="正常用户"
               value={stats?.active_users ?? 0}
               prefix={<UserAddOutlined />}
+              valueStyle={{ color: '#16A34A' }}
             />
           </Card>
         </Col>
-        <Col xs={24} sm={12} lg={6}>
+        <Col xs={24} md={8}>
           <Card>
             <Statistic
-              title="封禁用户"
+              title="禁用用户"
               value={stats?.banned_users ?? 0}
               prefix={<StopOutlined />}
-            />
-          </Card>
-        </Col>
-        <Col xs={24} sm={12} lg={6}>
-          <Card>
-            <Statistic
-              title="绑定总数"
-              value={stats?.total_bindings ?? 0}
-              prefix={<LinkOutlined />}
+              valueStyle={{ color: '#DC2626' }}
             />
           </Card>
         </Col>
       </Row>
+
       {stats?.users_by_role && (
-        <Card title="会员等级分布" style={{ marginTop: 24 }}>
+        <Card title="按会员等级统计" style={{ marginTop: 24 }} extra={<BarChartOutlined />}>
           <Row gutter={[24, 24]}>
             {Object.entries(stats.users_by_role).map(([role, count]) => (
               <Col xs={12} sm={8} lg={6} key={role}>

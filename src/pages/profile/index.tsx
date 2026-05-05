@@ -14,13 +14,7 @@ import {
   Typography,
   message,
 } from 'antd'
-import {
-  LockOutlined,
-  MobileOutlined,
-  SafetyOutlined,
-  UserOutlined,
-} from '@ant-design/icons'
-import FamilyBindingsPanel from '@/features/account-center/FamilyBindingsPanel'
+import { LockOutlined, MobileOutlined, SafetyOutlined, UserOutlined } from '@ant-design/icons'
 import MembershipOrdersPanel from '@/features/account-center/MembershipOrdersPanel'
 import { authApi } from '@/services/auth'
 import { useAuthStore } from '@/stores/authStore'
@@ -43,30 +37,14 @@ function getPhoneErrorMessage(err: unknown, fallback: string) {
   const status = axiosErr.response?.status
   const messageText = axiosErr.response?.data?.message?.toLowerCase() || ''
 
-  if (status === 401) {
-    return '登录状态已失效，请重新登录'
-  }
-  if (status === 409 || messageText.includes('phone already exists')) {
-    return '该手机号已被占用'
-  }
-  if (messageText.includes('invalid phone number')) {
-    return '手机号格式不正确'
-  }
-  if (messageText.includes('too frequently')) {
-    return '验证码发送过于频繁，请稍后再试'
-  }
-  if (messageText.includes('daily limit')) {
-    return '今日验证码发送次数已达上限'
-  }
-  if (messageText.includes('not found') || messageText.includes('expired')) {
-    return '验证码已过期，请重新发送'
-  }
-  if (messageText.includes('attempts exceeded')) {
-    return '验证码尝试次数过多，请重新发送'
-  }
-  if (messageText.includes('invalid verification code')) {
-    return '验证码错误'
-  }
+  if (status === 401) return '登录已过期，请重新登录'
+  if (status === 409 || messageText.includes('phone already exists')) return '该手机号已被使用'
+  if (messageText.includes('invalid phone number')) return '手机号格式不正确'
+  if (messageText.includes('too frequently')) return '验证码发送过于频繁'
+  if (messageText.includes('daily limit')) return '今日验证码发送次数已达上限'
+  if (messageText.includes('not found') || messageText.includes('expired')) return '验证码已过期，请重新获取'
+  if (messageText.includes('attempts exceeded')) return '验证次数过多，请重新获取验证码'
+  if (messageText.includes('invalid verification code')) return '验证码不正确'
 
   return fallback
 }
@@ -104,7 +82,7 @@ export default function ProfilePage() {
         current_password: values.currentPassword,
         new_password: values.newPassword,
       })
-      message.success('密码修改成功，请重新登录')
+      message.success('密码已更新，请重新登录')
       form.resetFields()
       logout()
       navigate('/login')
@@ -177,10 +155,10 @@ export default function ProfilePage() {
       })
       await refreshUser()
       phoneForm.setFieldsValue({ phone: normalizedPhone, code: '' })
-      message.success('手机号绑定成功')
+      message.success('手机号验证成功')
     } catch (err: unknown) {
       if (!('errorFields' in (err as object))) {
-        message.error(getPhoneErrorMessage(err, '手机号绑定失败'))
+        message.error(getPhoneErrorMessage(err, '验证手机号失败'))
       }
     } finally {
       setVerifyingPhone(false)
@@ -200,11 +178,11 @@ export default function ProfilePage() {
           <Space size={8} wrap>
             <Typography.Text type="secondary">{user.email}</Typography.Text>
             <Tag color={user.is_admin ? 'blue' : 'default'}>
-              {user.is_admin ? '管理员' : '普通用户'}
+              {user.is_admin ? '管理员' : '用户'}
             </Tag>
             {phoneBound && (
               <Tag color="success" icon={<LockOutlined style={{ fontSize: 12 }} />}>
-                手机号已验证
+                已验证手机号
               </Tag>
             )}
           </Space>
@@ -227,19 +205,14 @@ export default function ProfilePage() {
         {user.phone_verified ? <Tag color="success">已验证</Tag> : <Tag>未验证</Tag>}
       </Descriptions.Item>
       <Descriptions.Item label="管理员权限">
-        <Tag color={user.is_admin ? 'blue' : 'default'}>
-          {user.is_admin ? '管理员' : '普通用户'}
-        </Tag>
-      </Descriptions.Item>
-      <Descriptions.Item label="身份类型">
-        {user.user_type === 'parent' ? '家长' : '学生'}
+        <Tag color={user.is_admin ? 'blue' : 'default'}>{user.is_admin ? '管理员' : '普通用户'}</Tag>
       </Descriptions.Item>
       <Descriptions.Item label="账号状态">
         <Tag color={user.status === 'banned' ? 'error' : 'success'}>
-          {user.status === 'banned' ? '已封禁' : '正常'}
+          {user.status === 'banned' ? '已禁用' : '正常'}
         </Tag>
       </Descriptions.Item>
-      <Descriptions.Item label="注册时间">
+      <Descriptions.Item label="创建时间">
         {new Date(user.created_at).toLocaleString()}
       </Descriptions.Item>
     </Descriptions>
@@ -250,7 +223,7 @@ export default function ProfilePage() {
       <Alert
         type="info"
         showIcon
-        message="密码修改成功后将退出当前登录状态，需要使用新密码重新登录。"
+        message="修改密码后，你会被退出登录，需要重新登录。"
         style={{ marginBottom: 24 }}
       />
       <Form form={form} layout="vertical" autoComplete="off">
@@ -260,13 +233,10 @@ export default function ProfilePage() {
           rules={[
             { required: true, message: '请输入当前密码' },
             { min: 8, message: '密码至少 8 位' },
-            {
-              pattern: /^[A-Za-z0-9]+$/,
-              message: '密码只能包含字母和数字',
-            },
+            { pattern: /^[A-Za-z0-9]+$/, message: '密码只能包含字母和数字' },
           ]}
         >
-          <Input.Password placeholder="请输入当前密码" />
+          <Input.Password placeholder="当前密码" />
         </Form.Item>
         <Form.Item
           label="新密码"
@@ -275,10 +245,7 @@ export default function ProfilePage() {
           rules={[
             { required: true, message: '请输入新密码' },
             { min: 8, message: '密码至少 8 位' },
-            {
-              pattern: /^[A-Za-z0-9]+$/,
-              message: '密码只能包含字母和数字',
-            },
+            { pattern: /^[A-Za-z0-9]+$/, message: '密码只能包含字母和数字' },
             ({ getFieldValue }) => ({
               validator(_, value) {
                 if (!value || getFieldValue('currentPassword') !== value) {
@@ -289,7 +256,7 @@ export default function ProfilePage() {
             }),
           ]}
         >
-          <Input.Password placeholder="请输入新密码" />
+          <Input.Password placeholder="新密码" />
         </Form.Item>
         <Form.Item
           label="确认新密码"
@@ -307,7 +274,7 @@ export default function ProfilePage() {
             }),
           ]}
         >
-          <Input.Password placeholder="请再次输入新密码" />
+          <Input.Password placeholder="再次输入新密码" />
         </Form.Item>
         <Button type="primary" loading={submitting} onClick={handleChangePassword}>
           修改密码
@@ -323,8 +290,8 @@ export default function ProfilePage() {
         showIcon
         message={
           phoneBound
-            ? '当前手机号已完成验证。如需更换手机号，可输入新手机号并重新验证。'
-            : '绑定手机号后，可用于后续身份验证和账号安全能力。'
+            ? '手机号已验证。如需更换，可以输入新的手机号重新验证。'
+            : '验证手机号可提升账号安全性。'
         }
         style={{ marginBottom: 24 }}
       />
@@ -337,9 +304,7 @@ export default function ProfilePage() {
         <Form.Item
           label="手机号"
           name="phone"
-          normalize={(value) =>
-            typeof value === 'string' ? normalizeMainlandPhone(value) : value
-          }
+          normalize={(value) => (typeof value === 'string' ? normalizeMainlandPhone(value) : value)}
           rules={[
             { required: true, message: '请输入手机号' },
             {
@@ -352,28 +317,24 @@ export default function ProfilePage() {
             },
           ]}
         >
-          <Input placeholder="支持 13800138000、+86 13800138000 等格式" />
+          <Input placeholder="13800138000 或 +86 13800138000" />
         </Form.Item>
         <Form.Item
           label="验证码"
           name="code"
           rules={[
             { required: true, message: '请输入验证码' },
-            { pattern: /^\d{6}$/, message: '验证码为 6 位数字' },
+            { pattern: /^\d{6}$/, message: '验证码必须是 6 位数字' },
           ]}
         >
-          <Input placeholder="请输入 6 位短信验证码" maxLength={6} />
+          <Input placeholder="6 位短信验证码" maxLength={6} />
         </Form.Item>
         <Space>
-          <Button
-            onClick={handleSendPhoneCode}
-            loading={sendingCode}
-            disabled={countdown > 0}
-          >
-            {countdown > 0 ? `${countdown} 秒后重发` : '发送验证码'}
+          <Button onClick={handleSendPhoneCode} loading={sendingCode} disabled={countdown > 0}>
+            {countdown > 0 ? `${countdown}s 后重发` : '发送验证码'}
           </Button>
           <Button type="primary" loading={verifyingPhone} onClick={handleVerifyPhone}>
-            确认绑定
+            验证手机号
           </Button>
         </Space>
       </Form>
@@ -406,7 +367,7 @@ export default function ProfilePage() {
       label: (
         <span>
           <MobileOutlined style={{ marginRight: 6 }} />
-          手机号绑定
+          手机号
         </span>
       ),
       children: phonePanel,
@@ -434,16 +395,6 @@ export default function ProfilePage() {
       children: profileSecurityContent,
     },
     {
-      key: 'family-bindings',
-      label: (
-        <span>
-          <UserOutlined style={{ marginRight: 6 }} />
-          绑定管理
-        </span>
-      ),
-      children: <FamilyBindingsPanel />,
-    },
-    {
       key: 'membership-orders',
       label: (
         <span>
@@ -458,10 +409,10 @@ export default function ProfilePage() {
   return (
     <div>
       <Typography.Title level={2} style={{ marginBottom: 4, fontSize: 24 }}>
-        账户中心
+        账号中心
       </Typography.Title>
       <Typography.Text type="secondary" style={{ fontSize: 14 }}>
-        管理账号安全、家庭绑定、会员套餐和订单。
+        管理账号安全、手机号验证、会员权益和订单。
       </Typography.Text>
 
       <Tabs
