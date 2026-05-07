@@ -615,6 +615,378 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admission/admission-lines": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List admission lines
+         * @description Returns school-major admission lines with university, admission group, local school major, score, rank, and plan fields. If admission_year is omitted, the latest available admission year is used for the selected region and subject category.
+         */
+        get: {
+            parameters: {
+                query?: {
+                    /** @description Admission year */
+                    admission_year?: number;
+                    /** @description Region code */
+                    region_code?: string;
+                    /** @description Subject category code */
+                    subject_category_code?: string;
+                    /** @description Comma-separated internal university IDs */
+                    university_ids?: string;
+                    /** @description Comma-separated school-published university codes */
+                    university_codes?: string;
+                    /** @description Comma-separated admission group codes */
+                    group_codes?: string;
+                    /** @description CHSI tag catalog year */
+                    tag_catalog_year?: number;
+                    /** @description CHSI tag keyword, matching category/class/major code or name */
+                    tag_query?: string;
+                    /** @description CHSI major category code */
+                    tag_category_code?: string;
+                    /** @description CHSI major class code */
+                    tag_class_code?: string;
+                    /** @description CHSI standard major code */
+                    tag_major_code?: string;
+                    /** @description Minimum rank lower bound */
+                    min_rank_from?: number;
+                    /** @description Minimum rank upper bound */
+                    min_rank_to?: number;
+                    /** @description Minimum score lower bound */
+                    min_score_from?: number;
+                    /** @description Minimum score upper bound */
+                    min_score_to?: number;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"] & {
+                            data?: components["schemas"]["admission.AdmissionLineResponse"][];
+                        };
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+                /** @description Internal Server Error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admission/dictionaries": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List admission dictionaries
+         * @description Returns code-name values used by admission filters and imports.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"] & {
+                            data?: components["schemas"]["admission.DictionaryResponse"];
+                        };
+                    };
+                };
+                /** @description Internal Server Error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admission/major-catalog/latest-year": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get latest major catalog year
+         * @description Returns the latest available CHSI standard major catalog year.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"] & {
+                            data?: components["schemas"]["admission.LatestCatalogYearResponse"];
+                        };
+                    };
+                };
+                /** @description Internal Server Error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admission/standard-majors": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List standard majors
+         * @description Returns CHSI standard majors. If catalog_year is omitted, the latest catalog year is used.
+         */
+        get: {
+            parameters: {
+                query?: {
+                    /** @description Catalog year */
+                    catalog_year?: number;
+                    /** @description Search major code or name */
+                    q?: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"] & {
+                            data?: components["schemas"]["admission.StandardMajorResponse"][];
+                        };
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+                /** @description Internal Server Error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admission/universities": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List universities
+         * @description Returns university identities.
+         */
+        get: {
+            parameters: {
+                query?: {
+                    /** @description Search university code or name */
+                    q?: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"] & {
+                            data?: components["schemas"]["admission.UniversityResponse"][];
+                        };
+                    };
+                };
+                /** @description Internal Server Error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admission/universities/{id}/profile": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get university profile
+         * @description Returns a university yearly profile. If profile_year is omitted, the latest profile is used.
+         */
+        get: {
+            parameters: {
+                query?: {
+                    /** @description Profile year */
+                    profile_year?: number;
+                };
+                header?: never;
+                path: {
+                    /** @description University ID */
+                    id: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"] & {
+                            data?: components["schemas"]["admission.UniversityProfileResponse"];
+                        };
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+                /** @description Internal Server Error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/auth/login": {
         parameters: {
             query?: never;
@@ -1684,6 +2056,93 @@ export interface components {
             updated_at?: string;
             /** @example johndoe */
             username?: string;
+        };
+        "admission.AdmissionLineResponse": {
+            admission_group_id?: number;
+            admission_remark?: string;
+            admission_year?: number;
+            admitted_count?: number;
+            batch_code?: string;
+            duration?: string;
+            equivalent_min_score?: number;
+            group_code?: string;
+            id?: number;
+            local_major_code?: string;
+            local_major_name?: string;
+            max_rank?: number;
+            max_score?: number;
+            min_rank?: number;
+            min_score?: number;
+            plan_count?: number;
+            region_code?: string;
+            subject_category_code?: string;
+            subject_requirement_code?: string;
+            tuition?: number;
+            university_code?: string;
+            university_id?: number;
+            university_major_line_id?: number;
+            university_name?: string;
+        };
+        "admission.DictionaryItem": {
+            code?: string;
+            name?: string;
+        };
+        "admission.DictionaryResponse": {
+            batches?: components["schemas"]["admission.DictionaryItem"][];
+            education_levels?: components["schemas"]["admission.DictionaryItem"][];
+            regions?: components["schemas"]["admission.DictionaryItem"][];
+            school_categories?: components["schemas"]["admission.DictionaryItem"][];
+            school_ownership_types?: components["schemas"]["admission.DictionaryItem"][];
+            subject_categories?: components["schemas"]["admission.DictionaryItem"][];
+            subject_requirements?: components["schemas"]["admission.DictionaryItem"][];
+        };
+        "admission.LatestCatalogYearResponse": {
+            catalog_year?: number;
+        };
+        "admission.StandardMajorResponse": {
+            catalog_year?: number;
+            category_code?: string;
+            category_name?: string;
+            class_code?: string;
+            class_name?: string;
+            degree_category?: string;
+            duration?: string;
+            id?: number;
+            major_code?: string;
+            name?: string;
+            source_url?: string;
+        };
+        "admission.UniversityProfileResponse": {
+            affiliation?: string;
+            alumni_rank?: string;
+            city?: string;
+            difficulty_rank?: string;
+            doctoral_program_count?: number;
+            education_level_code?: string;
+            excellence_tags?: string;
+            has_postgraduate_recommendation?: boolean;
+            id?: number;
+            is_211?: boolean;
+            is_985?: boolean;
+            is_double_first_class?: boolean;
+            is_national_key?: boolean;
+            is_provincial_key?: boolean;
+            master_program_count?: number;
+            national_key_subject_count?: number;
+            ownership_type_code?: string;
+            postgraduate_recommendation_rate?: number;
+            profile_year?: number;
+            region_code?: string;
+            school_category_code?: string;
+            school_level_tags?: string;
+            soft_rank?: string;
+            university_id?: number;
+        };
+        "admission.UniversityResponse": {
+            id?: number;
+            name?: string;
+            normalized_name?: string;
+            university_code?: string;
         };
         "membership.CurrentMembershipResponse": {
             /** @example true */

@@ -33,3 +33,131 @@ body {
 .ant-card-hoverable:hover {
   box-shadow: 0 4px 12px rgba(30, 58, 138, 0.08);
 }
+
+.admission-page {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.admission-interest-panel {
+  padding: 22px 24px 18px;
+  border: 1px solid #D7E3F7;
+  border-radius: 8px;
+  background: #FFFFFF;
+}
+
+.admission-interest-copy {
+  max-width: 920px;
+  margin-bottom: 18px;
+}
+
+.admission-interest-title {
+  margin: 10px 0 6px !important;
+  color: #0F172A !important;
+}
+
+.admission-university-search {
+  max-width: 420px;
+}
+
+.admission-interest-form {
+  padding: 16px;
+  border: 1px solid #E2E8F0;
+  border-radius: 8px;
+  background: #F8FAFC;
+}
+
+.admission-interest-form .ant-form-item {
+  margin-bottom: 0;
+}
+
+.admission-advanced-collapse {
+  margin-top: 6px;
+}
+
+.admission-advanced-collapse .ant-collapse-header {
+  padding-left: 0 !important;
+}
+
+.admission-advanced-collapse .ant-collapse-content-box {
+  padding: 8px 0 0 !important;
+}
+
+.admission-advanced-actions {
+  display: flex;
+  align-items: flex-end;
+}
+
+.admission-stat-row {
+  padding: 12px 16px;
+  border: 1px solid #E2E8F0;
+  border-radius: 8px;
+  background: #FFFFFF;
+}
+
+.admission-inline-alert {
+  border-radius: 8px;
+}
+
+.admission-result-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.admission-remark-text {
+  max-width: 100%;
+}
+
+.admission-detail-panel {
+  padding: 12px 16px;
+  background: #F8FAFC;
+}
+
+.admission-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 10px 16px;
+  margin-bottom: 12px;
+}
+
+.admission-detail-title {
+  margin: 0 0 10px !important;
+  color: #0F172A !important;
+}
+
+.admission-detail-title:not(:first-child) {
+  margin-top: 16px !important;
+}
+
+.admission-detail-item,
+.admission-detail-block {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.admission-detail-block {
+  margin-top: 10px;
+}
+
+.admission-detail-block .ant-typography {
+  margin-bottom: 0;
+}
+
+@media (max-width: 768px) {
+  .admission-interest-panel {
+    padding: 18px 16px;
+  }
+
+  .admission-interest-form {
+    padding: 14px;
+  }
+
+  .admission-advanced-actions {
+    align-items: flex-start;
+  }
+}

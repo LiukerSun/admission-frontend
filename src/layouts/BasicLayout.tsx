@@ -3,6 +3,7 @@ import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom'
 import { Avatar, Breadcrumb, Button, Drawer, Dropdown, Grid, Layout, Menu, Spin } from 'antd'
 import {
   BarChartOutlined,
+  BankOutlined,
   DashboardOutlined,
   HomeOutlined,
   LogoutOutlined,
@@ -21,6 +22,7 @@ const { useBreakpoint } = Grid
 
 const ROUTE_TITLE_MAP: Record<string, string> = {
   '/dashboard': '工作台',
+  '/admission': '招生数据',
   '/profile': '账号中心',
   '/admin/dashboard': '管理概览',
   '/admin/users': '用户管理',
@@ -55,6 +57,11 @@ export default function BasicLayout() {
       key: '/dashboard',
       icon: <DashboardOutlined />,
       label: <Link to="/dashboard">工作台</Link>,
+    },
+    {
+      key: '/admission',
+      icon: <BankOutlined />,
+      label: <Link to="/admission">招生数据</Link>,
     },
   ]
 
