@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 import { createBrowserRouter, RouterProvider } from 'react-router-dom'
-import { ConfigProvider } from 'antd'
+import { ConfigProvider, App as AntdApp } from 'antd'
 import { useAuthStore } from '@/stores/authStore'
 import LandingLayout from '@/layouts/LandingLayout'
 import AuthLayout from '@/layouts/AuthLayout'
@@ -10,6 +10,7 @@ import LoginPage from '@/pages/auth/LoginPage'
 import RegisterPage from '@/pages/auth/RegisterPage'
 import AdmissionPage from '@/pages/admission'
 import AdmissionAIPage from '@/pages/admission-ai'
+import VolunteerPlansPage from '@/pages/admission/VolunteerPlansPage'
 import DashboardPage from '@/pages/dashboard'
 import ProfilePage from '@/pages/profile'
 import AdminDashboardPage from '@/pages/admin/AdminDashboardPage'
@@ -74,6 +75,14 @@ const router = createBrowserRouter([
         element: (
           <RequireAuth>
             <AdmissionAIPage />
+          </RequireAuth>
+        ),
+      },
+      {
+        path: 'admission/plans',
+        element: (
+          <RequireAuth>
+            <VolunteerPlansPage />
           </RequireAuth>
         ),
       },
@@ -154,9 +163,11 @@ function App() {
         },
       }}
     >
-      <AppInitializer>
-        <RouterProvider router={router} />
-      </AppInitializer>
+      <AntdApp>
+        <AppInitializer>
+          <RouterProvider router={router} />
+        </AppInitializer>
+      </AntdApp>
     </ConfigProvider>
   )
 }
