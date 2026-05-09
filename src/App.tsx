@@ -9,6 +9,7 @@ import LandingPage from '@/pages/landing'
 import LoginPage from '@/pages/auth/LoginPage'
 import RegisterPage from '@/pages/auth/RegisterPage'
 import AdmissionPage from '@/pages/admission'
+import AdmissionAIPage from '@/pages/admission-ai'
 import DashboardPage from '@/pages/dashboard'
 import ProfilePage from '@/pages/profile'
 import AdminDashboardPage from '@/pages/admin/AdminDashboardPage'
@@ -65,6 +66,14 @@ const router = createBrowserRouter([
         element: (
           <RequireAuth>
             <AdmissionPage />
+          </RequireAuth>
+        ),
+      },
+      {
+        path: 'admission/ai',
+        element: (
+          <RequireAuth>
+            <AdmissionAIPage />
           </RequireAuth>
         ),
       },
