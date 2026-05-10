@@ -148,6 +148,47 @@ body {
   margin-bottom: 0;
 }
 
+.volunteer-table-header-title {
+  display: block;
+  padding-right: 10px;
+}
+
+.ant-table-thead > tr > th:has(.volunteer-table-column-resizer) {
+  position: relative;
+}
+
+.volunteer-table-column-resizer {
+  position: absolute;
+  top: 0;
+  right: -4px;
+  z-index: 3;
+  width: 8px;
+  height: 100%;
+  cursor: col-resize;
+  touch-action: none;
+}
+
+.volunteer-table-column-resizer::after {
+  position: absolute;
+  top: 20%;
+  right: 3px;
+  width: 1px;
+  height: 60%;
+  background: transparent;
+  content: '';
+}
+
+.volunteer-table-column-resizer:hover::after,
+.volunteer-table-resizing .volunteer-table-column-resizer::after {
+  background: #1E40AF;
+}
+
+.volunteer-table-resizing,
+.volunteer-table-resizing * {
+  cursor: col-resize !important;
+  user-select: none;
+}
+
 @media (max-width: 768px) {
   .admission-interest-panel {
     padding: 18px 16px;
