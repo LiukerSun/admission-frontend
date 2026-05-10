@@ -38,17 +38,81 @@ export type StandardMajor = components['schemas']['admission.StandardMajorRespon
 export type University = components['schemas']['admission.UniversityResponse']
 export type UniversityProfile = components['schemas']['admission.UniversityProfileResponse']
 
+export interface VolunteerPlanMajor {
+  majorOrder: number
+  majorCode: string
+  majorName: string
+}
+
+export interface VolunteerPlanGroup {
+  id: string
+  orderNo: number
+  universityCode: string
+  universityName: string
+  groupCode: string
+  groupName: string
+  isObeyAdjustment: boolean
+  remark: string
+  majors: VolunteerPlanMajor[]
+}
+
 export interface VolunteerPlan {
   id: string
   name: string
   description: string
-  columns: string[]
-  rows: Record<string, unknown>[]
+  groups: VolunteerPlanGroup[]
   stats: {
     schoolCount: number
     groupCount: number
     recordCount: number
   }
+}
+
+export interface UserDetails {
+  username: string
+  email: string
+}
+
+export interface PlanStatistics {
+  totalUniversities: number
+  totalGroups: number
+  totalMajors: number
+  majorDistribution: Record<string, number> // e.g., { '计算机科学与技术': 10, '软件工程': 8 }
+}
+
+export interface UniversityDetails {
+  is985: boolean
+  is211: boolean
+  schoolCategory: string
+  region: string
+}
+
+export interface GroupAdmissionDetails {
+  minScore2024: number
+  minScore2023: number
+  minScore2022: number
+}
+
+export interface DetailedVolunteerPlanMajor extends VolunteerPlanMajor {
+  majorIntro: string
+  trainingGoal: string
+  employmentDirection: string
+  minScore: number
+  minRank: number
+  tuition: number
+}
+
+export interface DetailedVolunteerPlanGroup extends VolunteerPlanGroup {
+  universityDetails: UniversityDetails
+  groupAdmissionDetails: GroupAdmissionDetails
+  detailedMajors: DetailedVolunteerPlanMajor[]
+}
+
+export interface RichVolunteerPlan extends VolunteerPlan {
+  userDetails: UserDetails
+  planStatistics: PlanStatistics
+  detailedGroups: DetailedVolunteerPlanGroup[]
+  createdAt?: string
 }
 
 export interface VolunteerPlansResponse {
@@ -95,4 +159,15 @@ export const admissionApi = {
 
   listVolunteerPlans: () =>
     api.get<AdmissionEnvelope<VolunteerPlansResponse>>('/api/v1/admission/volunteer-plans'),
+
+  updateVolunteerPlan: (id: string | number, data: { name: string; description: string }) =>
+    api.put<AdmissionEnvelope<void>>(`/api/v1/admission/volunteer-plans/${id}`, data),
+
+  updateGroupRemark: (groupId: string | number, remark: string) =>
+    api.put<AdmissionEnvelope<void>>(`/api/v1/admission/volunteer-plans/groups/${groupId}/remark`, {
+      remark,
+    }),
+
+  getRichVolunteerPlan: (planId: string | number) =>
+    api.get<AdmissionEnvelope<RichVolunteerPlan>>(`/api/v1/admission/volunteer-plans/${planId}/rich-details`),
 }

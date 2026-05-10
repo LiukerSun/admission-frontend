@@ -13,11 +13,16 @@ import {
   Table,
   Tag,
   Typography,
+  type TableColumnsType,
 } from 'antd'
-import { EditOutlined, FileTextOutlined, SaveOutlined, SendOutlined } from '@ant-design/icons'
-import type { TableColumnsType } from 'antd'
-import { admissionApi, type VolunteerPlan } from '@/services/admission'
-import { volunteerPlansApi } from '@/services/volunteerPlans'
+import { EditOutlined, ExportOutlined, FileTextOutlined, SaveOutlined, SendOutlined } from '@ant-design/icons'
+import { admissionApi, type VolunteerPlan, type VolunteerPlanGroup, type RichVolunteerPlan } from '@/services/admission'
+import { Dropdown } from 'antd'
+import * as XLSX from 'xlsx'
+import { generateHtmlReport, getChartData, getChartOptions } from '@/utils/htmlExportUtils'
+import html2canvas from 'html2canvas'
+import { jsPDF } from 'jspdf'
+import * as echarts from 'echarts'
 
 const { Paragraph, Text, Title } = Typography
 
@@ -26,29 +31,6 @@ type PlanDraft = {
   note: string
   volunteerNotes: Record<string, string>
 }
-
-type VolunteerGroup = {
-  key: string
-  volunteerOrder: string
-  schoolCode: string
-  schoolName: string
-  groupCode: string
-  groupName: string
-  adjustment: string
-  majors: VolunteerMajor[]
-}
-
-type VolunteerMajor = {
-  key: string
-  majorOrder: string
-  majorCode: string
-  majorName: string
-}
-
-type VolunteerTableRow = VolunteerGroup &
-  VolunteerMajor & {
-    rowSpan: number
-  }
 
 type SaveStatus = 'saved' | 'saving' | 'failed'
 
@@ -68,6 +50,15 @@ type ResizableTitleProps = ThHTMLAttributes<HTMLTableCellElement> & {
   columnKey?: ColumnKey
   onResizeColumn?: (columnKey: ColumnKey, nextWidth: number) => void
   width?: number
+}
+
+type VolunteerTableRow = {
+  key: string
+  group: VolunteerPlanGroup
+  majorOrder: number
+  majorCode: string
+  majorName: string
+  isFirstRow: boolean
 }
 
 const defaultColumnWidths: Record<ColumnKey, number> = {
@@ -141,84 +132,23 @@ function ResizableTitle({ columnKey, onResizeColumn, width, children, ...restPro
   )
 }
 
-const fieldNames = {
-  volunteerOrder: '志愿顺序',
-  schoolCode: '院校代码',
-  schoolName: '院校名称',
-  groupCode: '专业组代号',
-  groupName: '专业组名称',
-  majorOrder: '专业志愿顺序',
-  majorCode: '专业代号',
-  majorName: '专业名称',
-  adjustment: '专业是否服从调剂',
-} as const
-
-function readText(row: Record<string, unknown>, key: string) {
-  const value = row[key]
-  return typeof value === 'string' ? value : value == null ? '' : String(value)
-}
-
-function buildVolunteerGroups(plan?: VolunteerPlan): VolunteerGroup[] {
-  if (!plan) return []
-
-  const groupMap = new Map<string, VolunteerGroup>()
-
-  for (const row of plan.rows) {
-    const volunteerOrder = readText(row, fieldNames.volunteerOrder)
-    const schoolCode = readText(row, fieldNames.schoolCode)
-    const schoolName = readText(row, fieldNames.schoolName)
-    const groupCode = readText(row, fieldNames.groupCode)
-    const groupName = readText(row, fieldNames.groupName)
-    const adjustment = readText(row, fieldNames.adjustment)
-    const rowKey = readText(row, 'key')
-    const key = [volunteerOrder, schoolCode, groupCode].join('-')
-
-    let group = groupMap.get(key)
-    if (!group) {
-      group = {
-        key,
-        volunteerOrder,
-        schoolCode,
-        schoolName,
-        groupCode,
-        groupName,
-        adjustment,
-        majors: [],
-      }
-      groupMap.set(key, group)
-    }
-
-    group.majors.push({
-      key: rowKey || `${key}-${group.majors.length}`,
-      majorOrder: readText(row, fieldNames.majorOrder),
-      majorCode: readText(row, fieldNames.majorCode),
-      majorName: readText(row, fieldNames.majorName),
-    })
-  }
-
-  return Array.from(groupMap.values())
-}
-
-function buildTableRows(groups: VolunteerGroup[]): VolunteerTableRow[] {
-  return groups.flatMap((group) =>
-    group.majors.map((major, index) => ({
-      ...group,
-      ...major,
-      key: major.key,
-      rowSpan: index === 0 ? group.majors.length : 0,
-    }))
-  )
-}
-
-function getNoteSummary(note: string) {
-  const trimmed = note.trim()
-  return trimmed || '暂无备注'
-}
-
 function getVolunteerColumnKey(column: TableColumnsType<VolunteerTableRow>[number]): ColumnKey | undefined {
   const dataIndex = 'dataIndex' in column ? column.dataIndex : undefined
-  if (typeof dataIndex === 'string' && dataIndex in defaultColumnWidths) {
-    return dataIndex as ColumnKey
+
+  if (Array.isArray(dataIndex)) {
+    const path = dataIndex.join('.')
+    if (path === 'group.orderNo') return 'volunteerOrder'
+    if (path === 'group.universityCode') return 'schoolCode'
+    if (path === 'group.universityName') return 'schoolName'
+    if (path === 'group.groupCode') return 'groupCode'
+    if (path === 'group.groupName') return 'groupName'
+    if (path === 'group.isObeyAdjustment') return 'adjustment'
+  }
+
+  if (typeof dataIndex === 'string') {
+    if (dataIndex === 'majorOrder') return 'majorOrder'
+    if (dataIndex === 'majorCode') return 'majorCode'
+    if (dataIndex === 'majorName') return 'majorName'
   }
 
   const key = 'key' in column ? column.key : undefined
@@ -235,51 +165,59 @@ export default function VolunteerPlansPage() {
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('saved')
   const [renameOpen, setRenameOpen] = useState(false)
   const [planNoteOpen, setPlanNoteOpen] = useState(false)
-  const [volunteerNoteTarget, setVolunteerNoteTarget] = useState<VolunteerGroup | null>(null)
+  const [volunteerNoteTarget, setVolunteerNoteTarget] = useState<VolunteerPlanGroup | null>(null)
   const [columnWidths, setColumnWidths] = useState<Record<ColumnKey, number>>(defaultColumnWidths)
   const [renameForm] = Form.useForm<{ name: string }>()
   const [planNoteForm] = Form.useForm<{ note: string }>()
   const [volunteerNoteForm] = Form.useForm<{ note: string }>()
 
+  const fetchPlans = async (targetId?: string) => {
+    setLoading(true)
+    try {
+      const res = await admissionApi.listVolunteerPlans()
+      if (res.data?.data) {
+        const newPlans = res.data.data.plans
+        setPlans(newPlans)
+        if (targetId) {
+          setActivePlanId(targetId)
+        } else if (!activePlanId && newPlans.length > 0) {
+          setActivePlanId(newPlans[0].id)
+        }
+      }
+    } catch (error) {
+      message.error('获取志愿方案失败')
+      console.error(error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
   useEffect(() => {
     let isMounted = true
-
-    async function init() {
+    const init = async () => {
       try {
-        const res = await volunteerPlansApi.list()
-        if (!isMounted) return
-        const userPlans = res.data.data ?? []
-        const nextPlans = userPlans
-          .map((p) => {
-            const plan = p.plan_json as VolunteerPlan
-            const name = plan?.name || p.title || '志愿方案'
-            const description = plan?.description ?? ''
-            return {
-              ...plan,
-              id: String(p.id),
-              name,
-              description,
-            }
-          })
-          .filter((p): p is VolunteerPlan => !!p)
-        setPlans(nextPlans)
-        setActivePlanId(nextPlans[0]?.id ?? '')
-        setShowingTemplates(false)
-      } catch (error) {
-        message.error('获取志愿方案失败')
-        console.error(error)
+        setLoading(true)
+        const res = await admissionApi.listVolunteerPlans()
+        if (isMounted && res.data?.data) {
+          const newPlans = res.data.data.plans
+          setPlans(newPlans)
+          if (newPlans.length > 0) {
+            setActivePlanId(newPlans[0].id)
+          }
+        }
+      } catch {
+        // 忽略错误，不做处理
       } finally {
         if (isMounted) {
           setLoading(false)
         }
       }
     }
-
     void init()
     return () => {
       isMounted = false
     }
-  }, [message])
+  }, [])
 
   const loadTemplates = async () => {
     setLoading(true)
@@ -298,7 +236,7 @@ export default function VolunteerPlansPage() {
   }
 
   const activePlan = useMemo(() => {
-    return plans.find((plan) => plan.id === activePlanId) ?? plans[0]
+    return plans.find(p => p.id === activePlanId) || plans[0]
   }, [activePlanId, plans])
 
   const activeDraft = useMemo(() => {
@@ -306,18 +244,25 @@ export default function VolunteerPlansPage() {
     return drafts[activePlan.id] ?? { name: activePlan.name, note: activePlan.description, volunteerNotes: {} }
   }, [activePlan, drafts])
 
-  const volunteerGroups = useMemo(() => buildVolunteerGroups(activePlan), [activePlan])
-  const tableRows = useMemo(() => buildTableRows(volunteerGroups), [volunteerGroups])
-
-  const planTitle = activeDraft?.name || activePlan?.name || '志愿详情'
-  const planNote = activeDraft?.note ?? ''
-
-  const markSavedSoon = () => {
-    setSaveStatus('saving')
-    window.setTimeout(() => {
-      setSaveStatus('saved')
-    }, 350)
-  }
+  const tableData = useMemo(() => {
+    if (!activePlan) return []
+    const data: VolunteerTableRow[] = []
+    activePlan.groups.forEach((group) => {
+      // 每个组固定展示 6 行专业
+      for (let i = 1; i <= 6; i++) {
+        const major = group.majors.find(m => m.majorOrder === i)
+        data.push({
+          key: `${group.id}-${i}`,
+          group,
+          majorOrder: i,
+          majorCode: major?.majorCode || '',
+          majorName: major?.majorName || '',
+          isFirstRow: i === 1,
+        })
+      }
+    })
+    return data
+  }, [activePlan])
 
   const updateDraft = (planId: string, updater: (draft: PlanDraft) => PlanDraft) => {
     setDrafts((current) => {
@@ -333,135 +278,390 @@ export default function VolunteerPlansPage() {
         [planId]: updater(existing),
       }
     })
-    markSavedSoon()
   }
 
   const openRename = () => {
-    renameForm.setFieldsValue({ name: planTitle })
+    renameForm.setFieldsValue({ name: activeDraft?.name || activePlan?.name || '' })
     setRenameOpen(true)
   }
 
   const openPlanNote = () => {
-    planNoteForm.setFieldsValue({ note: planNote })
+    planNoteForm.setFieldsValue({ note: activeDraft?.note ?? '' })
     setPlanNoteOpen(true)
   }
 
-  const openVolunteerNote = (group: VolunteerGroup) => {
-    volunteerNoteForm.setFieldsValue({ note: activeDraft?.volunteerNotes[group.key] ?? '' })
+  const openVolunteerNote = (group: VolunteerPlanGroup) => {
+    volunteerNoteForm.setFieldsValue({ note: activeDraft?.volunteerNotes[group.id] ?? group.remark ?? '' })
     setVolunteerNoteTarget(group)
   }
 
   const saveRename = async () => {
     if (!activePlan) return
     const values = await renameForm.validateFields()
-    updateDraft(activePlan.id, (draft) => ({ ...draft, name: values.name.trim() || activePlan.name }))
-    setRenameOpen(false)
-    message.success('方案名称已更新')
+    const newName = values.name.trim() || activePlan.name
+    try {
+      setSaveStatus('saving')
+      await admissionApi.updateVolunteerPlan(activePlan.id, {
+        name: newName,
+        description: activeDraft?.note || activePlan.description,
+      })
+      updateDraft(activePlan.id, (draft) => ({ ...draft, name: newName }))
+      // 刷新列表以同步状态
+      void fetchPlans(activePlan.id)
+      setRenameOpen(false)
+      message.success('方案名称已更新')
+      setSaveStatus('saved')
+    } catch {
+      setSaveStatus('failed')
+      message.error('保存失败，请重试')
+    }
   }
 
   const savePlanNote = async () => {
     if (!activePlan) return
     const values = await planNoteForm.validateFields()
-    updateDraft(activePlan.id, (draft) => ({ ...draft, note: values.note }))
-    setPlanNoteOpen(false)
-    message.success('方案备注已更新')
+    try {
+      setSaveStatus('saving')
+      await admissionApi.updateVolunteerPlan(activePlan.id, {
+        name: activeDraft?.name || activePlan.name,
+        description: values.note,
+      })
+      updateDraft(activePlan.id, (draft) => ({ ...draft, note: values.note }))
+      // 刷新列表以同步状态
+      void fetchPlans(activePlan.id)
+      setPlanNoteOpen(false)
+      message.success('方案备注已更新')
+      setSaveStatus('saved')
+    } catch {
+      setSaveStatus('failed')
+      message.error('保存失败，请重试')
+    }
   }
 
   const saveVolunteerNote = async () => {
     if (!activePlan || !volunteerNoteTarget) return
     const values = await volunteerNoteForm.validateFields()
-    const targetKey = volunteerNoteTarget.key
-    updateDraft(activePlan.id, (draft) => ({
-      ...draft,
-      volunteerNotes: {
-        ...draft.volunteerNotes,
-        [targetKey]: values.note,
-      },
-    }))
-    setVolunteerNoteTarget(null)
-    message.success('志愿备注已更新')
+    const targetId = volunteerNoteTarget.id
+    try {
+      setSaveStatus('saving')
+      await admissionApi.updateGroupRemark(targetId, values.note)
+      updateDraft(activePlan.id, (draft) => ({
+        ...draft,
+        volunteerNotes: {
+          ...draft.volunteerNotes,
+          [targetId]: values.note,
+        },
+      }))
+      // 刷新数据以同步
+      void fetchPlans(activePlan.id)
+      setVolunteerNoteTarget(null)
+      message.success('志愿备注已更新')
+      setSaveStatus('saved')
+    } catch {
+      setSaveStatus('failed')
+      message.error('保存失败，请重试')
+    }
   }
 
-  const columns: TableColumnsType<VolunteerTableRow> = [
+  const handlePlanClick = (id: string) => {
+    setActivePlanId(id)
+    void fetchPlans(id)
+  }
+
+  const tableRows = tableData
+
+  const handleExport = async (key: string) => {
+    if (!activePlan) return
+
+    let dataToExport: RichVolunteerPlan | undefined
+    if (key === 'html' || key === 'pdf') {
+      message.loading('正在准备数据...', 0)
+      try {
+        const res = await admissionApi.getRichVolunteerPlan(activePlan.id)
+        if (res.data?.data) {
+          dataToExport = res.data.data
+        } else {
+          message.error('获取详细方案数据失败')
+          return
+        }
+      } catch {
+        message.error('获取详细方案数据失败')
+        return
+      } finally {
+        message.destroy()
+      }
+      // 删除未使用的 setRichPlanData
+      // setRichPlanData(dataToExport)
+    }
+
+    switch (key) {
+      case 'excel': {
+        const excelData = tableData.map(row => ({
+          '志愿顺序': row.group.orderNo,
+          '院校代码': row.group.universityCode,
+          '院校名称': row.group.universityName,
+          '专业组代号': row.group.groupCode,
+          '专业组名称': row.group.groupName,
+          '专业志愿顺序': `第 ${row.majorOrder} 专业志愿`,
+          '专业代号': row.majorCode,
+          '专业名称': row.majorName,
+          '专业是否服从调剂': row.group.isObeyAdjustment ? '服从' : '不服从',
+          '备注': activeDraft?.volunteerNotes[row.group.id] ?? row.group.remark ?? '',
+        }))
+
+        const ws = XLSX.utils.json_to_sheet(excelData)
+
+        // 设置列宽 (基于当前拖拽后的宽度)
+        ws['!cols'] = [
+          { wpx: columnWidths.volunteerOrder },
+          { wpx: columnWidths.schoolCode },
+          { wpx: columnWidths.schoolName },
+          { wpx: columnWidths.groupCode },
+          { wpx: columnWidths.groupName },
+          { wpx: columnWidths.majorOrder },
+          { wpx: columnWidths.majorCode },
+          { wpx: columnWidths.majorName },
+          { wpx: columnWidths.adjustment },
+          { wpx: columnWidths.note },
+        ]
+
+        // Calculate merges
+        const merges: XLSX.Range[] = []
+        let currentRow = 1 // Start after header row
+        activePlan.groups.forEach(() => {
+          const startRow = currentRow
+          const endRow = currentRow + 5 // Each group has 6 rows
+
+          // Columns to merge: 志愿顺序(0), 院校代码(1), 院校名称(2), 专业组代号(3), 专业组名称(4), 专业是否服从调剂(8), 备注(9)
+          const mergeCols = [0, 1, 2, 3, 4, 8, 9]
+
+          mergeCols.forEach(colIndex => {
+            merges.push({ s: { r: startRow, c: colIndex }, e: { r: endRow, c: colIndex } })
+          })
+          currentRow += 6
+        })
+
+        if (merges.length > 0) {
+          ws['!merges'] = merges
+        }
+
+        const wb = XLSX.utils.book_new()
+        XLSX.utils.book_append_sheet(wb, ws, '志愿方案')
+        XLSX.writeFile(wb, `${activeDraft?.name || activePlan.name}.xlsx`)
+        message.success('导出 Excel 成功')
+        break
+      }
+      case 'html': {
+        if (dataToExport) {
+          const htmlContent = generateHtmlReport(dataToExport)
+          const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' })
+          const url = URL.createObjectURL(blob)
+          const a = document.createElement('a')
+          a.href = url
+          a.download = `${dataToExport.name}.html`
+          document.body.appendChild(a)
+          a.click()
+          document.body.removeChild(a)
+          URL.revokeObjectURL(url)
+          message.success('导出 HTML 成功')
+        } else {
+          message.error('HTML 导出数据未准备好')
+        }
+        break
+      }
+      case 'pdf': {
+        if (dataToExport) {
+          message.loading('正在生成 PDF...', 0)
+
+          // 1. 处理图表转图片
+          let chartImageUrl = ''
+          const chartData = getChartData(dataToExport)
+          if (chartData.hasAnyTrendData) {
+            const chartDiv = document.createElement('div')
+            chartDiv.style.width = '1000px'
+            chartDiv.style.height = '400px'
+            chartDiv.style.position = 'absolute'
+            chartDiv.style.top = '0'
+            chartDiv.style.left = '-2000px'
+            document.body.appendChild(chartDiv)
+
+            const chart = echarts.init(chartDiv)
+            chart.setOption(getChartOptions(chartData))
+            
+            // 等待渲染完成
+            await new Promise(resolve => setTimeout(resolve, 200))
+            
+            chartImageUrl = chart.getDataURL({
+              type: 'png',
+              pixelRatio: 2,
+              backgroundColor: '#fff'
+            })
+            chart.dispose()
+            document.body.removeChild(chartDiv)
+          }
+
+          // 2. 生成 HTML 内容（传入图表图片）
+          const htmlContent = generateHtmlReport(dataToExport, undefined, chartImageUrl)
+          const tempDiv = document.createElement('div')
+          tempDiv.innerHTML = htmlContent
+          tempDiv.style.position = 'absolute'
+          tempDiv.style.top = '0'
+          tempDiv.style.left = '0'
+          tempDiv.style.width = '1000px'
+          tempDiv.style.height = 'auto'
+          tempDiv.style.overflow = 'visible'
+          tempDiv.style.zIndex = '-1'
+          document.body.appendChild(tempDiv)
+
+          // 等待 DOM 渲染和图片加载
+          await new Promise(resolve => setTimeout(resolve, 200))
+
+          html2canvas(tempDiv, {
+            scale: 2,
+            useCORS: true,
+            allowTaint: true,
+            logging: false,
+          }).then((canvas) => {
+            const imgData = canvas.toDataURL('image/png')
+            const pdf = new jsPDF({
+              orientation: 'portrait',
+              unit: 'mm',
+              format: 'a4',
+            })
+            const imgWidth = 210
+            const pageHeight = 297
+            const imgHeight = (canvas.height * imgWidth) / canvas.width
+            let heightLeft = imgHeight
+            let position = 0
+
+            pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight)
+            heightLeft -= pageHeight
+
+            while (heightLeft >= 0) {
+              position = heightLeft - imgHeight
+              pdf.addPage()
+              pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight)
+              heightLeft -= pageHeight
+            }
+            pdf.save(`${dataToExport.name}.pdf`)
+            document.body.removeChild(tempDiv)
+            message.destroy()
+            message.success('导出 PDF 成功')
+          }).catch((err) => {
+            console.error('PDF generation error:', err)
+            message.destroy()
+            message.error('导出 PDF 失败')
+            if (tempDiv.parentNode) {
+              document.body.removeChild(tempDiv)
+            }
+          })
+        } else {
+          message.error('PDF 导出数据未准备好')
+        }
+        break
+      }
+      default:
+        break
+    }
+  }
+
+  const columns = [
     {
       title: '志愿顺序',
-      dataIndex: 'volunteerOrder',
-      width: 92,
-      fixed: 'left',
-      onCell: (row) => ({ rowSpan: row.rowSpan }),
-      render: (value: string) => value || '-',
+      dataIndex: ['group', 'orderNo'],
+      key: 'orderNo',
+      width: 80,
+      align: 'center' as const,
+      onCell: (record: VolunteerTableRow) => ({
+        rowSpan: record.isFirstRow ? 6 : 0,
+      }),
     },
     {
       title: '院校代码',
-      dataIndex: 'schoolCode',
+      dataIndex: ['group', 'universityCode'],
+      key: 'universityCode',
       width: 96,
-      onCell: (row) => ({ rowSpan: row.rowSpan }),
-      render: (value: string) => value || '-',
+      onCell: (record: VolunteerTableRow) => ({
+        rowSpan: record.isFirstRow ? 6 : 0,
+      }),
     },
     {
       title: '院校名称',
-      dataIndex: 'schoolName',
-      width: 170,
-      onCell: (row) => ({ rowSpan: row.rowSpan }),
-      render: (value: string) => value || '-',
+      dataIndex: ['group', 'universityName'],
+      key: 'universityName',
+      width: 190,
+      onCell: (record: VolunteerTableRow) => ({
+        rowSpan: record.isFirstRow ? 6 : 0,
+      }),
     },
     {
       title: '专业组代号',
-      dataIndex: 'groupCode',
-      width: 112,
-      onCell: (row) => ({ rowSpan: row.rowSpan }),
-      render: (value: string) => value || '-',
+      dataIndex: ['group', 'groupCode'],
+      key: 'groupCode',
+      width: 100,
+      onCell: (record: VolunteerTableRow) => ({
+        rowSpan: record.isFirstRow ? 6 : 0,
+      }),
     },
     {
       title: '专业组名称',
-      dataIndex: 'groupName',
+      dataIndex: ['group', 'groupName'],
+      key: 'groupName',
       width: 120,
-      onCell: (row) => ({ rowSpan: row.rowSpan }),
-      render: (value: string) => value || '-',
+      onCell: (record: VolunteerTableRow) => ({
+        rowSpan: record.isFirstRow ? 6 : 0,
+      }),
     },
     {
       title: '专业志愿顺序',
       dataIndex: 'majorOrder',
-      width: 136,
-      render: (value: string) => value || '-',
+      key: 'majorOrder',
+      width: 120,
+      align: 'center' as const,
+      render: (order: number) => `第 ${order} 专业志愿`,
     },
     {
       title: '专业代号',
       dataIndex: 'majorCode',
-      width: 96,
-      render: (value: string) => value || '-',
+      key: 'majorCode',
+      width: 80,
     },
     {
       title: '专业名称',
       dataIndex: 'majorName',
+      key: 'majorName',
       width: 220,
-      render: (value: string) => value || '-',
     },
     {
-      title: '服从调剂',
-      dataIndex: 'adjustment',
-      width: 104,
-      onCell: (row) => ({ rowSpan: row.rowSpan }),
-      render: (value: string) => value || '未填写',
+      title: '专业是否服从调剂',
+      dataIndex: ['group', 'isObeyAdjustment'],
+      key: 'isObeyAdjustment',
+      width: 150,
+      align: 'center' as const,
+      onCell: (record: VolunteerTableRow) => ({
+        rowSpan: record.isFirstRow ? 6 : 0,
+      }),
+      render: (obey: boolean) => obey ? '服从' : '不服从',
     },
     {
       title: '备注',
       key: 'note',
-      width: 260,
-      fixed: 'right',
-      onCell: (row) => ({ rowSpan: row.rowSpan }),
-      render: (_, row) => {
-        const note = activeDraft?.volunteerNotes[row.key] ?? ''
+      width: 200,
+      onCell: (record: VolunteerTableRow) => ({
+        rowSpan: record.isFirstRow ? 6 : 0,
+      }),
+      render: (_, record: VolunteerTableRow) => {
+        const note = activeDraft?.volunteerNotes[record.group.id] ?? record.group.remark ?? ''
         return (
           <Space orientation="vertical" size={4} style={{ width: '100%' }}>
             <Paragraph
-              ellipsis={{ rows: 1, tooltip: note || undefined }}
+              ellipsis={{ rows: 2, tooltip: note || undefined }}
               type={note ? undefined : 'secondary'}
-              style={{ marginBottom: 0, maxWidth: 180 }}
+              style={{ marginBottom: 0 }}
             >
-              {getNoteSummary(note)}
+              {note || '暂无备注'}
             </Paragraph>
-            <Button size="small" type="link" icon={<EditOutlined />} onClick={() => openVolunteerNote(row)}>
+            <Button size="small" type="link" icon={<EditOutlined />} onClick={() => openVolunteerNote(record.group)}>
               编辑
             </Button>
           </Space>
@@ -506,77 +706,86 @@ export default function VolunteerPlansPage() {
 
   return (
     <div>
-      <div style={{ marginBottom: 24 }}>
-        <Title level={3}>志愿方案核对</Title>
-        <Text type="secondary">按志愿顺序核对院校、专业组和专业明细，并补充方案备注。</Text>
+      <div style={{ marginBottom: '24px' }}>
+        <Title level={3}>志愿填报方案</Title>
+        <Text type="secondary">查看已生成的志愿方案详情。</Text>
       </div>
-
       <Row gutter={[24, 24]}>
-        <Col xs={24} lg={5}>
-          <Card
+        {/* Left Column: Plan Selection */}
+        <Col xs={24} lg={6}>
+          <Card 
             title={
               <Space>
                 <FileTextOutlined />
-                <span>方案列表</span>
+                <span>生成方案列表</span>
               </Space>
             }
-            styles={{ body: { padding: 12 } }}
+            styles={{ body: { padding: '12px' } }}
             loading={loading && plans.length === 0}
           >
             <Space orientation="vertical" style={{ width: '100%' }} size="middle">
-              {plans.map((plan) => {
-                const draft = drafts[plan.id]
-                const displayName = draft?.name || plan.name
-                return (
-                  <Button
-                    key={plan.id}
-                    type={activePlanId === plan.id ? 'primary' : 'default'}
-                    block
-                    onClick={() => setActivePlanId(plan.id)}
-                    style={{
-                      alignItems: 'flex-start',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      height: 'auto',
-                      padding: 12,
-                      textAlign: 'left',
+              {plans.map((plan) => (
+                <Button
+                  key={plan.id}
+                  type={activePlanId === plan.id ? 'primary' : 'default'}
+                  block
+                  onClick={() => handlePlanClick(plan.id)}
+                  style={{ 
+                    textAlign: 'left', 
+                    height: 'auto', 
+                    padding: '12px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'flex-start'
+                  }}
+                >
+                  <Text 
+                    strong 
+                    style={{ 
+                      color: activePlanId === plan.id ? '#fff' : 'inherit',
+                      fontSize: '16px'
                     }}
                   >
-                    <Text strong style={{ color: activePlanId === plan.id ? '#fff' : 'inherit', fontSize: 16 }}>
-                      {displayName}
-                    </Text>
-                  </Button>
-                )
-              })}
+                    {drafts[plan.id]?.name || plan.name}
+                  </Text>
+                  <Text 
+                    type="secondary" 
+                    style={{ 
+                      fontSize: '12px',
+                      color: activePlanId === plan.id ? 'rgba(255,255,255,0.8)' : 'inherit'
+                    }}
+                  >
+                    {plan.description}
+                  </Text>
+                </Button>
+              ))}
               {plans.length === 0 && !loading && (
-                <Empty
-                  description={
-                    showingTemplates ? (
-                      '暂无示例方案'
-                    ) : (
-                      <Space direction="vertical" size={8}>
-                        <div>暂无我的方案</div>
-                        <Button onClick={() => void loadTemplates()}>查看示例方案</Button>
-                      </Space>
-                    )
-                  }
-                />
+                <Empty description="暂无生成方案" />
               )}
             </Space>
           </Card>
         </Col>
 
-        <Col xs={24} lg={19}>
+        {/* Right Column: Data Table */}
+        <Col xs={24} lg={18}>
           <Card
             title={
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <Space>
                   <SendOutlined />
-                  <span>{planTitle}</span>
+                  <span>{activeDraft?.name || activePlan?.name || '志愿详情'}</span>
                 </Space>
-                <Tag color={saveStatusColor} icon={<SaveOutlined />}>
-                  {saveStatusText}
-                </Tag>
+                <Space>
+                  <Tag color={saveStatusColor} icon={<SaveOutlined />}>
+                    {saveStatusText}
+                  </Tag>
+                  {activePlan && (
+                    <>
+                      <Tag color="blue">院校: {activePlan.stats.schoolCount}</Tag>
+                      <Tag color="cyan">专业组: {activePlan.stats.groupCount}</Tag>
+                    </>
+                  )}
+                </Space>
               </div>
             }
             extra={
@@ -588,30 +797,38 @@ export default function VolunteerPlansPage() {
                   <Button icon={<EditOutlined />} onClick={openPlanNote}>
                     方案备注
                   </Button>
+                  <Dropdown
+                    menu={{
+                      items: [
+                        { key: 'excel', label: '导出为 Excel' },
+                        { key: 'html', label: '导出为 HTML' },
+                        { key: 'pdf', label: '导出为 PDF' },
+                      ],
+                      onClick: ({ key }) => handleExport(key),
+                    }}
+                    placement="bottomRight"
+                  >
+                    <Button icon={<ExportOutlined />}>导出</Button>
+                  </Dropdown>
                 </Space>
               )
             }
           >
             {activePlan ? (
               <Space orientation="vertical" size="large" style={{ width: '100%' }}>
-                <div
-                  style={{
-                    background: '#F8FAFC',
-                    border: '1px solid #E9EEF6',
-                    borderRadius: 6,
-                    padding: 16,
-                  }}
-                >
-                  <Space orientation="vertical" size={8} style={{ width: '100%' }}>
-                    <Space wrap>
-                      <Tag color="blue">院校: {activePlan.stats.schoolCount}</Tag>
-                      <Tag color="cyan">专业组: {activePlan.stats.groupCount}</Tag>
-                      <Tag color="purple">专业: {activePlan.stats.recordCount}</Tag>
-                      <Tag color="geekblue">志愿: {volunteerGroups.length}</Tag>
-                    </Space>
-                    <Text type={planNote ? undefined : 'secondary'}>{planNote || '暂无方案备注'}</Text>
-                  </Space>
-                </div>
+                {activeDraft?.note && (
+                  <div
+                    style={{
+                      background: '#F8FAFC',
+                      border: '1px solid #E9EEF6',
+                      borderRadius: 6,
+                      padding: '12px 16px',
+                    }}
+                  >
+                    <Text strong>方案备注：</Text>
+                    <Text>{activeDraft.note}</Text>
+                  </div>
+                )}
 
                 <Table
                   bordered
@@ -666,7 +883,7 @@ export default function VolunteerPlansPage() {
       </Modal>
 
       <Modal
-        title={volunteerNoteTarget ? `编辑第 ${volunteerNoteTarget.volunteerOrder} 志愿备注` : '编辑志愿备注'}
+        title={volunteerNoteTarget ? `编辑志愿备注 - ${volunteerNoteTarget.universityName}` : '编辑志愿备注'}
         open={Boolean(volunteerNoteTarget)}
         onCancel={() => setVolunteerNoteTarget(null)}
         onOk={() => void saveVolunteerNote()}
@@ -686,17 +903,10 @@ export default function VolunteerPlansPage() {
               }}
             >
               <Text strong>
-                {volunteerNoteTarget.schoolName} / {volunteerNoteTarget.groupName}
+                {volunteerNoteTarget.universityName} / {volunteerNoteTarget.groupName}
               </Text>
               <div style={{ color: '#64748B', marginTop: 4 }}>
-                院校代码 {volunteerNoteTarget.schoolCode} · 专业组代号 {volunteerNoteTarget.groupCode}
-              </div>
-              <div style={{ marginTop: 12 }}>
-                {volunteerNoteTarget.majors.map((major) => (
-                  <div key={major.key}>
-                    {major.majorOrder} · {major.majorCode} · {major.majorName}
-                  </div>
-                ))}
+                院校代码 {volunteerNoteTarget.universityCode} · 专业组代号 {volunteerNoteTarget.groupCode}
               </div>
             </div>
             <Form form={volunteerNoteForm} layout="vertical">
