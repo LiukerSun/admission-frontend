@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, type PointerEvent as ReactPointerEvent, type ThHTMLAttributes } from 'react'
 import {
   App,
   Button,
@@ -50,6 +50,95 @@ type VolunteerTableRow = VolunteerGroup &
   }
 
 type SaveStatus = 'saved' | 'saving' | 'failed'
+
+type ColumnKey =
+  | 'volunteerOrder'
+  | 'schoolCode'
+  | 'schoolName'
+  | 'groupCode'
+  | 'groupName'
+  | 'majorOrder'
+  | 'majorCode'
+  | 'majorName'
+  | 'adjustment'
+  | 'note'
+
+type ResizableTitleProps = ThHTMLAttributes<HTMLTableCellElement> & {
+  columnKey?: ColumnKey
+  onResizeColumn?: (columnKey: ColumnKey, nextWidth: number) => void
+  width?: number
+}
+
+const defaultColumnWidths: Record<ColumnKey, number> = {
+  volunteerOrder: 92,
+  schoolCode: 96,
+  schoolName: 170,
+  groupCode: 112,
+  groupName: 120,
+  majorOrder: 136,
+  majorCode: 96,
+  majorName: 220,
+  adjustment: 104,
+  note: 260,
+}
+
+const minColumnWidths: Record<ColumnKey, number> = {
+  volunteerOrder: 72,
+  schoolCode: 78,
+  schoolName: 120,
+  groupCode: 88,
+  groupName: 96,
+  majorOrder: 108,
+  majorCode: 78,
+  majorName: 140,
+  adjustment: 92,
+  note: 180,
+}
+
+function ResizableTitle({ columnKey, onResizeColumn, width, children, ...restProps }: ResizableTitleProps) {
+  const startResize = (event: ReactPointerEvent<HTMLSpanElement>) => {
+    if (!columnKey || !width || !onResizeColumn) return
+
+    event.preventDefault()
+    event.stopPropagation()
+
+    const startX = event.clientX
+    const startWidth = width
+    const minWidth = minColumnWidths[columnKey]
+    document.body.classList.add('volunteer-table-resizing')
+
+    const handlePointerMove = (moveEvent: PointerEvent) => {
+      const nextWidth = Math.max(minWidth, startWidth + moveEvent.clientX - startX)
+      onResizeColumn(columnKey, Math.round(nextWidth))
+    }
+
+    const stopResize = () => {
+      document.removeEventListener('pointermove', handlePointerMove)
+      document.removeEventListener('pointerup', stopResize)
+      document.body.classList.remove('volunteer-table-resizing')
+    }
+
+    document.addEventListener('pointermove', handlePointerMove)
+    document.addEventListener('pointerup', stopResize)
+  }
+
+  return (
+    <th {...restProps}>
+      <span className="volunteer-table-header-title">{children}</span>
+      {columnKey && width ? (
+        <span
+          aria-hidden="true"
+          className="volunteer-table-column-resizer"
+          onClick={(event) => {
+            event.preventDefault()
+            event.stopPropagation()
+          }}
+          onPointerDown={startResize}
+        />
+      ) : null}
+    </th>
+  )
+}
 
 const fieldNames = {
   volunteerOrder: '志愿顺序',
@@ -125,6 +214,16 @@ function getNoteSummary(note: string) {
   return trimmed || '暂无备注'
 }
 
+function getVolunteerColumnKey(column: TableColumnsType<VolunteerTableRow>[number]): ColumnKey | undefined {
+  const dataIndex = 'dataIndex' in column ? column.dataIndex : undefined
+  if (typeof dataIndex === 'string' && dataIndex in defaultColumnWidths) {
+    return dataIndex as ColumnKey
+  }
+
+  const key = 'key' in column ? column.key : undefined
+  return key === 'note' ? 'note' : undefined
+}
+
 export default function VolunteerPlansPage() {
   const { message } = App.useApp()
   const [plans, setPlans] = useState<VolunteerPlan[]>([])
@@ -135,6 +234,7 @@ export default function VolunteerPlansPage() {
   const [renameOpen, setRenameOpen] = useState(false)
   const [planNoteOpen, setPlanNoteOpen] = useState(false)
   const [volunteerNoteTarget, setVolunteerNoteTarget] = useState<VolunteerGroup | null>(null)
+  const [columnWidths, setColumnWidths] = useState<Record<ColumnKey, number>>(defaultColumnWidths)
   const [renameForm] = Form.useForm<{ name: string }>()
   const [planNoteForm] = Form.useForm<{ note: string }>()
   const [volunteerNoteForm] = Form.useForm<{ note: string }>()
@@ -338,6 +438,28 @@ export default function VolunteerPlansPage() {
     },
   ]
 
+  const resizableColumns: TableColumnsType<VolunteerTableRow> = columns.map((column) => {
+    const columnKey = getVolunteerColumnKey(column)
+    if (!columnKey) return column
+
+    return {
+      ...column,
+      width: columnWidths[columnKey],
+      onHeaderCell: () => ({
+        columnKey,
+        onResizeColumn: (key: ColumnKey, nextWidth: number) => {
+          setColumnWidths((current) => ({
+            ...current,
+            [key]: nextWidth,
+          }))
+        },
+        width: columnWidths[columnKey],
+      }),
+    }
+  })
+
+  const tableScrollX = Object.values(columnWidths).reduce((total, width) => total + width, 0)
+
   const saveStatusText = {
     saved: '所有修改已保存',
     saving: '保存中...',
@@ -448,12 +570,13 @@ export default function VolunteerPlansPage() {
 
                 <Table
                   bordered
-                  columns={columns}
+                  columns={resizableColumns}
+                  components={{ header: { cell: ResizableTitle } }}
                   dataSource={tableRows}
                   loading={loading}
                   pagination={false}
                   rowKey="key"
-                  scroll={{ x: 1600, y: 'calc(100vh - 380px)' }}
+                  scroll={{ x: tableScrollX, y: 'calc(100vh - 380px)' }}
                   size="middle"
                   sticky
                 />
