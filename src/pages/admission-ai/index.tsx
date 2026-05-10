@@ -67,7 +67,7 @@ export default function AdmissionAIPage() {
   }, [])
 
   useEffect(() => {
-    loadConversations()
+    void Promise.resolve().then(loadConversations)
   }, [loadConversations])
 
   useEffect(() => {
@@ -80,29 +80,34 @@ export default function AdmissionAIPage() {
     abortRef.current?.()
     abortRef.current = null
 
-    setLoading(false)
-    setInputValue('')
-    setMessages([])
-
     let ignore = false
-    if (conversationId) {
-      loadMessages(conversationId)
-        .then((items) => {
-          if (!ignore) {
+
+    void Promise.resolve().then(async () => {
+      if (ignore) return
+
+      setLoading(false)
+      setInputValue('')
+      setMessages([])
+
+      if (!conversationId) return
+
+      try {
+        const items = await loadMessages(conversationId)
+        if (!ignore) {
             setMessages(items)
-          }
-        })
-        .catch((err: AxiosError) => {
-          if (!ignore) {
-            setMessages([])
-            if (err.response?.status === 404) {
-              navigate('/admission/ai', { replace: true })
-            } else {
-              message.error('加载对话内容失败，请稍后重试')
-            }
-          }
-        })
-    }
+        }
+      } catch (err) {
+        if (ignore) return
+
+        const axiosErr = err as AxiosError
+        setMessages([])
+        if (axiosErr.response?.status === 404) {
+          navigate('/admission/ai', { replace: true })
+        } else {
+          message.error('加载对话内容失败，请稍后重试')
+        }
+      }
+    })
 
     return () => {
       ignore = true
