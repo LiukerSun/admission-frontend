@@ -5,6 +5,7 @@ import {
   BarChartOutlined,
   BankOutlined,
   DashboardOutlined,
+  FileTextOutlined,
   HomeOutlined,
   LogoutOutlined,
   MenuOutlined,
@@ -25,6 +26,7 @@ const ROUTE_TITLE_MAP: Record<string, string> = {
   '/dashboard': '工作台',
   '/admission': '招生数据',
   '/admission/ai': '智能填报',
+  '/admission/plans': '志愿方案',
   '/profile': '账号中心',
   '/admin/dashboard': '管理概览',
   '/admin/users': '用户管理',
@@ -69,6 +71,11 @@ export default function BasicLayout() {
       key: '/admission/ai',
       icon: <RobotOutlined />,
       label: <Link to="/admission/ai">智能填报</Link>,
+    },
+    {
+      key: '/admission/plans',
+      icon: <FileTextOutlined />,
+      label: <Link to="/admission/plans">志愿方案</Link>,
     },
   ]
 

@@ -36,6 +36,23 @@ export type AdmissionLine = components['schemas']['admission.AdmissionLineRespon
 export type StandardMajor = components['schemas']['admission.StandardMajorResponse']
 export type University = components['schemas']['admission.UniversityResponse']
 
+export interface VolunteerPlan {
+  id: string
+  name: string
+  description: string
+  columns: string[]
+  rows: Record<string, unknown>[]
+  stats: {
+    schoolCount: number
+    groupCount: number
+    recordCount: number
+  }
+}
+
+export interface VolunteerPlansResponse {
+  plans: VolunteerPlan[]
+}
+
 export type AdmissionLineQuery =
   NonNullable<paths['/api/v1/admission/admission-lines']['get']['parameters']['query']>
 
@@ -68,4 +85,7 @@ export const admissionApi = {
     api.get<AdmissionEnvelope<University[]>>('/api/v1/admission/universities', {
       params: cleanParams(params),
     }),
+
+  listVolunteerPlans: () =>
+    api.get<AdmissionEnvelope<VolunteerPlansResponse>>('/api/v1/admission/volunteer-plans'),
 }
