@@ -678,7 +678,7 @@ export default function AdmissionAIPage() {
                     avatar: <Avatar icon={<UserOutlined />} style={{ background: token.colorPrimary }} size="small" />,
                     variant: 'shadow',
                     contentRender: () => (
-                      <div className="ai-chat-bubble">
+                      <div className="ai-chat-bubble ai-chat-bubble-user">
                         <div className="ai-chat-bubble-body">
                           {isEditing ? (
                             <MessageEditor
@@ -710,7 +710,7 @@ export default function AdmissionAIPage() {
                     variant: 'filled',
                     loadingRender: () => <Spin size="small" />,
                     contentRender: () => (
-                      <div className="ai-chat-bubble">
+                      <div className="ai-chat-bubble ai-chat-bubble-ai">
                         {chatItem.toolCallStatus ? (
                           <div className="ai-chat-tool-status">正在调用 {chatItem.toolCallStatus.toolName}...</div>
                         ) : null}
