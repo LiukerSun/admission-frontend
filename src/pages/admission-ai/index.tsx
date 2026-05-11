@@ -1,27 +1,37 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Avatar, Button, Empty, Layout, Spin, Tag, Typography, message, theme } from 'antd'
 import type { AxiosError } from 'axios'
 import {
   BulbOutlined,
   DeleteOutlined,
+  EditOutlined,
   MessageOutlined,
   PlusOutlined,
+  RedoOutlined,
   RobotOutlined,
   UserOutlined,
 } from '@ant-design/icons'
 import { Bubble, Sender, Welcome } from '@ant-design/x'
 import type { BubbleItemType } from '@ant-design/x/es/bubble'
 import { conversationApi, type Conversation, type Message } from '@/services/conversation'
-import { streamChatWithConversation, type SSEEvent } from '@/services/ai'
+import { streamChatWithConversation, streamRegenerateWithConversation, type SSEEvent } from '@/services/ai'
+import MessageEditor from '@/components/ai-chat/MessageEditor'
+import SegmentRenderer from '@/components/ai-chat/SegmentRenderer'
+import SuggestionPills from '@/components/ai-chat/SuggestionPills'
+import type { ChatStatus, Segment, ToolCallStatus } from '@/components/ai-chat/types'
 
 const { Sider, Content } = Layout
 const { Text } = Typography
 
 interface ChatItem extends BubbleItemType {
   role: 'user' | 'ai' | 'system'
-  content: string
   key: string | number
+  content: string
+  segments: Segment[]
+  chatStatus: ChatStatus
+  toolCallStatus?: ToolCallStatus
+  serverId?: number
 }
 
 export default function AdmissionAIPage() {
@@ -36,8 +46,16 @@ export default function AdmissionAIPage() {
   const [inputValue, setInputValue] = useState('')
   const [loading, setLoading] = useState(false)
   const [conversationsLoading, setConversationsLoading] = useState(false)
+  const [suggestions, setSuggestions] = useState<string[]>([])
+  const [editingKey, setEditingKey] = useState<string | number | null>(null)
+  const [editingSaving, setEditingSaving] = useState(false)
   const abortRef = useRef<(() => void) | null>(null)
   const listRef = useRef<HTMLDivElement>(null)
+  const pendingBufferRef = useRef('')
+  const rafRef = useRef<number | null>(null)
+  const lastFlushRef = useRef(0)
+  const activeAIKeyRef = useRef<string | number | null>(null)
+  const suggestionsTimerRef = useRef<number | null>(null)
 
   const loadConversations = useCallback(async () => {
     setConversationsLoading(true)
@@ -58,12 +76,27 @@ export default function AdmissionAIPage() {
   const loadMessages = useCallback(async (id: number): Promise<ChatItem[]> => {
     const res = await conversationApi.get(id)
     const data = res.data?.data
-    return (data?.messages ?? []).map((m: Message) => ({
-      key: m.id,
-      role: m.role === 'user' ? 'user' : 'ai',
-      content: m.content,
-      placement: m.role === 'user' ? 'end' : 'start',
-    }))
+    return (data?.messages ?? []).map((m: Message) => {
+      const role = m.role === 'user' ? 'user' : 'ai'
+      const segments: Segment[] = [{ type: 'text', content: m.content || '' }]
+      if (Array.isArray(m.widgets)) {
+        m.widgets.forEach((w) => {
+          if (w && typeof w.id === 'string' && (w.kind === 'chart' || w.kind === 'card') && w.payload) {
+            segments.push({ type: 'widget', id: w.id, kind: w.kind, payload: w.payload })
+          }
+        })
+      }
+      return {
+        key: m.id,
+        serverId: m.id,
+        role,
+        content: m.content || '',
+        segments,
+        chatStatus: 'done',
+        status: 'success',
+        placement: role === 'user' ? 'end' : 'start',
+      }
+    })
   }, [])
 
   useEffect(() => {
@@ -79,6 +112,16 @@ export default function AdmissionAIPage() {
     // silently get appended to a deleted message.
     abortRef.current?.()
     abortRef.current = null
+    activeAIKeyRef.current = null
+    pendingBufferRef.current = ''
+    if (rafRef.current) {
+      cancelAnimationFrame(rafRef.current)
+      rafRef.current = null
+    }
+    if (suggestionsTimerRef.current) {
+      window.clearTimeout(suggestionsTimerRef.current)
+      suggestionsTimerRef.current = null
+    }
 
     let ignore = false
 
@@ -88,13 +131,15 @@ export default function AdmissionAIPage() {
       setLoading(false)
       setInputValue('')
       setMessages([])
+      setSuggestions([])
+      setEditingKey(null)
 
       if (!conversationId) return
 
       try {
         const items = await loadMessages(conversationId)
         if (!ignore) {
-            setMessages(items)
+          setMessages(items)
         }
       } catch (err) {
         if (ignore) return
@@ -117,6 +162,16 @@ export default function AdmissionAIPage() {
       // to setState on an unmounted component.
       abortRef.current?.()
       abortRef.current = null
+      activeAIKeyRef.current = null
+      pendingBufferRef.current = ''
+      if (rafRef.current) {
+        cancelAnimationFrame(rafRef.current)
+        rafRef.current = null
+      }
+      if (suggestionsTimerRef.current) {
+        window.clearTimeout(suggestionsTimerRef.current)
+        suggestionsTimerRef.current = null
+      }
     }
   }, [conversationId, loadMessages, navigate])
 
@@ -125,6 +180,213 @@ export default function AdmissionAIPage() {
       listRef.current.scrollTop = listRef.current.scrollHeight
     }
   }
+
+  const lastAIKey = useMemo(() => {
+    for (let i = messages.length - 1; i >= 0; i--) {
+      if (messages[i].role === 'ai') return messages[i].key
+    }
+    return null
+  }, [messages])
+
+  const flushPending = useCallback((force?: boolean) => {
+    const now = Date.now()
+    if (!force && now - lastFlushRef.current < 50) return
+    if (!pendingBufferRef.current) return
+    const aiKey = activeAIKeyRef.current
+    if (!aiKey) return
+
+    const delta = pendingBufferRef.current
+    pendingBufferRef.current = ''
+    lastFlushRef.current = now
+
+    setMessages((prev) =>
+      prev.map((m) => {
+        if (m.key !== aiKey) return m
+        const nextSegments = m.segments.length ? [...m.segments] : []
+        const last = nextSegments[nextSegments.length - 1]
+        if (last && last.type === 'text') {
+          nextSegments[nextSegments.length - 1] = { type: 'text', content: (last.content || '') + delta }
+        } else {
+          nextSegments.push({ type: 'text', content: delta })
+        }
+        const text = nextSegments
+          .filter((s) => s.type === 'text')
+          .map((s) => s.content)
+          .join('')
+        return { ...m, segments: nextSegments, content: text, loading: false, chatStatus: 'streaming', status: 'loading' }
+      })
+    )
+    setTimeout(scrollToBottom, 50)
+  }, [])
+
+  const scheduleFlush = useCallback(() => {
+    if (rafRef.current) return
+    const tick = () => {
+      rafRef.current = null
+      flushPending(false)
+      if (pendingBufferRef.current) {
+        rafRef.current = requestAnimationFrame(tick)
+      }
+    }
+    rafRef.current = requestAnimationFrame(tick)
+  }, [flushPending])
+
+  const fetchSuggestions = useCallback(
+    async (convId: number) => {
+      try {
+        const res = await conversationApi.suggestions(convId)
+        const next = res.data?.data?.suggestions
+        if (Array.isArray(next)) {
+          setSuggestions(next.filter((s): s is string => typeof s === 'string').slice(0, 4))
+        }
+      } catch {
+        setSuggestions([])
+      }
+    },
+    []
+  )
+
+  const onStreamEvent = useCallback(
+    (convId: number, aiKey: string | number, event: SSEEvent) => {
+      if (event.type === 'text_delta') {
+        pendingBufferRef.current += event.content || ''
+        if (!lastFlushRef.current) {
+          flushPending(true)
+        } else {
+          scheduleFlush()
+        }
+        return
+      }
+
+      if (event.type === 'widget') {
+        flushPending(true)
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.key === aiKey
+              ? {
+                  ...m,
+                  segments: [...m.segments, { type: 'widget', id: event.id, kind: event.kind, payload: event.payload }],
+                  loading: false,
+                }
+              : m
+          )
+        )
+        setTimeout(scrollToBottom, 50)
+        return
+      }
+
+      if (event.type === 'tool_call_start') {
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.key === aiKey ? { ...m, toolCallStatus: { toolName: event.tool_name, callId: event.call_id } } : m
+          )
+        )
+        return
+      }
+
+      if (event.type === 'tool_call_end') {
+        setMessages((prev) => prev.map((m) => (m.key === aiKey ? { ...m, toolCallStatus: undefined } : m)))
+        return
+      }
+
+      if (event.type === 'done') {
+        flushPending(true)
+        setLoading(false)
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.key === aiKey ? { ...m, loading: false, chatStatus: 'done', status: 'success', toolCallStatus: undefined } : m
+          )
+        )
+        if (suggestionsTimerRef.current) window.clearTimeout(suggestionsTimerRef.current)
+        suggestionsTimerRef.current = window.setTimeout(() => {
+          void fetchSuggestions(convId)
+        }, 500)
+        return
+      }
+
+      if (event.type === 'error') {
+        flushPending(true)
+        setLoading(false)
+        setMessages((prev) =>
+          prev.map((m) => {
+            if (m.key !== aiKey) return m
+            const text = m.content || event.content || '抱歉，发生了错误，请重试。'
+            const segments: Segment[] = text ? [{ type: 'text', content: text }] : []
+            return { ...m, content: text, segments, loading: false, chatStatus: 'error', status: 'error', toolCallStatus: undefined }
+          })
+        )
+        return
+      }
+    },
+    [fetchSuggestions, flushPending, scheduleFlush]
+  )
+
+  const startChatStream = useCallback(
+    (convId: number, userText: string, aiKey: string | number) => {
+      abortRef.current?.()
+      pendingBufferRef.current = ''
+      lastFlushRef.current = 0
+      activeAIKeyRef.current = aiKey
+
+      abortRef.current = streamChatWithConversation(
+        convId,
+        userText,
+        (event) => onStreamEvent(convId, aiKey, event),
+        (err) => {
+          setLoading(false)
+          setMessages((prev) =>
+            prev.map((m) =>
+              m.key === aiKey
+                ? {
+                    ...m,
+                    content: m.content || `错误: ${err.message}`,
+                    segments: [{ type: 'text', content: m.content || `错误: ${err.message}` }],
+                    loading: false,
+                  chatStatus: 'error',
+                  status: 'error',
+                    toolCallStatus: undefined,
+                  }
+                : m
+            )
+          )
+        }
+      )
+    },
+    [onStreamEvent]
+  )
+
+  const startRegenerateStream = useCallback(
+    (convId: number, aiKey: string | number) => {
+      abortRef.current?.()
+      pendingBufferRef.current = ''
+      lastFlushRef.current = 0
+      activeAIKeyRef.current = aiKey
+
+      abortRef.current = streamRegenerateWithConversation(
+        convId,
+        (event) => onStreamEvent(convId, aiKey, event),
+        (err) => {
+          setLoading(false)
+          setMessages((prev) =>
+            prev.map((m) =>
+              m.key === aiKey
+                ? {
+                    ...m,
+                    content: m.content || `错误: ${err.message}`,
+                    segments: [{ type: 'text', content: m.content || `错误: ${err.message}` }],
+                    loading: false,
+                  chatStatus: 'error',
+                  status: 'error',
+                    toolCallStatus: undefined,
+                  }
+                : m
+            )
+          )
+        }
+      )
+    },
+    [onStreamEvent]
+  )
 
   const handleCreateConversation = async () => {
     try {
@@ -177,10 +439,16 @@ export default function AdmissionAIPage() {
 
     if (!convId) return
 
+    setSuggestions([])
+    setEditingKey(null)
+
     const userMessage: ChatItem = {
       key: Date.now(),
       role: 'user',
       content: value,
+      segments: [{ type: 'text', content: value }],
+      chatStatus: 'done',
+      status: 'success',
       placement: 'end',
     }
     setMessages((prev) => [...prev, userMessage])
@@ -192,6 +460,9 @@ export default function AdmissionAIPage() {
       key: aiMessageKey,
       role: 'ai',
       content: '',
+      segments: [],
+      chatStatus: 'streaming',
+      status: 'loading',
       placement: 'start',
       loading: true,
     }
@@ -199,50 +470,90 @@ export default function AdmissionAIPage() {
 
     setTimeout(scrollToBottom, 50)
 
-    let fullText = ''
-    abortRef.current = streamChatWithConversation(
-      convId,
-      value,
-      (event: SSEEvent) => {
-        if (event.type === 'text_delta') {
-          fullText += event.content || ''
-          setMessages((prev) =>
-            prev.map((m) =>
-              m.key === aiMessageKey
-                ? { ...m, content: fullText, loading: false }
-                : m
-            )
-          )
-          setTimeout(scrollToBottom, 50)
-        } else if (event.type === 'done') {
-          setLoading(false)
-        } else if (event.type === 'error') {
-          setLoading(false)
-          setMessages((prev) =>
-            prev.map((m) =>
-              m.key === aiMessageKey
-                ? { ...m, content: fullText || '抱歉，发生了错误，请重试。', loading: false }
-                : m
-            )
-          )
-        }
-      },
-      (err) => {
-        setLoading(false)
-        setMessages((prev) =>
-          prev.map((m) =>
-            m.key === aiMessageKey
-              ? { ...m, content: fullText || `错误: ${err.message}`, loading: false }
-              : m
-          )
-        )
-      }
-    )
+    startChatStream(convId, value, aiMessageKey)
   }
 
   const handleCancel = () => {
     abortRef.current?.()
     setLoading(false)
+    flushPending(true)
+    const aiKey = activeAIKeyRef.current
+    if (aiKey) {
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.key === aiKey
+            ? {
+                ...m,
+                loading: false,
+                chatStatus: m.content ? 'done' : 'error',
+                status: m.content ? 'success' : 'error',
+                toolCallStatus: undefined,
+              }
+            : m
+        )
+      )
+    }
+  }
+
+  const handlePickSuggestion = (value: string) => {
+    setInputValue(value)
+    void Promise.resolve().then(() => handleSubmit(value))
+  }
+
+  const handleEdit = (item: ChatItem) => {
+    if (!item.serverId || item.role !== 'user') return
+    if (loading) return
+    setEditingKey(item.key)
+  }
+
+  const handleSaveEdit = async (item: ChatItem, nextValue: string) => {
+    if (!conversationId) return
+    if (!item.serverId) return
+    if (!nextValue.trim()) return
+
+    setEditingSaving(true)
+    abortRef.current?.()
+
+    try {
+      await conversationApi.rollback(conversationId, { message_id: item.serverId, inclusive: true })
+      setMessages((prev) => {
+        const idx = prev.findIndex((m) => m.key === item.key)
+        if (idx < 0) return prev
+        return prev.slice(0, idx)
+      })
+      setEditingKey(null)
+      setEditingSaving(false)
+      await handleSubmit(nextValue)
+    } catch {
+      setEditingSaving(false)
+      message.error('编辑失败，请稍后重试')
+    }
+  }
+
+  const handleRegenerate = () => {
+    if (!conversationId) return
+    if (!lastAIKey) return
+    const last = messages.find((m) => m.key === lastAIKey)
+    if (!last || last.role !== 'ai' || last.chatStatus !== 'done') return
+
+    setSuggestions([])
+    setLoading(true)
+    setMessages((prev) =>
+      prev.map((m) =>
+        m.key === lastAIKey
+          ? {
+              ...m,
+              content: '',
+              segments: [],
+              chatStatus: 'streaming',
+              status: 'loading',
+              loading: true,
+              toolCallStatus: undefined,
+            }
+          : m
+      )
+    )
+    startRegenerateStream(conversationId, lastAIKey)
   }
 
   return (
@@ -355,16 +666,67 @@ export default function AdmissionAIPage() {
             <Bubble.List
               items={messages}
               role={{
-                user: {
-                  placement: 'end',
-                  avatar: <Avatar icon={<UserOutlined />} style={{ background: token.colorPrimary }} size="small" />,
-                  variant: 'shadow',
+                user: (data) => {
+                  const chatItem = data as ChatItem
+                  const isEditing = editingKey === chatItem.key
+                  const text = chatItem.segments
+                    .filter((s) => s.type === 'text')
+                    .map((s) => s.content)
+                    .join('')
+                  return {
+                    placement: 'end',
+                    avatar: <Avatar icon={<UserOutlined />} style={{ background: token.colorPrimary }} size="small" />,
+                    variant: 'shadow',
+                    contentRender: () => (
+                      <div className="ai-chat-bubble">
+                        <div className="ai-chat-bubble-body">
+                          {isEditing ? (
+                            <MessageEditor
+                              key={chatItem.key}
+                              initialValue={text || chatItem.content || ''}
+                              saving={editingSaving}
+                              onCancel={() => setEditingKey(null)}
+                              onSave={(v) => void handleSaveEdit(chatItem, v)}
+                            />
+                          ) : (
+                            <SegmentRenderer segments={chatItem.segments} />
+                          )}
+                        </div>
+                        {!isEditing && chatItem.serverId ? (
+                          <div className="ai-chat-bubble-actions">
+                            <Button type="text" size="small" icon={<EditOutlined />} onClick={() => handleEdit(chatItem)} />
+                          </div>
+                        ) : null}
+                      </div>
+                    ),
+                  }
                 },
-                ai: {
-                  placement: 'start',
-                  avatar: <Avatar icon={<RobotOutlined />} style={{ background: '#52c41a' }} size="small" />,
-                  variant: 'filled',
-                  loadingRender: () => <Spin size="small" />,
+                ai: (data) => {
+                  const chatItem = data as ChatItem
+                  const showRegenerate = chatItem.key === lastAIKey && chatItem.chatStatus === 'done'
+                  return {
+                    placement: 'start',
+                    avatar: <Avatar icon={<RobotOutlined />} style={{ background: '#52c41a' }} size="small" />,
+                    variant: 'filled',
+                    loadingRender: () => <Spin size="small" />,
+                    contentRender: () => (
+                      <div className="ai-chat-bubble">
+                        {chatItem.toolCallStatus ? (
+                          <div className="ai-chat-tool-status">正在调用 {chatItem.toolCallStatus.toolName}...</div>
+                        ) : null}
+                        <div className="ai-chat-bubble-body">
+                          <SegmentRenderer segments={chatItem.segments} />
+                        </div>
+                        {showRegenerate ? (
+                          <div className="ai-chat-bubble-actions">
+                            <Button type="text" size="small" icon={<RedoOutlined />} onClick={handleRegenerate}>
+                              重新生成
+                            </Button>
+                          </div>
+                        ) : null}
+                      </div>
+                    ),
+                  }
                 },
               }}
             />
@@ -378,6 +740,7 @@ export default function AdmissionAIPage() {
             background: token.colorBgContainer,
           }}
         >
+          <SuggestionPills suggestions={suggestions} disabled={!!inputValue.trim()} onPick={handlePickSuggestion} />
           <Sender
             value={inputValue}
             onChange={setInputValue}

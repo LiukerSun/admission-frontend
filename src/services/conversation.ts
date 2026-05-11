@@ -14,6 +14,7 @@ export interface Message {
   conversation_id: number
   role: string
   content: string
+  widgets?: Array<{ id: string; kind: 'chart' | 'card'; payload: Record<string, unknown> }>
   tool_calls?: unknown
   tool_results?: unknown
   created_at: string
@@ -47,4 +48,10 @@ export const conversationApi = {
 
   archive: (id: number) =>
     api.post<Envelope<null>>(`/api/v1/conversations/${id}/archive`),
+
+  rollback: (id: number, body: { message_id: number; inclusive?: boolean }) =>
+    api.post<Envelope<null>>(`/api/v1/conversations/${id}/rollback`, body),
+
+  suggestions: (id: number) =>
+    api.get<Envelope<{ suggestions: string[] }>>(`/api/v1/conversations/${id}/suggestions`),
 }
