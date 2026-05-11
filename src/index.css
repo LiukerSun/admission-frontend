@@ -220,6 +220,10 @@ body {
   opacity: 1;
 }
 
+.ai-chat-bubble-user .ai-chat-bubble-actions {
+  opacity: 1;
+}
+
 .ai-chat-tool-status {
   font-size: 12px;
   color: rgba(0, 0, 0, 0.65);
