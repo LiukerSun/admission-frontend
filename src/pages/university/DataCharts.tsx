@@ -5,7 +5,7 @@ import type { AdmissionLine } from '@/services/admission'
 
 interface DataChartsProps {
   displayLines: AdmissionLine[]
-  selectedMajors: AdmissionLine[]
+  selectedMajor: AdmissionLine | null
   loading: boolean
 }
 
@@ -94,15 +94,16 @@ function aggregateByYear(
   return result
 }
 
-export default function DataCharts({ displayLines, selectedMajors, loading }: DataChartsProps) {
+export default function DataCharts({ displayLines, selectedMajor, loading }: DataChartsProps) {
   const chartRef = useRef<HTMLDivElement>(null)
   const chartInstanceRef = useRef<echarts.ECharts | null>(null)
 
   const option = useMemo(() => {
     if (displayLines.length === 0) return null
 
-    const sourceMajors =
-      selectedMajors.length > 0 ? selectedMajors : pickTop10Majors(displayLines)
+    const sourceMajors = selectedMajor
+      ? [selectedMajor]
+      : pickTop10Majors(displayLines)
 
     if (sourceMajors.length === 0) return null
 
@@ -218,10 +219,9 @@ export default function DataCharts({ displayLines, selectedMajors, loading }: Da
       } as echarts.SeriesOption)
     }
 
-    const titleText =
-      selectedMajors.length > 0
-        ? `已选 ${selectedMajors.length} 个专业近${recentYears.length}年趋势`
-        : `TOP${Math.min(sourceMajors.length, 10)} 专业近${recentYears.length}年趋势`
+    const titleText = selectedMajor
+      ? `${selectedMajor.local_major_name || '已选专业'}近${recentYears.length}年趋势`
+      : `TOP${Math.min(sourceMajors.length, 10)} 专业近${recentYears.length}年趋势`
 
     return {
       title: {
@@ -254,7 +254,7 @@ export default function DataCharts({ displayLines, selectedMajors, loading }: Da
       yAxis,
       series,
     }
-  }, [displayLines, selectedMajors])
+  }, [displayLines, selectedMajor])
 
   useEffect(() => {
     if (!chartRef.current) return

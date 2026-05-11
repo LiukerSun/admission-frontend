@@ -410,7 +410,7 @@ export default function AdmissionPage() {
       },
       {
         title: '选科',
-        dataIndex: 'subject_requirement_code',
+        dataIndex: 'subject_requirement_name',
         width: 140,
         render: (value: string) => value || '-',
       },

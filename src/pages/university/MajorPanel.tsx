@@ -1,13 +1,11 @@
 import { useMemo, useState, useEffect } from 'react'
-import { List, Tag, Typography, Empty, Spin, Button, Pagination } from 'antd'
-import { CheckOutlined, CloseCircleOutlined } from '@ant-design/icons'
+import { List, Tag, Typography, Empty, Spin, Pagination } from 'antd'
 import type { AdmissionLine } from '@/services/admission'
 
 interface MajorPanelProps {
   lines: AdmissionLine[]
-  selectedMajors: AdmissionLine[]
-  onToggleMajor: (major: AdmissionLine) => void
-  onClearMajors: () => void
+  selectedMajor: AdmissionLine | null
+  onSelectMajor: (major: AdmissionLine) => void
   groupCode: string | null
   loading: boolean
 }
@@ -16,26 +14,19 @@ const PAGE_SIZE = 15
 
 export default function MajorPanel({
   lines,
-  selectedMajors,
-  onToggleMajor,
-  onClearMajors,
+  selectedMajor,
+  onSelectMajor,
   groupCode,
   loading,
 }: MajorPanelProps) {
   const [currentPage, setCurrentPage] = useState(1)
   const header = groupCode ? `专业组 ${groupCode}` : '全部专业'
   const count = lines.length
-  const selectedCount = selectedMajors.length
 
   useEffect(() => {
     const id = setTimeout(() => setCurrentPage(1), 0)
     return () => clearTimeout(id)
   }, [groupCode, lines.length])
-
-  const selectedIds = useMemo(
-    () => new Set(selectedMajors.map((m) => m.university_major_line_id)),
-    [selectedMajors]
-  )
 
   const currentLines = useMemo(() => {
     const start = (currentPage - 1) * PAGE_SIZE
@@ -51,17 +42,6 @@ export default function MajorPanel({
             共 {count} 个
           </Typography.Text>
         </div>
-        {selectedCount > 0 && (
-          <Button
-            type="text"
-            size="small"
-            danger
-            icon={<CloseCircleOutlined />}
-            onClick={onClearMajors}
-          >
-            清空 ({selectedCount}/10)
-          </Button>
-        )}
       </div>
 
       {loading && lines.length === 0 ? (
@@ -77,35 +57,18 @@ export default function MajorPanel({
               size="small"
               dataSource={currentLines}
               renderItem={(line) => {
-                const isSelected = selectedIds.has(line.university_major_line_id)
+                const isSelected = selectedMajor?.university_major_line_id === line.university_major_line_id
                 return (
                   <List.Item
                     className={`major-list-item ${isSelected ? 'major-list-item-active' : ''}`}
-                    onClick={() => onToggleMajor(line)}
+                    onClick={() => onSelectMajor(line)}
                     style={{ cursor: 'pointer', padding: '10px 12px' }}
                   >
                     <div style={{ width: '100%' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 4 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                          <div
-                            style={{
-                              width: 18,
-                              height: 18,
-                              borderRadius: 4,
-                              border: isSelected ? 'none' : '1px solid #D1D5DB',
-                              backgroundColor: isSelected ? '#1E40AF' : 'transparent',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              flexShrink: 0,
-                            }}
-                          >
-                            {isSelected && <CheckOutlined style={{ fontSize: 10, color: '#fff' }} />}
-                          </div>
-                          <Typography.Text strong style={{ fontSize: 13, color: isSelected ? '#1E40AF' : undefined }}>
-                            {line.local_major_name || '-'}
-                          </Typography.Text>
-                        </div>
+                        <Typography.Text strong style={{ fontSize: 13, color: isSelected ? '#1E40AF' : undefined }}>
+                          {line.local_major_name || '-'}
+                        </Typography.Text>
                         {line.plan_count !== undefined && (
                           <Tag>{line.plan_count}人</Tag>
                         )}
@@ -123,10 +86,10 @@ export default function MajorPanel({
                           )}
                         </div>
                       </div>
-                      {line.subject_requirement_code && (
+                      {line.subject_requirement_name && (
                         <div style={{ marginTop: 4 }}>
                           <Typography.Text type="secondary" style={{ fontSize: 11 }}>
-                            选科: {line.subject_requirement_code}
+                            选科: {line.subject_requirement_name}
                           </Typography.Text>
                         </div>
                       )}

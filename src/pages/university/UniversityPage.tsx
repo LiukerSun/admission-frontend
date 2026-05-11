@@ -28,7 +28,7 @@ export default function UniversityPage() {
   const [profile, setProfile] = useState<UniversityProfile | null>(null)
   const [university, setUniversity] = useState<University | null>(null)
   const [selectedGroupCode, setSelectedGroupCode] = useState<string | null>(null)
-  const [selectedMajors, setSelectedMajors] = useState<AdmissionLine[]>([])
+  const [selectedMajor, setSelectedMajor] = useState<AdmissionLine | null>(null)
   const [loading, setLoading] = useState(false)
 
   const groupMap = useMemo(() => groupLinesByGroupCode(lines), [lines])
@@ -43,7 +43,7 @@ export default function UniversityPage() {
       )
       return {
         code,
-        name: firstLine?.group_major_names || firstLine?.subject_requirement_code || '',
+        name: firstLine?.group_major_names || firstLine?.subject_requirement_name || '',
         lineCount: groupLines.length,
         minScore: minScore === Infinity ? undefined : minScore,
         minRank: minRank === Infinity ? undefined : minRank,
@@ -57,29 +57,15 @@ export default function UniversityPage() {
 
   const handleSelectGroup = useCallback((code: string | null) => {
     setSelectedGroupCode(code)
-    setSelectedMajors([])
+    setSelectedMajor(null)
   }, [])
 
-  const handleToggleMajor = useCallback((major: AdmissionLine) => {
-    setSelectedMajors((prev) => {
-      const exists = prev.some(
-        (m) => m.university_major_line_id === major.university_major_line_id
-      )
-      if (exists) {
-        return prev.filter(
-          (m) => m.university_major_line_id !== major.university_major_line_id
-        )
-      }
-      if (prev.length >= 10) {
-        message.warning('最多选择10个专业')
-        return prev
-      }
-      return [...prev, major]
-    })
-  }, [])
-
-  const handleClearMajors = useCallback(() => {
-    setSelectedMajors([])
+  const handleSelectMajor = useCallback((major: AdmissionLine) => {
+    setSelectedMajor((prev) =>
+      prev?.university_major_line_id === major.university_major_line_id
+        ? null
+        : major
+    )
   }, [])
 
   const handleSwitchUniversity = useCallback((u: University) => {
@@ -100,7 +86,7 @@ export default function UniversityPage() {
       setProfile(null)
       setUniversity(null)
       setSelectedGroupCode(null)
-      setSelectedMajors([])
+      setSelectedMajor(null)
 
       try {
         const [linesRes, profileRes, uniRes] = await Promise.all([
@@ -168,14 +154,14 @@ export default function UniversityPage() {
           <div className="university-charts">
             <DataCharts
               displayLines={selectedGroupCode ? selectedGroupLines : lines}
-              selectedMajors={selectedMajors}
+              selectedMajor={selectedMajor}
               loading={loading}
             />
           </div>
           <div className="university-info">
             <InfoPanel
               profile={profile}
-              selectedMajor={selectedMajors[0] || null}
+              selectedMajor={selectedMajor}
               selectedGroupLines={selectedGroupLines}
               university={university}
               loading={loading}
@@ -187,9 +173,8 @@ export default function UniversityPage() {
         <div className="university-right">
           <MajorPanel
             lines={selectedGroupCode ? selectedGroupLines : lines}
-            selectedMajors={selectedMajors}
-            onToggleMajor={handleToggleMajor}
-            onClearMajors={handleClearMajors}
+            selectedMajor={selectedMajor}
+            onSelectMajor={handleSelectMajor}
             groupCode={selectedGroupCode}
             loading={loading}
           />

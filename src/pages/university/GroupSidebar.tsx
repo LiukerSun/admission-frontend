@@ -96,7 +96,7 @@ export default function GroupSidebar({
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
             {tags}
             {profile.city && <Tag>{profile.city}</Tag>}
-            {profile.ownership_type_code && <Tag>{profile.ownership_type_code}</Tag>}
+            {profile.ownership_type_name && <Tag>{profile.ownership_type_name}</Tag>}
           </div>
         )}
       </Card>

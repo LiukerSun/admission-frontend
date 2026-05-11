@@ -40,10 +40,10 @@ function UniversityInfoPanel({
         {detailItem('学校名称', university?.name)}
         {detailItem('院校代码', university?.university_code)}
         {detailItem('所在城市', profile?.city)}
-        {detailItem('办学层次', profile?.education_level_code)}
+        {detailItem('办学层次', profile?.education_level_name)}
         {detailItem('隶属', profile?.affiliation)}
-        {detailItem('办学性质', profile?.ownership_type_code)}
-        {detailItem('学校类型', profile?.school_category_code)}
+        {detailItem('办学性质', profile?.ownership_type_name)}
+        {detailItem('学校类型', profile?.school_category_name)}
         {detailItem('学校标签', profile?.school_level_tags)}
         {detailItem('卓越计划', profile?.excellence_tags)}
         {detailItem('排名', [softRank, alumniRank, difficultyRank].filter(Boolean).join(' / ') || undefined)}
@@ -96,7 +96,7 @@ function MajorInfoPanel({ major }: { major: AdmissionLine }) {
         {detailItem('国家特色专业', major.is_national_feature ? '是' : undefined)}
         {detailItem('学制', major.duration)}
         {detailItem('学费', major.tuition ? `${major.tuition}元/年` : undefined)}
-        {detailItem('选科要求', major.subject_requirement_code)}
+        {detailItem('选科要求', major.subject_requirement_name)}
         {detailItem('年份', major.admission_year)}
         {detailItem('计划人数', major.plan_count)}
         {detailItem('最低分', major.min_score)}
