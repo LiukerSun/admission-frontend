@@ -56,6 +56,7 @@ export default function AdmissionAIPage() {
   const lastFlushRef = useRef(0)
   const activeAIKeyRef = useRef<string | number | null>(null)
   const suggestionsTimerRef = useRef<number | null>(null)
+  const syncTimerRef = useRef<number | null>(null)
 
   const loadConversations = useCallback(async () => {
     setConversationsLoading(true)
@@ -122,6 +123,10 @@ export default function AdmissionAIPage() {
       window.clearTimeout(suggestionsTimerRef.current)
       suggestionsTimerRef.current = null
     }
+    if (syncTimerRef.current) {
+      window.clearTimeout(syncTimerRef.current)
+      syncTimerRef.current = null
+    }
 
     let ignore = false
 
@@ -171,6 +176,10 @@ export default function AdmissionAIPage() {
       if (suggestionsTimerRef.current) {
         window.clearTimeout(suggestionsTimerRef.current)
         suggestionsTimerRef.current = null
+      }
+      if (syncTimerRef.current) {
+        window.clearTimeout(syncTimerRef.current)
+        syncTimerRef.current = null
       }
     }
   }, [conversationId, loadMessages, navigate])
@@ -246,6 +255,18 @@ export default function AdmissionAIPage() {
     []
   )
 
+  const syncConversation = useCallback(
+    async (convId: number) => {
+      try {
+        const items = await loadMessages(convId)
+        setMessages(items)
+      } catch {
+        // ignore
+      }
+    },
+    [loadMessages]
+  )
+
   const onStreamEvent = useCallback(
     (convId: number, aiKey: string | number, event: SSEEvent) => {
       if (event.type === 'text_delta') {
@@ -301,6 +322,10 @@ export default function AdmissionAIPage() {
         suggestionsTimerRef.current = window.setTimeout(() => {
           void fetchSuggestions(convId)
         }, 500)
+        if (syncTimerRef.current) window.clearTimeout(syncTimerRef.current)
+        syncTimerRef.current = window.setTimeout(() => {
+          void syncConversation(convId)
+        }, 300)
         return
       }
 
@@ -315,10 +340,14 @@ export default function AdmissionAIPage() {
             return { ...m, content: text, segments, loading: false, chatStatus: 'error', status: 'error', toolCallStatus: undefined }
           })
         )
+        if (syncTimerRef.current) window.clearTimeout(syncTimerRef.current)
+        syncTimerRef.current = window.setTimeout(() => {
+          void syncConversation(convId)
+        }, 300)
         return
       }
     },
-    [fetchSuggestions, flushPending, scheduleFlush]
+    [fetchSuggestions, flushPending, scheduleFlush, syncConversation]
   )
 
   const startChatStream = useCallback(
@@ -677,6 +706,23 @@ export default function AdmissionAIPage() {
                     placement: 'end',
                     avatar: <Avatar icon={<UserOutlined />} style={{ background: token.colorPrimary }} size="small" />,
                     variant: 'shadow',
+                    footerPlacement: 'outer-end',
+                    footer:
+                      !isEditing && chatItem.serverId
+                        ? () => (
+                            <div className="ai-chat-bubble-actions">
+                              <Button
+                                type="text"
+                                size="small"
+                                icon={<EditOutlined />}
+                                style={{ color: token.colorTextSecondary }}
+                                onClick={() => handleEdit(chatItem)}
+                              >
+                                编辑
+                              </Button>
+                            </div>
+                          )
+                        : null,
                     contentRender: () => (
                       <div className="ai-chat-bubble ai-chat-bubble-user">
                         <div className="ai-chat-bubble-body">
@@ -692,11 +738,6 @@ export default function AdmissionAIPage() {
                             <SegmentRenderer segments={chatItem.segments} />
                           )}
                         </div>
-                        {!isEditing && chatItem.serverId ? (
-                          <div className="ai-chat-bubble-actions">
-                            <Button type="text" size="small" icon={<EditOutlined />} onClick={() => handleEdit(chatItem)} />
-                          </div>
-                        ) : null}
                       </div>
                     ),
                   }
@@ -709,6 +750,22 @@ export default function AdmissionAIPage() {
                     avatar: <Avatar icon={<RobotOutlined />} style={{ background: '#52c41a' }} size="small" />,
                     variant: 'filled',
                     loadingRender: () => <Spin size="small" />,
+                    footerPlacement: 'outer-start',
+                    footer: showRegenerate
+                      ? () => (
+                          <div className="ai-chat-bubble-actions">
+                            <Button
+                              type="text"
+                              size="small"
+                              icon={<RedoOutlined />}
+                              style={{ color: token.colorTextSecondary }}
+                              onClick={handleRegenerate}
+                            >
+                              重新生成
+                            </Button>
+                          </div>
+                        )
+                      : null,
                     contentRender: () => (
                       <div className="ai-chat-bubble ai-chat-bubble-ai">
                         {chatItem.toolCallStatus ? (
@@ -717,13 +774,6 @@ export default function AdmissionAIPage() {
                         <div className="ai-chat-bubble-body">
                           <SegmentRenderer segments={chatItem.segments} />
                         </div>
-                        {showRegenerate ? (
-                          <div className="ai-chat-bubble-actions">
-                            <Button type="text" size="small" icon={<RedoOutlined />} onClick={handleRegenerate}>
-                              重新生成
-                            </Button>
-                          </div>
-                        ) : null}
                       </div>
                     ),
                   }
