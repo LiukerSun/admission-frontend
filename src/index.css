@@ -209,18 +209,10 @@ body {
 
 .ai-chat-bubble-actions {
   display: flex;
+  align-items: center;
   justify-content: flex-end;
   gap: 6px;
   margin-top: 6px;
-  opacity: 0;
-  transition: opacity 0.15s ease;
-}
-
-.ai-chat-bubble:hover .ai-chat-bubble-actions {
-  opacity: 1;
-}
-
-.ai-chat-bubble-user .ai-chat-bubble-actions {
   opacity: 1;
 }
 

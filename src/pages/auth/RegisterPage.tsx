@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { Form, Input, Button, Card, message } from 'antd'
 import { useAuthStore } from '@/stores/authStore'
+import type { AxiosError } from 'axios'
 
 interface RegisterForm {
   email: string
@@ -20,8 +21,9 @@ export default function RegisterPage() {
       await register(values.email, values.password)
       message.success('账号创建成功，已自动登录')
       navigate('/dashboard')
-    } catch {
-      message.error('注册失败，该邮箱可能已被注册')
+    } catch (err) {
+      const axiosErr = err as AxiosError<{ message?: string }>
+      message.error(axiosErr.response?.data?.message || '注册失败，该邮箱可能已被注册')
     } finally {
       setLoading(false)
     }
@@ -47,6 +49,7 @@ export default function RegisterPage() {
           rules={[
             { required: true, message: '请输入密码' },
             { min: 8, message: '密码至少 8 位' },
+            { pattern: /^[a-zA-Z0-9]+$/, message: '密码仅支持字母和数字' },
           ]}
         >
           <Input.Password placeholder="至少 8 位字符" />
