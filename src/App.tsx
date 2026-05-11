@@ -11,6 +11,8 @@ import RegisterPage from '@/pages/auth/RegisterPage'
 import AdmissionPage from '@/pages/admission'
 import DashboardPage from '@/pages/dashboard'
 import ProfilePage from '@/pages/profile'
+import UniversitySearchPage from '@/pages/university/UniversitySearchPage'
+import UniversityPage from '@/pages/university/UniversityPage'
 import AdminDashboardPage from '@/pages/admin/AdminDashboardPage'
 import AdminUsersPage from '@/pages/admin/AdminUsersPage'
 import AdminPaymentOrdersPage from '@/pages/admin/AdminPaymentOrdersPage'
@@ -65,6 +67,22 @@ const router = createBrowserRouter([
         element: (
           <RequireAuth>
             <AdmissionPage />
+          </RequireAuth>
+        ),
+      },
+      {
+        path: 'university',
+        element: (
+          <RequireAuth>
+            <UniversitySearchPage />
+          </RequireAuth>
+        ),
+      },
+      {
+        path: 'university/:id',
+        element: (
+          <RequireAuth>
+            <UniversityPage />
           </RequireAuth>
         ),
       },
