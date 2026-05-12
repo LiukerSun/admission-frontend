@@ -307,8 +307,12 @@ export default function RecommendationPage() {
               </Form.Item>
             </Col>
             <Col xs={12} md={6}>
-              <Form.Item label="志愿数" name="plan_size">
-                <InputNumber min={1} max={40} style={{ width: '100%' }} />
+              <Form.Item
+                label="志愿数"
+                name="plan_size"
+                tooltip="HLJ 新高考一次 40 个志愿位；这里允许到 500 用于批量分析。"
+              >
+                <InputNumber min={1} max={500} style={{ width: '100%' }} />
               </Form.Item>
             </Col>
           </Row>
