@@ -46,7 +46,11 @@ export default function AdmissionAIPage() {
   const [inputValue, setInputValue] = useState('')
   const [loading, setLoading] = useState(false)
   const [conversationsLoading, setConversationsLoading] = useState(false)
-  const [suggestions, setSuggestions] = useState<string[]>([])
+  const [suggestionsByConversation, setSuggestionsByConversation] = useState<Record<number, string[]>>({})
+  const suggestions = useMemo(() => {
+    if (!conversationId) return []
+    return suggestionsByConversation[conversationId] || []
+  }, [conversationId, suggestionsByConversation])
   const [editingKey, setEditingKey] = useState<string | number | null>(null)
   const [editingSaving, setEditingSaving] = useState(false)
   const abortRef = useRef<(() => void) | null>(null)
@@ -57,6 +61,7 @@ export default function AdmissionAIPage() {
   const activeAIKeyRef = useRef<string | number | null>(null)
   const suggestionsTimerRef = useRef<number | null>(null)
   const syncTimerRef = useRef<number | null>(null)
+  const pendingDraftRef = useRef<string | null>(null)
 
   const loadConversations = useCallback(async () => {
     setConversationsLoading(true)
@@ -134,9 +139,10 @@ export default function AdmissionAIPage() {
       if (ignore) return
 
       setLoading(false)
-      setInputValue('')
+      const pendingDraft = pendingDraftRef.current
+      setInputValue(pendingDraft || '')
+      pendingDraftRef.current = null
       setMessages([])
-      setSuggestions([])
       setEditingKey(null)
 
       if (!conversationId) return
@@ -197,6 +203,13 @@ export default function AdmissionAIPage() {
     return null
   }, [messages])
 
+  const lastUserKey = useMemo(() => {
+    for (let i = messages.length - 1; i >= 0; i--) {
+      if (messages[i].role === 'user') return messages[i].key
+    }
+    return null
+  }, [messages])
+
   const flushPending = useCallback((force?: boolean) => {
     const now = Date.now()
     if (!force && now - lastFlushRef.current < 50) return
@@ -246,10 +259,15 @@ export default function AdmissionAIPage() {
         const res = await conversationApi.suggestions(convId)
         const next = res.data?.data?.suggestions
         if (Array.isArray(next)) {
-          setSuggestions(next.filter((s): s is string => typeof s === 'string').slice(0, 4))
+          setSuggestionsByConversation((prev) => ({
+            ...prev,
+            [convId]: next.filter((s): s is string => typeof s === 'string').slice(0, 4),
+          }))
+        } else {
+          setSuggestionsByConversation((prev) => ({ ...prev, [convId]: [] }))
         }
       } catch {
-        setSuggestions([])
+        setSuggestionsByConversation((prev) => ({ ...prev, [convId]: [] }))
       }
     },
     []
@@ -468,7 +486,7 @@ export default function AdmissionAIPage() {
 
     if (!convId) return
 
-    setSuggestions([])
+    setSuggestionsByConversation((prev) => ({ ...prev, [convId]: [] }))
     setEditingKey(null)
 
     const userMessage: ChatItem = {
@@ -526,12 +544,31 @@ export default function AdmissionAIPage() {
 
   const handlePickSuggestion = (value: string) => {
     setInputValue(value)
-    void Promise.resolve().then(() => handleSubmit(value))
+  }
+
+  const handlePickWelcomeQuestion = async (value: string) => {
+    if (!value.trim()) return
+    if (conversationId) {
+      setInputValue(value)
+      return
+    }
+    try {
+      const res = await conversationApi.create(value.slice(0, 20))
+      const conv = res.data?.data
+      if (conv) {
+        pendingDraftRef.current = value
+        setConversations((prev) => [conv, ...prev])
+        navigate(`/admission/ai?id=${conv.id}`, { replace: true })
+      }
+    } catch {
+      message.error('创建对话失败，请稍后重试')
+    }
   }
 
   const handleEdit = (item: ChatItem) => {
     if (!item.serverId || item.role !== 'user') return
     if (loading) return
+    if (item.key !== lastUserKey) return
     setEditingKey(item.key)
   }
 
@@ -565,7 +602,7 @@ export default function AdmissionAIPage() {
     const last = messages.find((m) => m.key === lastAIKey)
     if (!last || last.role !== 'ai' || last.chatStatus !== 'done') return
 
-    setSuggestions([])
+    setSuggestionsByConversation((prev) => ({ ...prev, [conversationId]: [] }))
     setLoading(true)
     setMessages((prev) =>
       prev.map((m) =>
@@ -671,21 +708,21 @@ export default function AdmissionAIPage() {
                 <Tag
                   icon={<BulbOutlined />}
                   style={{ cursor: 'pointer', padding: '6px 12px', fontSize: 14 }}
-                  onClick={() => setInputValue('我想看985院校在黑龙江的录取数据')}
+                  onClick={() => void Promise.resolve().then(() => handlePickWelcomeQuestion('我想看985院校在黑龙江的录取数据'))}
                 >
                   我想看985院校在黑龙江的录取数据
                 </Tag>
                 <Tag
                   icon={<BulbOutlined />}
                   style={{ cursor: 'pointer', padding: '6px 12px', fontSize: 14 }}
-                  onClick={() => setInputValue('我不想去北京的学校')}
+                  onClick={() => void Promise.resolve().then(() => handlePickWelcomeQuestion('我不想去北京的学校'))}
                 >
                   我不想去北京的学校
                 </Tag>
                 <Tag
                   icon={<BulbOutlined />}
                   style={{ cursor: 'pointer', padding: '6px 12px', fontSize: 14 }}
-                  onClick={() => setInputValue('我的分数是650分，理科')}
+                  onClick={() => void Promise.resolve().then(() => handlePickWelcomeQuestion('我的分数是650分，理科'))}
                 >
                   我的分数是650分，理科
                 </Tag>
@@ -708,7 +745,7 @@ export default function AdmissionAIPage() {
                     variant: 'shadow',
                     footerPlacement: 'outer-end',
                     footer:
-                      !isEditing && chatItem.serverId
+                      !isEditing && chatItem.serverId && chatItem.key === lastUserKey
                         ? () => (
                             <div className="ai-chat-bubble-actions">
                               <Button
