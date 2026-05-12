@@ -11,6 +11,7 @@ import {
   MenuOutlined,
   BankOutlined as SchoolOutlined,
   RobotOutlined,
+  RocketOutlined,
   SettingOutlined,
   TeamOutlined,
   UserOutlined,
@@ -28,6 +29,7 @@ const ROUTE_TITLE_MAP: Record<string, string> = {
   '/admission': '招生数据',
   '/admission/ai': '智能填报',
   '/admission/plans': '志愿方案',
+  '/admission/recommendation': '志愿推荐',
   '/university': '学校详情',
   '/profile': '账号中心',
   '/admin/dashboard': '管理概览',
@@ -81,6 +83,11 @@ export default function BasicLayout() {
       key: '/admission/plans',
       icon: <FileTextOutlined />,
       label: <Link to="/admission/plans">志愿方案</Link>,
+    },
+    {
+      key: '/admission/recommendation',
+      icon: <RocketOutlined />,
+      label: <Link to="/admission/recommendation">志愿推荐</Link>,
     },
     {
       key: '/university',

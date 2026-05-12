@@ -15,6 +15,7 @@ import DashboardPage from '@/pages/dashboard'
 import ProfilePage from '@/pages/profile'
 import UniversitySearchPage from '@/pages/university/UniversitySearchPage'
 import UniversityPage from '@/pages/university/UniversityPage'
+import RecommendationPage from '@/pages/recommendation'
 import AdminDashboardPage from '@/pages/admin/AdminDashboardPage'
 import AdminUsersPage from '@/pages/admin/AdminUsersPage'
 import AdminPaymentOrdersPage from '@/pages/admin/AdminPaymentOrdersPage'
@@ -85,6 +86,14 @@ const router = createBrowserRouter([
         element: (
           <RequireAuth>
             <VolunteerPlansPage />
+          </RequireAuth>
+        ),
+      },
+      {
+        path: 'admission/recommendation',
+        element: (
+          <RequireAuth>
+            <RecommendationPage />
           </RequireAuth>
         ),
       },
