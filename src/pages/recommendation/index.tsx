@@ -218,8 +218,17 @@ export default function RecommendationPage() {
         >
           <Row gutter={16}>
             <Col xs={24} md={6}>
-              <Form.Item label="生源地" name="region_code" rules={[{ required: true }]}>
-                <Input placeholder="230000（黑龙江）" />
+              <Form.Item
+                label="生源地"
+                name="region_code"
+                rules={[{ required: true }]}
+                tooltip="目前仅黑龙江数据完备。其他省份逐步导入中。"
+              >
+                <Select
+                  options={[
+                    { value: '230000', label: '黑龙江 (230000)' },
+                  ]}
+                />
               </Form.Item>
             </Col>
             <Col xs={24} md={6}>
