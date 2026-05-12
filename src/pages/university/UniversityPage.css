@@ -1,0 +1,147 @@
+.university-page {
+  height: 100%;
+}
+
+.university-layout {
+  display: grid;
+  grid-template-columns: 260px 1fr 320px;
+  grid-template-rows: 1fr;
+  gap: 16px;
+  height: calc(100vh - 168px);
+  min-height: 500px;
+}
+
+.university-left {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.university-center {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  overflow: hidden;
+}
+
+.university-charts {
+  flex: 0 0 auto;
+}
+
+.university-info {
+  flex: 1 1 auto;
+  overflow: hidden;
+  min-height: 0;
+}
+
+.university-right {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.group-sidebar {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+.group-sidebar .university-card {
+  flex-shrink: 0;
+}
+
+.group-list-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+  padding: 0 4px;
+}
+
+.group-list-item {
+  transition: background-color 0.15s;
+}
+
+.group-list-item:hover {
+  background-color: #F1F5F9;
+}
+
+.group-list-item-active {
+  background-color: #EFF6FF;
+}
+
+.group-list-item-active:hover {
+  background-color: #DBEAFE;
+}
+
+.major-panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+.major-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+  padding: 0 4px;
+  flex-shrink: 0;
+}
+
+.major-list-scrollable {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+.major-list-item {
+  transition: background-color 0.15s;
+}
+
+.major-list-item:hover {
+  background-color: #F1F5F9;
+}
+
+.major-list-item-active {
+  background-color: #EFF6FF;
+}
+
+.major-list-item-active:hover {
+  background-color: #DBEAFE;
+}
+
+.info-panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+.info-panel .ant-card-head {
+  flex-shrink: 0;
+}
+
+.info-panel .ant-card-body {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px 16px;
+}
+
+.info-grid-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.university-search-item:hover {
+  background-color: #F1F5F9;
+}

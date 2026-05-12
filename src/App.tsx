@@ -13,6 +13,8 @@ import AdmissionAIPage from '@/pages/admission-ai'
 import VolunteerPlansPage from '@/pages/admission/VolunteerPlansPage'
 import DashboardPage from '@/pages/dashboard'
 import ProfilePage from '@/pages/profile'
+import UniversitySearchPage from '@/pages/university/UniversitySearchPage'
+import UniversityPage from '@/pages/university/UniversityPage'
 import AdminDashboardPage from '@/pages/admin/AdminDashboardPage'
 import AdminUsersPage from '@/pages/admin/AdminUsersPage'
 import AdminPaymentOrdersPage from '@/pages/admin/AdminPaymentOrdersPage'
@@ -83,6 +85,22 @@ const router = createBrowserRouter([
         element: (
           <RequireAuth>
             <VolunteerPlansPage />
+          </RequireAuth>
+        ),
+      },
+      {
+        path: 'university',
+        element: (
+          <RequireAuth>
+            <UniversitySearchPage />
+          </RequireAuth>
+        ),
+      },
+      {
+        path: 'university/:id',
+        element: (
+          <RequireAuth>
+            <UniversityPage />
           </RequireAuth>
         ),
       },

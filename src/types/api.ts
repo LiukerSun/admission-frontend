@@ -705,6 +705,106 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admission/aggregate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Aggregate admission data
+         * @description Aggregates admission lines by a dimension (province, city, subject_category, university, group). Supports metrics: count, avg_min_score, avg_min_rank, avg_tuition, is_985_count, is_211_count, is_double_first_class_count.
+         */
+        get: {
+            parameters: {
+                query: {
+                    /** @description Admission year */
+                    admission_year?: number;
+                    /** @description Region code */
+                    region_code?: string;
+                    /** @description Subject category code */
+                    subject_category_code?: string;
+                    /** @description Comma-separated internal university IDs */
+                    university_ids?: string;
+                    /** @description Comma-separated school-published university codes */
+                    university_codes?: string;
+                    /** @description Comma-separated admission group codes */
+                    group_codes?: string;
+                    /** @description CHSI tag catalog year */
+                    tag_catalog_year?: number;
+                    /** @description CHSI tag keyword */
+                    tag_query?: string;
+                    /** @description CHSI major category code */
+                    tag_category_code?: string;
+                    /** @description CHSI major class code */
+                    tag_class_code?: string;
+                    /** @description CHSI standard major code */
+                    tag_major_code?: string;
+                    /** @description Minimum rank lower bound */
+                    min_rank_from?: number;
+                    /** @description Minimum rank upper bound */
+                    min_rank_to?: number;
+                    /** @description Minimum score lower bound */
+                    min_score_from?: number;
+                    /** @description Minimum score upper bound */
+                    min_score_to?: number;
+                    /** @description Filter by 985 status */
+                    is_985?: boolean;
+                    /** @description Filter by 211 status */
+                    is_211?: boolean;
+                    /** @description Filter by double-first-class status */
+                    is_double_first_class?: boolean;
+                    /** @description Dimension to group by: province, city, subject_category, university, group */
+                    group_by: string;
+                    /** @description Comma-separated metrics: count, avg_min_score, avg_min_rank, avg_tuition, is_985_count, is_211_count, is_double_first_class_count */
+                    metrics: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"] & {
+                            data?: components["schemas"]["admission.AggregateResponse"];
+                        };
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+                /** @description Internal Server Error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admission/dictionaries": {
         parameters: {
             query?: never;
@@ -987,6 +1087,118 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admission/volunteer-plans": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List volunteer plans
+         * @description Returns volunteer plans from plans.json.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"] & {
+                            data?: components["schemas"]["admission.VolunteerPlansResponse"];
+                        };
+                    };
+                };
+                /** @description Internal Server Error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/ai/chat": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * AI chat with SSE streaming
+         * @description Streams AI responses via SSE. Send messages array; receive step_start/step_finish/text_delta/done events.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            /** @description Chat messages */
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["ai.ChatRequest"];
+                };
+            };
+            responses: {
+                /** @description SSE stream */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/event-stream": string;
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/event-stream": components["schemas"]["web.Response"];
+                    };
+                };
+                /** @description Internal Server Error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/event-stream": components["schemas"]["web.Response"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/auth/login": {
         parameters: {
             query?: never;
@@ -1155,6 +1367,423 @@ export interface paths {
                 };
                 /** @description Conflict */
                 409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/conversations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List conversations
+         * @description Lists active conversations, optionally filtered by user_id.
+         */
+        get: {
+            parameters: {
+                query?: {
+                    /** @description User ID */
+                    user_id?: number;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"] & {
+                            data?: components["schemas"]["conversation.Conversation"][];
+                        };
+                    };
+                };
+                /** @description Internal Server Error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        /**
+         * Create a conversation
+         * @description Creates a new AI conversation. If user_id is omitted, the conversation is anonymous.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            /** @description Conversation creation request */
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["conversation.CreateConversationRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"] & {
+                            data?: components["schemas"]["conversation.Conversation"];
+                        };
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+                /** @description Internal Server Error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/conversations/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get conversation with messages
+         * @description Returns a conversation and its messages.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Conversation ID */
+                    id: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"] & {
+                            data?: components["schemas"]["conversation.WithMessages"];
+                        };
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+                /** @description Internal Server Error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        /**
+         * Delete conversation
+         * @description Soft-deletes a conversation by marking it as deleted.
+         */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Conversation ID */
+                    id: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+                /** @description Internal Server Error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/conversations/{id}/ai-chat": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * AI chat within a conversation
+         * @description Sends a message in a conversation context. Persists messages and streams AI response via SSE.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Conversation ID */
+                    id: number;
+                };
+                cookie?: never;
+            };
+            /** @description User message */
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["ai.ConversationChatRequest"];
+                };
+            };
+            responses: {
+                /** @description SSE stream */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/event-stream": string;
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/event-stream": components["schemas"]["web.Response"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/event-stream": components["schemas"]["web.Response"];
+                    };
+                };
+                /** @description Internal Server Error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/event-stream": components["schemas"]["web.Response"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/conversations/{id}/archive": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Archive conversation
+         * @description Archives a conversation.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Conversation ID */
+                    id: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+                /** @description Internal Server Error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/conversations/{id}/messages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Add a user message
+         * @description Appends a user message to an existing conversation.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Conversation ID */
+                    id: number;
+                };
+                cookie?: never;
+            };
+            /** @description Message */
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["conversation.AddMessageRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"] & {
+                            data?: components["schemas"]["conversation.Message"];
+                        };
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+                /** @description Internal Server Error */
+                500: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -2063,25 +2692,72 @@ export interface components {
             admission_year?: number;
             admitted_count?: number;
             batch_code?: string;
+            batch_name?: string;
+            batch_remark?: string;
+            corresponding_doctoral_majors?: string;
+            corresponding_master_majors?: string;
+            discipline_category?: string;
+            doctoral_major_count?: number;
+            doctoral_major_names?: string;
+            double_first_class_subject?: string;
             duration?: string;
+            employment_direction?: string;
             equivalent_min_score?: number;
+            equivalent_min_score_2022?: number;
+            equivalent_min_score_2023?: number;
+            equivalent_min_score_2024?: number;
+            first_level_discipline?: string;
+            fourth_round_subject_eval?: string;
             group_code?: string;
+            group_major_names?: string;
+            group_min_rank?: number;
+            group_min_score?: number;
             id?: number;
+            is_national_feature?: boolean;
             local_major_code?: string;
             local_major_name?: string;
+            main_courses?: string;
+            major_evaluation_score?: number;
+            major_intro?: string;
+            major_rank?: string;
+            master_major_count?: number;
+            master_major_names?: string;
             max_rank?: number;
             max_score?: number;
             min_rank?: number;
             min_score?: number;
             plan_count?: number;
+            postgraduate_direction?: string;
             region_code?: string;
+            soft_major_grade?: string;
             subject_category_code?: string;
+            subject_category_name?: string;
+            subject_change_2024?: string;
             subject_requirement_code?: string;
+            subject_requirement_name?: string;
+            subject_study_requirement?: string;
+            training_goal?: string;
             tuition?: number;
             university_code?: string;
             university_id?: number;
             university_major_line_id?: number;
             university_name?: string;
+        };
+        "admission.AggregateItem": {
+            avg_min_rank?: number;
+            avg_min_score?: number;
+            avg_tuition?: number;
+            code?: string;
+            count?: number;
+            is_211_count?: number;
+            is_985_count?: number;
+            is_double_first_class_count?: number;
+            name?: string;
+        };
+        "admission.AggregateResponse": {
+            group_by?: string;
+            items?: components["schemas"]["admission.AggregateItem"][];
+            total?: number;
         };
         "admission.DictionaryItem": {
             code?: string;
@@ -2119,6 +2795,7 @@ export interface components {
             difficulty_rank?: string;
             doctoral_program_count?: number;
             education_level_code?: string;
+            education_level_name?: string;
             excellence_tags?: string;
             has_postgraduate_recommendation?: boolean;
             id?: number;
@@ -2130,10 +2807,12 @@ export interface components {
             master_program_count?: number;
             national_key_subject_count?: number;
             ownership_type_code?: string;
+            ownership_type_name?: string;
             postgraduate_recommendation_rate?: number;
             profile_year?: number;
             region_code?: string;
             school_category_code?: string;
+            school_category_name?: string;
             school_level_tags?: string;
             soft_rank?: string;
             university_id?: number;
@@ -2143,6 +2822,72 @@ export interface components {
             name?: string;
             normalized_name?: string;
             university_code?: string;
+        };
+        "admission.VolunteerPlan": {
+            columns?: string[];
+            description?: string;
+            id?: string;
+            name?: string;
+            rows?: {
+                [key: string]: unknown;
+            }[];
+            stats?: components["schemas"]["admission.VolunteerPlanStats"];
+        };
+        "admission.VolunteerPlanStats": {
+            groupCount?: number;
+            recordCount?: number;
+            schoolCount?: number;
+        };
+        "admission.VolunteerPlansResponse": {
+            plans?: components["schemas"]["admission.VolunteerPlan"][];
+        };
+        "ai.ChatRequest": {
+            messages?: components["schemas"]["ai.Message"][];
+        };
+        "ai.ConversationChatRequest": {
+            message?: string;
+        };
+        "ai.Message": {
+            content?: string;
+            role?: string;
+            tool_call_id?: string;
+            tool_calls?: components["schemas"]["ai.ToolCall"][];
+        };
+        "ai.ToolCall": {
+            function?: {
+                arguments?: string;
+                name?: string;
+            };
+            id?: string;
+            type?: string;
+        };
+        "conversation.AddMessageRequest": {
+            content?: string;
+        };
+        "conversation.Conversation": {
+            created_at?: string;
+            id?: number;
+            status?: string;
+            title?: string;
+            updated_at?: string;
+            user_id?: number;
+        };
+        "conversation.CreateConversationRequest": {
+            title?: string;
+            user_id?: number;
+        };
+        "conversation.Message": {
+            content?: string;
+            conversation_id?: number;
+            created_at?: string;
+            id?: number;
+            role?: string;
+            tool_calls?: number[];
+            tool_results?: number[];
+        };
+        "conversation.WithMessages": {
+            conversation?: components["schemas"]["conversation.Conversation"];
+            messages?: components["schemas"]["conversation.Message"][];
         };
         "membership.CurrentMembershipResponse": {
             /** @example true */

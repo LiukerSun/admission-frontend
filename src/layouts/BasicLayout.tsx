@@ -9,6 +9,7 @@ import {
   HomeOutlined,
   LogoutOutlined,
   MenuOutlined,
+  BankOutlined as SchoolOutlined,
   RobotOutlined,
   SettingOutlined,
   TeamOutlined,
@@ -27,6 +28,7 @@ const ROUTE_TITLE_MAP: Record<string, string> = {
   '/admission': '招生数据',
   '/admission/ai': '智能填报',
   '/admission/plans': '志愿方案',
+  '/university': '学校详情',
   '/profile': '账号中心',
   '/admin/dashboard': '管理概览',
   '/admin/users': '用户管理',
@@ -40,6 +42,9 @@ function buildBreadcrumbItems(pathname: string) {
     items.push({ title: '管理后台' })
     const sub = ROUTE_TITLE_MAP[pathname]
     if (sub) items.push({ title: sub })
+  } else if (pathname.startsWith('/university/')) {
+    items.push({ title: ROUTE_TITLE_MAP['/university'] || '学校详情' })
+    items.push({ title: '学校信息' })
   } else {
     const title = ROUTE_TITLE_MAP[pathname]
     if (title) items.push({ title })
@@ -76,6 +81,11 @@ export default function BasicLayout() {
       key: '/admission/plans',
       icon: <FileTextOutlined />,
       label: <Link to="/admission/plans">志愿方案</Link>,
+    },
+    {
+      key: '/university',
+      icon: <SchoolOutlined />,
+      label: <Link to="/university">学校详情</Link>,
     },
   ]
 
