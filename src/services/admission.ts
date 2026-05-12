@@ -7,6 +7,7 @@ type AdmissionLineExtras = {
   batch_remark?: string
   group_min_score?: number
   group_min_rank?: number
+  group_major_names?: string
   equivalent_min_score_2024?: number
   equivalent_min_score_2023?: number
   equivalent_min_score_2022?: number
@@ -35,6 +36,7 @@ type AdmissionLineExtras = {
 export type AdmissionLine = components['schemas']['admission.AdmissionLineResponse'] & AdmissionLineExtras
 export type StandardMajor = components['schemas']['admission.StandardMajorResponse']
 export type University = components['schemas']['admission.UniversityResponse']
+export type UniversityProfile = components['schemas']['admission.UniversityProfileResponse']
 
 export interface VolunteerPlan {
   id: string
@@ -84,6 +86,11 @@ export const admissionApi = {
   listUniversities: (params: { q?: string }) =>
     api.get<AdmissionEnvelope<University[]>>('/api/v1/admission/universities', {
       params: cleanParams(params),
+    }),
+
+  getUniversityProfile: (id: number, params?: { profile_year?: number }) =>
+    api.get<AdmissionEnvelope<UniversityProfile>>(`/api/v1/admission/universities/${id}/profile`, {
+      params: cleanParams(params || {}),
     }),
 
   listVolunteerPlans: () =>
