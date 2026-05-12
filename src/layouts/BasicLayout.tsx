@@ -5,10 +5,12 @@ import {
   BarChartOutlined,
   BankOutlined,
   DashboardOutlined,
+  FileTextOutlined,
   HomeOutlined,
   LogoutOutlined,
   MenuOutlined,
   BankOutlined as SchoolOutlined,
+  RobotOutlined,
   SettingOutlined,
   TeamOutlined,
   UserOutlined,
@@ -24,6 +26,8 @@ const { useBreakpoint } = Grid
 const ROUTE_TITLE_MAP: Record<string, string> = {
   '/dashboard': '工作台',
   '/admission': '招生数据',
+  '/admission/ai': '智能填报',
+  '/admission/plans': '志愿方案',
   '/university': '学校详情',
   '/profile': '账号中心',
   '/admin/dashboard': '管理概览',
@@ -67,6 +71,16 @@ export default function BasicLayout() {
       key: '/admission',
       icon: <BankOutlined />,
       label: <Link to="/admission">招生数据</Link>,
+    },
+    {
+      key: '/admission/ai',
+      icon: <RobotOutlined />,
+      label: <Link to="/admission/ai">智能填报</Link>,
+    },
+    {
+      key: '/admission/plans',
+      icon: <FileTextOutlined />,
+      label: <Link to="/admission/plans">志愿方案</Link>,
     },
     {
       key: '/university',
@@ -123,6 +137,7 @@ export default function BasicLayout() {
 
   const breadcrumbItems = buildBreadcrumbItems(location.pathname)
   const isAdminRoute = location.pathname.startsWith('/admin')
+  const isAdmissionAIPage = location.pathname === '/admission/ai'
   const currentMenuItems = isAdminRoute ? adminMenuItems : primaryMenuItems
   const selectedMenuKeys = [location.pathname]
   const userName = user?.email?.split('@')[0]
@@ -136,7 +151,7 @@ export default function BasicLayout() {
   }
 
   return (
-    <Layout style={{ minHeight: '100vh' }}>
+    <Layout style={{ minHeight: '100vh', ...(isAdmissionAIPage ? { height: '100vh', overflow: 'hidden' } : {}) }}>
       <Header
         style={{
           background: '#fff',
@@ -229,8 +244,22 @@ export default function BasicLayout() {
         )}
       </div>
 
-      <Content style={{ margin: isDesktop ? 24 : 12, padding: 0 }}>
-        <div style={{ padding: isDesktop ? 24 : 16, background: '#fff', borderRadius: 8, border: '1px solid #E9EEF6' }}>
+      <Content
+        style={{
+          margin: isDesktop ? 24 : 12,
+          padding: 0,
+          ...(isAdmissionAIPage ? { display: 'flex', minHeight: 0 } : {}),
+        }}
+      >
+        <div
+          style={{
+            padding: isDesktop ? 24 : 16,
+            background: '#fff',
+            borderRadius: 8,
+            border: '1px solid #E9EEF6',
+            ...(isAdmissionAIPage ? { flex: 1, minHeight: 0, display: 'flex' } : {}),
+          }}
+        >
           <Outlet />
         </div>
       </Content>
