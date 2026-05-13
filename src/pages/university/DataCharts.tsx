@@ -81,7 +81,9 @@ export default function DataCharts({ universityId, selectedGroupCode, selectedMa
   useEffect(() => {
     if (!universityId) return
     let cancelled = false
-    setTabLoading(true)
+    queueMicrotask(() => {
+      if (!cancelled) setTabLoading(true)
+    })
     admissionApi
       .getTrend(universityId, {
         group_code: selectedGroupCode || undefined,
@@ -122,7 +124,7 @@ export default function DataCharts({ universityId, selectedGroupCode, selectedMa
   // Load distribution data
   useEffect(() => {
     if (!universityId || !selectedGroupCode) {
-      setDistributionData(null)
+      queueMicrotask(() => setDistributionData(null))
       return
     }
     let cancelled = false
@@ -142,7 +144,7 @@ export default function DataCharts({ universityId, selectedGroupCode, selectedMa
   // Load comparison data
   useEffect(() => {
     if (!selectedMajor?.local_major_name) {
-      setComparisonData(null)
+      queueMicrotask(() => setComparisonData(null))
       return
     }
     let cancelled = false
@@ -368,11 +370,13 @@ export default function DataCharts({ universityId, selectedGroupCode, selectedMa
 
   // Dispose charts on unmount
   useEffect(() => {
+    const instances = chartInstances.current
+    const observers = observersRef.current
     return () => {
-      Object.values(chartInstances.current).forEach((instance) => {
+      Object.values(instances).forEach((instance) => {
         instance.chart?.dispose()
       })
-      Object.values(observersRef.current).forEach((o) => o?.disconnect())
+      Object.values(observers).forEach((o) => o?.disconnect())
     }
   }, [])
 
