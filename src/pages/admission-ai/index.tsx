@@ -16,6 +16,8 @@ import { Bubble, Sender, Welcome } from '@ant-design/x'
 import type { BubbleItemType } from '@ant-design/x/es/bubble'
 import { conversationApi, type Conversation, type Message } from '@/services/conversation'
 import { streamChatWithConversation, streamRegenerateWithConversation, type SSEEvent } from '@/services/ai'
+import { useAuthStore } from '@/stores/authStore'
+import { usePaywallStore } from '@/stores/paywallStore'
 import MessageEditor from '@/components/ai-chat/MessageEditor'
 import SegmentRenderer from '@/components/ai-chat/SegmentRenderer'
 import SuggestionPills from '@/components/ai-chat/SuggestionPills'
@@ -468,6 +470,15 @@ export default function AdmissionAIPage() {
   const handleSubmit = async (value: string) => {
     if (!value.trim() || loading) return
 
+    if (!useAuthStore.getState().hasActiveMembership) {
+      usePaywallStore.getState().openPaywall({
+        featureName: '智能填报',
+        trigger: 'pre_check',
+        recommendedPlan: 'quarterly',
+      })
+      return
+    }
+
     let convId = conversationId
     if (!convId) {
       try {
@@ -601,6 +612,15 @@ export default function AdmissionAIPage() {
     if (!lastAIKey) return
     const last = messages.find((m) => m.key === lastAIKey)
     if (!last || last.role !== 'ai' || last.chatStatus !== 'done') return
+
+    if (!useAuthStore.getState().hasActiveMembership) {
+      usePaywallStore.getState().openPaywall({
+        featureName: '智能填报',
+        trigger: 'pre_check',
+        recommendedPlan: 'quarterly',
+      })
+      return
+    }
 
     setSuggestionsByConversation((prev) => ({ ...prev, [conversationId]: [] }))
     setLoading(true)

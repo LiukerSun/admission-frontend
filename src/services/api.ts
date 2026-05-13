@@ -1,6 +1,7 @@
 import axios, { AxiosError, type InternalAxiosRequestConfig } from 'axios'
 import { API_BASE_URL } from '@/utils/constants'
 import { useAuthStore } from '@/stores/authStore'
+import { triggerPaywallIfMatch } from '@/services/paywall'
 
 let isRefreshing = false
 let refreshSubscribers: ((token: string) => void)[] = []
@@ -34,6 +35,13 @@ api.interceptors.response.use(
   (response) => response,
   async (error: AxiosError) => {
     const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean }
+
+    // Paywall: a 403 with code === 1010 means the server gated this endpoint
+    // behind an active membership. triggerPaywallIfMatch also refreshes the
+    // cached membership internally.
+    if (error.response?.status === 403) {
+      triggerPaywallIfMatch(error.response.data)
+    }
 
     if (error.response?.status === 401 && originalRequest && !originalRequest._retry) {
       if (isRefreshing) {

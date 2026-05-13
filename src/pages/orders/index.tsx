@@ -6,6 +6,7 @@ import type { ColumnsType } from 'antd/es/table'
 import { DownOutlined, ReloadOutlined, WalletOutlined } from '@ant-design/icons'
 import { OrderStatusBadge } from '@/components/orders'
 import { paymentApi, type OrderResponse } from '@/services/payment'
+import { useAuthStore } from '@/stores/authStore'
 import {
   ORDER_STATUS_COLORS,
   canPayOrder,
@@ -105,6 +106,8 @@ export default function OrdersPage() {
           applyUpdatedOrder(res.data.data)
           message.success('Mock 支付成功')
           void fetchOrders()
+          // Sync membership so paywalled features unlock without a refresh.
+          void useAuthStore.getState().refreshMembership().catch(() => undefined)
         } catch (err: unknown) {
           const axiosErr = err as { response?: { data?: { message?: string } } }
           message.error(axiosErr.response?.data?.message || 'Mock 支付失败')

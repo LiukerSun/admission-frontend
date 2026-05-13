@@ -1,5 +1,6 @@
 import { API_BASE_URL } from '@/utils/constants'
 import { useAuthStore } from '@/stores/authStore'
+import { triggerPaywallIfMatch, tryParsePaywallText } from '@/services/paywall'
 
 export interface AIMessage {
   role: 'user' | 'assistant' | 'system' | 'tool'
@@ -49,6 +50,13 @@ function streamSSE(
     .then(async (response) => {
       if (!response.ok) {
         const text = await response.text()
+        // SSE doesn't go through axios, so paywall detection happens inline.
+        if (response.status === 403) {
+          const paywall = tryParsePaywallText(text)
+          if (paywall && triggerPaywallIfMatch(paywall)) {
+            throw new Error('membership_required')
+          }
+        }
         throw new Error(`HTTP ${response.status}: ${text}`)
       }
 

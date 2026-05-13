@@ -19,6 +19,7 @@ import {
 } from '@ant-design/icons'
 import { useAuthStore } from '@/stores/authStore'
 import { toAccountCenterPath } from '@/utils/accountCenter'
+import PaywallModal from '@/components/paywall/PaywallModal'
 import type { MenuProps } from 'antd'
 
 const { Header, Content } = Layout
@@ -286,6 +287,8 @@ export default function BasicLayout() {
           style={{ borderRight: 0 }}
         />
       </Drawer>
+
+      <PaywallModal />
     </Layout>
   )
 }

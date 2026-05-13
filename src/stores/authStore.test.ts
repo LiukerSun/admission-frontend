@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const mockPost = vi.fn()
 const mockGetMe = vi.fn()
+const mockGetMembership = vi.fn()
 const localStorageMock = (() => {
   let store: Record<string, string> = {}
 
@@ -29,6 +30,13 @@ vi.mock('@/services/auth', () => ({
     login: mockPost,
     register: mockPost,
     refresh: mockPost,
+  },
+}))
+
+vi.mock('@/services/membership', () => ({
+  membershipApi: {
+    getCurrent: mockGetMembership,
+    getPlans: vi.fn(),
   },
 }))
 
@@ -67,6 +75,17 @@ describe('useAuthStore', () => {
         },
       },
     })
+    mockGetMembership.mockResolvedValueOnce({
+      data: {
+        data: {
+          membership_level: 'premium',
+          status: 'active',
+          started_at: '2026-04-21T00:00:00Z',
+          ends_at: '2026-07-21T00:00:00Z',
+          active: true,
+        },
+      },
+    })
 
     localStorage.setItem('refresh_token', 'refresh-token')
 
@@ -82,6 +101,8 @@ describe('useAuthStore', () => {
     expect(state.user?.phone_verified).toBe(true)
     expect(state.user?.role).toBe('premium')
     expect(state.isAdmin).toBe(true)
+    expect(state.hasActiveMembership).toBe(true)
+    expect(state.membership?.membership_level).toBe('premium')
     expect(localStorage.getItem('refresh_token')).toBe('refresh-token-next')
   })
 
