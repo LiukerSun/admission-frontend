@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { Avatar, Button, Empty, Layout, Spin, Tag, Typography, message, theme } from 'antd'
+import { Avatar, Button, Collapse, Drawer, Empty, InputNumber, Layout, Select, Spin, Table, Tag, Typography, message, theme } from 'antd'
 import type { AxiosError } from 'axios'
 import {
   BulbOutlined,
@@ -16,6 +16,7 @@ import { Bubble, Sender, Welcome } from '@ant-design/x'
 import type { BubbleItemType } from '@ant-design/x/es/bubble'
 import { conversationApi, type Conversation, type Message } from '@/services/conversation'
 import { streamChatWithConversation, streamRegenerateWithConversation, type SSEEvent } from '@/services/ai'
+import { planDraftsApi, type PlanDraft } from '@/services/planDrafts'
 import { volunteerPlansApi } from '@/services/volunteerPlans'
 import MessageEditor from '@/components/ai-chat/MessageEditor'
 import SegmentRenderer from '@/components/ai-chat/SegmentRenderer'
@@ -33,6 +34,16 @@ interface ChatItem extends BubbleItemType {
   chatStatus: ChatStatus
   toolCallStatus?: ToolCallStatus
   serverId?: number
+}
+
+type RecommendationRequestSnapshot = {
+  region_code: string
+  subject_category_code?: 'physics' | 'history'
+  total_score?: number
+  provincial_rank?: number
+  priority_strategy?: 'auto' | 'school' | 'major'
+  enable_llm_tuning?: boolean
+  plan_size?: number
 }
 
 export default function AdmissionAIPage() {
@@ -64,6 +75,16 @@ export default function AdmissionAIPage() {
   const suggestionsTimerRef = useRef<number | null>(null)
   const syncTimerRef = useRef<number | null>(null)
   const pendingDraftRef = useRef<string | null>(null)
+
+  const [recommendationSnapshot, setRecommendationSnapshot] = useState<RecommendationRequestSnapshot>({
+    region_code: '230000',
+    priority_strategy: 'auto',
+    enable_llm_tuning: false,
+    plan_size: 40,
+  })
+  const [draftPreview, setDraftPreview] = useState<PlanDraft | null>(null)
+  const [draftPreviewLoading, setDraftPreviewLoading] = useState(false)
+  const [planDrawerOpen, setPlanDrawerOpen] = useState(false)
 
   const loadConversations = useCallback(async () => {
     setConversationsLoading(true)
@@ -148,6 +169,8 @@ export default function AdmissionAIPage() {
       setMessages([])
       setActiveConversation(null)
       setEditingKey(null)
+      setDraftPreview(null)
+      setPlanDrawerOpen(false)
 
       if (!conversationId) return
 
@@ -211,6 +234,62 @@ export default function AdmissionAIPage() {
       return null
     }
   }, [isArchived, messages])
+
+  useEffect(() => {
+    let ignore = false
+    void Promise.resolve()
+      .then(async () => {
+        if (!draftToAdopt || isArchived) {
+          if (!ignore) setDraftPreview(null)
+          return
+        }
+
+        if (!ignore) setDraftPreviewLoading(true)
+        try {
+          const res = await planDraftsApi.get(draftToAdopt.draftId)
+          if (!ignore) setDraftPreview(res.data?.data || null)
+        } catch {
+          if (!ignore) setDraftPreview(null)
+        } finally {
+          if (!ignore) setDraftPreviewLoading(false)
+        }
+      })
+    return () => {
+      ignore = true
+    }
+  }, [draftToAdopt, isArchived])
+
+  const missingRecommendationFields = useMemo(() => {
+    const missing: string[] = []
+    if (!recommendationSnapshot.subject_category_code) missing.push('科类')
+    if (!recommendationSnapshot.total_score) missing.push('分数')
+    if (!recommendationSnapshot.provincial_rank) missing.push('位次')
+    return missing
+  }, [recommendationSnapshot.provincial_rank, recommendationSnapshot.subject_category_code, recommendationSnapshot.total_score])
+
+  const canGeneratePlan = useMemo(() => {
+    if (isArchived) return false
+    if (loading) return false
+    return missingRecommendationFields.length === 0
+  }, [isArchived, loading, missingRecommendationFields.length])
+
+  const handleGeneratePlan = () => {
+    if (!canGeneratePlan) return
+    const payload: RecommendationRequestSnapshot = {
+      region_code: '230000',
+      subject_category_code: recommendationSnapshot.subject_category_code,
+      total_score: recommendationSnapshot.total_score,
+      provincial_rank: recommendationSnapshot.provincial_rank,
+      priority_strategy: recommendationSnapshot.priority_strategy || 'auto',
+      enable_llm_tuning: !!recommendationSnapshot.enable_llm_tuning,
+      plan_size: recommendationSnapshot.plan_size || 40,
+    }
+    const msg =
+      '请根据已收集信息生成志愿方案。\n\n```recommendation_request\n' +
+      JSON.stringify(payload, null, 2) +
+      '\n```\n'
+    void handleSubmit(msg)
+  }
 
   const scrollToBottom = () => {
     if (listRef.current) {
@@ -891,6 +970,84 @@ export default function AdmissionAIPage() {
             background: token.colorBgContainer,
           }}
         >
+          {!isArchived ? (
+            <div style={{ marginBottom: 12 }}>
+              <Collapse
+                size="small"
+                items={[
+                  {
+                    key: 'recommendation',
+                    label: '生成志愿方案（recommendations v1）',
+                    children: (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'center' }}>
+                          <Tag>地区：黑龙江(230000)</Tag>
+                          <Select
+                            style={{ width: 140 }}
+                            placeholder="科类"
+                            value={recommendationSnapshot.subject_category_code}
+                            options={[
+                              { label: '物理', value: 'physics' },
+                              { label: '历史', value: 'history' },
+                            ]}
+                            onChange={(v) =>
+                              setRecommendationSnapshot((prev) => ({ ...prev, subject_category_code: v as 'physics' | 'history' }))
+                            }
+                          />
+                          <InputNumber
+                            style={{ width: 140 }}
+                            placeholder="分数"
+                            min={0}
+                            value={recommendationSnapshot.total_score}
+                            onChange={(v) => setRecommendationSnapshot((prev) => ({ ...prev, total_score: typeof v === 'number' ? v : undefined }))}
+                          />
+                          <InputNumber
+                            style={{ width: 140 }}
+                            placeholder="位次"
+                            min={0}
+                            value={recommendationSnapshot.provincial_rank}
+                            onChange={(v) =>
+                              setRecommendationSnapshot((prev) => ({ ...prev, provincial_rank: typeof v === 'number' ? v : undefined }))
+                            }
+                          />
+                          <Select
+                            style={{ width: 160 }}
+                            placeholder="院校/专业优先"
+                            value={recommendationSnapshot.priority_strategy || 'auto'}
+                            options={[
+                              { label: '自动', value: 'auto' },
+                              { label: '院校优先', value: 'school' },
+                              { label: '专业优先', value: 'major' },
+                            ]}
+                            onChange={(v) =>
+                              setRecommendationSnapshot((prev) => ({ ...prev, priority_strategy: v as 'auto' | 'school' | 'major' }))
+                            }
+                          />
+                        </div>
+                        {missingRecommendationFields.length > 0 ? (
+                          <Text type="secondary">还缺：{missingRecommendationFields.join('、')}</Text>
+                        ) : null}
+                        <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+                          <Button type="primary" disabled={!canGeneratePlan} onClick={handleGeneratePlan}>
+                            生成志愿方案
+                          </Button>
+                          {draftToAdopt ? (
+                            <Button
+                              loading={draftPreviewLoading}
+                              disabled={!draftPreview?.plan_json}
+                              onClick={() => setPlanDrawerOpen(true)}
+                            >
+                              查看生成结果
+                            </Button>
+                          ) : null}
+                        </div>
+                      </div>
+                    ),
+                  },
+                ]}
+              />
+            </div>
+          ) : null}
           <SuggestionPills suggestions={suggestions} disabled={!!inputValue.trim()} onPick={handlePickSuggestion} />
           {draftToAdopt && !isArchived ? (
             <div style={{ marginBottom: 12 }}>
@@ -916,6 +1073,33 @@ export default function AdmissionAIPage() {
           />
         </div>
       </Content>
+      <Drawer
+        title="志愿方案预览"
+        open={planDrawerOpen}
+        onClose={() => setPlanDrawerOpen(false)}
+        width={900}
+        destroyOnClose
+      >
+        {draftPreview?.status === 'failed' ? <Text type="danger">生成失败：{draftPreview.error || '未知错误'}</Text> : null}
+        {draftPreview?.plan_json ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+              <Tag>学校数：{draftPreview.plan_json.stats?.schoolCount ?? 0}</Tag>
+              <Tag>组数：{draftPreview.plan_json.stats?.groupCount ?? 0}</Tag>
+              <Tag>记录数：{draftPreview.plan_json.stats?.recordCount ?? 0}</Tag>
+            </div>
+            <Table
+              size="small"
+              bordered
+              rowKey={(_, idx) => String(idx)}
+              pagination={{ pageSize: 20 }}
+              columns={(draftPreview.plan_json.columns || []).map((c) => ({ title: c, dataIndex: c, key: c }))}
+              dataSource={draftPreview.plan_json.rows || []}
+              scroll={{ x: true }}
+            />
+          </div>
+        ) : null}
+      </Drawer>
     </Layout>
   )
 }
