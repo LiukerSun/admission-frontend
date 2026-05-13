@@ -1,202 +1,202 @@
-import { useEffect, useRef, useMemo } from 'react'
-import { Card, Empty, Spin } from 'antd'
+import { useEffect, useRef, useState, useCallback } from 'react'
+import { Card, Empty, Spin, Tabs } from 'antd'
+import {
+  LineChartOutlined,
+  TeamOutlined,
+  BarChartOutlined,
+  TrophyOutlined,
+} from '@ant-design/icons'
 import * as echarts from 'echarts'
-import type { AdmissionLine } from '@/services/admission'
+import { admissionApi, type AdmissionLine, type TrendYear, type GroupComparisonItem } from '@/services/admission'
+import type {
+  TrendResponse,
+  GroupComparisonResponse,
+  MajorDistributionResponse,
+  MajorComparisonResponse,
+} from '@/services/admission'
 
 interface DataChartsProps {
-  displayLines: AdmissionLine[]
+  universityId: number
+  selectedGroupCode: string | null
   selectedMajor: AdmissionLine | null
   loading: boolean
 }
 
-function getMajorKey(line: AdmissionLine): string {
-  return `${line.local_major_name || ''}|${line.local_major_code || ''}`
-}
+const tabItems = [
+  { key: 'trend', label: '录取趋势', icon: <LineChartOutlined /> },
+  { key: 'groups', label: '招生计划', icon: <TeamOutlined /> },
+  { key: 'distribution', label: '分数分布', icon: <BarChartOutlined /> },
+  { key: 'comparison', label: '性价比', icon: <TrophyOutlined /> },
+]
 
-function pickTop10Majors(lines: AdmissionLine[]): AdmissionLine[] {
-  const majorMap = new Map<string, AdmissionLine[]>()
-  for (const line of lines) {
-    const key = getMajorKey(line)
-    const existing = majorMap.get(key) || []
-    existing.push(line)
-    majorMap.set(key, existing)
-  }
+export default function DataCharts({ universityId, selectedGroupCode, selectedMajor, loading }: DataChartsProps) {
+  const [activeTab, setActiveTab] = useState('trend')
+  const [trendData, setTrendData] = useState<TrendResponse | null>(null)
+  const [groupsData, setGroupsData] = useState<GroupComparisonResponse | null>(null)
+  const [distributionData, setDistributionData] = useState<MajorDistributionResponse | null>(null)
+  const [comparisonData, setComparisonData] = useState<MajorComparisonResponse | null>(null)
+  const [tabLoading, setTabLoading] = useState(false)
 
-  const majorScores = Array.from(majorMap.entries()).map(([key, majorLines]) => {
-    const validYears = majorLines.map((l) => l.admission_year || 0).filter((y) => y > 0)
-    const latestYear = validYears.length > 0 ? Math.max(...validYears) : 0
-    const latestLines = majorLines.filter((l) => l.admission_year === latestYear)
-    const minScore = Math.min(...latestLines.map((l) => l.min_score ?? Infinity).filter((s) => s !== Infinity))
-    return { key, score: minScore === Infinity ? 0 : minScore }
+  const trendChartRef = useRef<HTMLDivElement>(null)
+  const groupsChartRef = useRef<HTMLDivElement>(null)
+  const distributionChartRef = useRef<HTMLDivElement>(null)
+  const comparisonChartRef = useRef<HTMLDivElement>(null)
+  const chartInstances = useRef<Record<string, { chart: echarts.ECharts | null; el: HTMLElement | null }>>({
+    trend: { chart: null, el: null },
+    groups: { chart: null, el: null },
+    distribution: { chart: null, el: null },
+    comparison: { chart: null, el: null },
+  })
+  const observersRef = useRef<Record<string, ResizeObserver | null>>({
+    trend: null,
+    groups: null,
+    distribution: null,
+    comparison: null,
   })
 
-  majorScores.sort((a, b) => b.score - a.score)
-  const top10Keys = new Set(majorScores.slice(0, 10).map((m) => m.key))
-
-  return lines.filter((line) => top10Keys.has(getMajorKey(line)))
-}
-
-function mockMultiYearData(lines: AdmissionLine[]): AdmissionLine[] {
-  const result: AdmissionLine[] = []
-  const baseYear = 2024
-  const mockYears = [2024, 2023, 2022]
-
-  for (const line of lines) {
-    const currentBaseYear = line.admission_year || baseYear
-    const baseScore = line.min_score ?? 0
-    const baseRank = line.min_rank ?? 0
-
-    for (const year of mockYears) {
-      const yearDiff = currentBaseYear - year
-      const scoreOffset = yearDiff * 2 + (Math.random() > 0.5 ? 1 : -1)
-      const rankOffset = yearDiff * 40 + Math.floor(Math.random() * 20)
-
-      result.push({
-        ...line,
-        admission_year: year,
-        min_score: baseScore > 0 ? baseScore + scoreOffset : undefined,
-        min_rank: baseRank > 0 ? baseRank + rankOffset : undefined,
-      })
+  const getOrCreateChart = useCallback((key: string, el: HTMLDivElement | null) => {
+    if (!el) return null
+    const instance = chartInstances.current[key]
+    if (instance.chart && instance.el === el) {
+      return instance.chart
     }
-  }
-
-  return result
-}
-
-function aggregateByYear(
-  lines: AdmissionLine[]
-): Map<number, { planCount: number; avgScore: number | null; avgRank: number | null; avgTuition: number | null }> {
-  const yearMap = new Map<number, { scores: number[]; ranks: number[]; plans: number[]; tuitions: number[] }>()
-
-  for (const line of lines) {
-    const year = line.admission_year || 0
-    if (year === 0) continue
-    if (!yearMap.has(year)) {
-      yearMap.set(year, { scores: [], ranks: [], plans: [], tuitions: [] })
+    if (instance.chart) {
+      instance.chart.dispose()
     }
-    const data = yearMap.get(year)!
-    if (line.min_score !== undefined) data.scores.push(line.min_score)
-    if (line.min_rank !== undefined) data.ranks.push(line.min_rank)
-    if (line.plan_count !== undefined) data.plans.push(line.plan_count)
-    if (line.tuition !== undefined) data.tuitions.push(line.tuition)
-  }
-
-  const result = new Map<number, { planCount: number; avgScore: number | null; avgRank: number | null; avgTuition: number | null }>()
-  for (const [year, data] of yearMap) {
-    result.set(year, {
-      planCount: data.plans.reduce((a, b) => a + b, 0),
-      avgScore: data.scores.length > 0 ? Math.round(data.scores.reduce((a, b) => a + b, 0) / data.scores.length) : null,
-      avgRank: data.ranks.length > 0 ? Math.round(data.ranks.reduce((a, b) => a + b, 0) / data.ranks.length) : null,
-      avgTuition: data.tuitions.length > 0 ? Math.round(data.tuitions.reduce((a, b) => a + b, 0) / data.tuitions.length) : null,
+    if (observersRef.current[key]) {
+      observersRef.current[key]?.disconnect()
+      observersRef.current[key] = null
+    }
+    const chart = echarts.init(el)
+    const observer = new ResizeObserver(() => {
+      chart.resize()
     })
-  }
+    observer.observe(el)
+    observersRef.current[key] = observer
+    chartInstances.current[key] = { chart, el }
+    return chart
+  }, [])
 
-  return result
-}
+  // Load trend data
+  useEffect(() => {
+    if (!universityId) return
+    let cancelled = false
+    setTabLoading(true)
+    admissionApi
+      .getTrend(universityId, {
+        group_code: selectedGroupCode || undefined,
+        local_major_code: selectedMajor?.local_major_code || undefined,
+        years: 5,
+      })
+      .then((res) => {
+        if (!cancelled) setTrendData(res.data.data || null)
+      })
+      .catch(() => {
+        if (!cancelled) setTrendData(null)
+      })
+      .finally(() => {
+        if (!cancelled) setTabLoading(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [universityId, selectedGroupCode, selectedMajor])
 
-export default function DataCharts({ displayLines, selectedMajor, loading }: DataChartsProps) {
-  const chartRef = useRef<HTMLDivElement>(null)
-  const chartInstanceRef = useRef<echarts.ECharts | null>(null)
+  // Load groups data
+  useEffect(() => {
+    if (!universityId) return
+    let cancelled = false
+    admissionApi
+      .getGroupComparison(universityId)
+      .then((res) => {
+        if (!cancelled) setGroupsData(res.data.data || null)
+      })
+      .catch(() => {
+        if (!cancelled) setGroupsData(null)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [universityId])
 
-  const option = useMemo(() => {
-    if (displayLines.length === 0) return null
+  // Load distribution data
+  useEffect(() => {
+    if (!universityId || !selectedGroupCode) {
+      setDistributionData(null)
+      return
+    }
+    let cancelled = false
+    admissionApi
+      .getMajorDistribution(universityId, { group_code: selectedGroupCode })
+      .then((res) => {
+        if (!cancelled) setDistributionData(res.data.data || null)
+      })
+      .catch(() => {
+        if (!cancelled) setDistributionData(null)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [universityId, selectedGroupCode])
 
-    const sourceMajors = selectedMajor
-      ? [selectedMajor]
-      : pickTop10Majors(displayLines)
+  // Load comparison data
+  useEffect(() => {
+    if (!selectedMajor?.local_major_name) {
+      setComparisonData(null)
+      return
+    }
+    let cancelled = false
+    admissionApi
+      .getMajorComparison({ local_major_name: selectedMajor.local_major_name, limit: 50 })
+      .then((res) => {
+        if (!cancelled) setComparisonData(res.data.data || null)
+      })
+      .catch(() => {
+        if (!cancelled) setComparisonData(null)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [selectedMajor])
 
-    if (sourceMajors.length === 0) return null
+  // Render trend chart
+  useEffect(() => {
+    const chart = getOrCreateChart('trend', trendChartRef.current)
+    if (!chart || !trendData?.years?.length) {
+      chart?.clear()
+      return
+    }
 
-    const mockedLines = mockMultiYearData(sourceMajors)
-    const yearData = aggregateByYear(mockedLines)
-    const allYears = Array.from(yearData.keys()).sort((a, b) => a - b)
-    const recentYears = allYears.slice(-3)
-
-    const planData = recentYears.map((y) => yearData.get(y)?.planCount ?? null)
-    const tuitionData = recentYears.map((y) => yearData.get(y)?.avgTuition ?? null)
-    const scoreData = recentYears.map((y) => yearData.get(y)?.avgScore ?? null)
-    const rankData = recentYears.map((y) => yearData.get(y)?.avgRank ?? null)
+    const years = trendData.years.map((y) => String(y.year))
+    const planData = trendData.years.map((y) => y.plan_count ?? null)
+    const scoreData = trendData.years.map((y) => y.min_score ?? y.group_min_score ?? null)
+    const rankData = trendData.years.map((y) => y.min_rank ?? y.group_min_rank ?? null)
 
     const hasPlan = planData.some((v) => v !== null)
-    const hasTuition = tuitionData.some((v) => v !== null)
     const hasScore = scoreData.some((v) => v !== null)
     const hasRank = rankData.some((v) => v !== null)
 
     const yAxis: echarts.YAXisComponentOption[] = []
-    let nextYAxisIndex = 0
-
-    const planYIndex = hasPlan ? nextYAxisIndex++ : -1
-    const tuitionYIndex = hasTuition ? nextYAxisIndex++ : -1
-    const scoreYIndex = hasScore ? nextYAxisIndex++ : -1
-    const rankYIndex = hasRank ? nextYAxisIndex++ : -1
-
-    if (hasPlan) {
-      yAxis.push({
-        type: 'value',
-        name: '招生人数',
-        position: 'left',
-        axisLabel: { fontSize: 11 },
-        splitLine: { lineStyle: { type: 'dashed' } },
-      })
-    }
-    if (hasTuition) {
-      yAxis.push({
-        type: 'value',
-        name: '学费(元)',
-        position: 'left',
-        offset: hasPlan ? 50 : 0,
-        axisLabel: { fontSize: 11 },
-        splitLine: { show: false },
-      })
-    }
-    if (hasScore) {
-      yAxis.push({
-        type: 'value',
-        name: '分数线',
-        position: 'right',
-        axisLabel: { fontSize: 11 },
-        splitLine: { show: false },
-      })
-    }
-    if (hasRank) {
-      yAxis.push({
-        type: 'value',
-        name: '位次',
-        position: 'right',
-        offset: hasScore ? 50 : 0,
-        inverse: true,
-        axisLabel: { fontSize: 11 },
-        splitLine: { show: false },
-      })
-    }
-
     const series: echarts.SeriesOption[] = []
+    let yIdx = 0
 
     if (hasPlan) {
+      yAxis.push({ type: 'value', name: '招生人数', position: 'left', splitLine: { lineStyle: { type: 'dashed' } } })
       series.push({
         name: '招生人数',
         type: 'bar',
-        yAxisIndex: planYIndex,
+        yAxisIndex: yIdx++,
         data: planData,
         itemStyle: { color: '#3B82F6', borderRadius: [4, 4, 0, 0] },
         barMaxWidth: 32,
       } as echarts.SeriesOption)
     }
-    if (hasTuition) {
-      series.push({
-        name: '平均学费',
-        type: 'bar',
-        yAxisIndex: tuitionYIndex,
-        data: tuitionData,
-        itemStyle: { color: '#D97706', borderRadius: [4, 4, 0, 0] },
-        barMaxWidth: 32,
-      } as echarts.SeriesOption)
-    }
     if (hasScore) {
+      yAxis.push({ type: 'value', name: '分数线', position: 'right', splitLine: { show: false } })
       series.push({
-        name: '平均分数线',
+        name: '分数线',
         type: 'line',
-        yAxisIndex: scoreYIndex,
+        yAxisIndex: yIdx++,
         data: scoreData,
         smooth: true,
         symbol: 'circle',
@@ -206,10 +206,11 @@ export default function DataCharts({ displayLines, selectedMajor, loading }: Dat
       } as echarts.SeriesOption)
     }
     if (hasRank) {
+      yAxis.push({ type: 'value', name: '位次', position: 'right', inverse: true, offset: hasScore ? 40 : 0, splitLine: { show: false } })
       series.push({
-        name: '平均位次',
+        name: '位次',
         type: 'line',
-        yAxisIndex: rankYIndex,
+        yAxisIndex: yIdx++,
         data: rankData,
         smooth: true,
         symbol: 'diamond',
@@ -219,90 +220,253 @@ export default function DataCharts({ displayLines, selectedMajor, loading }: Dat
       } as echarts.SeriesOption)
     }
 
-    const titleText = selectedMajor
-      ? `${selectedMajor.local_major_name || '已选专业'}近${recentYears.length}年趋势`
-      : `TOP${Math.min(sourceMajors.length, 10)} 专业近${recentYears.length}年趋势`
+    const title = selectedMajor
+      ? `${selectedMajor.local_major_name} 历年趋势`
+      : selectedGroupCode
+        ? `${selectedGroupCode} 专业组历年趋势`
+        : '全校历年录取趋势'
 
-    return {
-      title: {
-        text: titleText,
-        left: 'center',
-        textStyle: { fontSize: 14, fontWeight: 600 },
+    chart.setOption(
+      {
+        title: { text: title, left: 'center', textStyle: { fontSize: 14, fontWeight: 600 } },
+        tooltip: { trigger: 'axis' },
+        legend: { bottom: 0 },
+        grid: { left: '2%', right: '4%', bottom: '14%', top: '14%', containLabel: true },
+        xAxis: { type: 'category', data: years, axisLabel: { fontSize: 12 } },
+        yAxis,
+        series,
       },
-      tooltip: {
-        trigger: 'axis',
-        axisPointer: { type: 'cross' },
-      },
-      legend: {
-        bottom: 0,
-        textStyle: { fontSize: 11 },
-        itemWidth: 16,
-        itemHeight: 10,
-      },
-      grid: {
-        left: hasTuition ? '12%' : '8%',
-        right: hasRank ? '12%' : '8%',
-        bottom: '14%',
-        top: '14%',
-        containLabel: true,
-      },
-      xAxis: {
-        type: 'category',
-        data: recentYears.map(String),
-        axisLabel: { fontSize: 12, fontWeight: 500 },
-      },
-      yAxis,
-      series,
-    }
-  }, [displayLines, selectedMajor])
+      true
+    )
+  }, [trendData, selectedMajor, selectedGroupCode, getOrCreateChart, loading])
 
+  // Render groups chart
   useEffect(() => {
-    if (!chartRef.current) return
-    if (!chartInstanceRef.current) {
-      chartInstanceRef.current = echarts.init(chartRef.current)
-    }
-    const chart = chartInstanceRef.current
-    if (option) {
-      chart.setOption(option, true)
-    } else {
-      chart.clear()
+    const chart = getOrCreateChart('groups', groupsChartRef.current)
+    if (!chart || !groupsData?.groups?.length) {
+      chart?.clear()
+      return
     }
 
-    const handleResize = () => chart.resize()
+    const groups = groupsData.groups
+    const names = groups.map((g) => g.group_code)
+    const planData = groups.map((g) => g.plan_count)
+    const scoreData = groups.map((g) => g.group_min_score ?? null)
+    const rankData = groups.map((g) => g.group_min_rank ?? null)
+
+    chart.setOption(
+      {
+        title: { text: `${groupsData.admission_year}年 专业组对比`, left: 'center', textStyle: { fontSize: 14, fontWeight: 600 } },
+        tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+        legend: { bottom: 0 },
+        grid: { left: '8%', right: '8%', bottom: '14%', top: '14%', containLabel: true },
+        xAxis: { type: 'category', data: names, axisLabel: { rotate: 30, fontSize: 11 } },
+        yAxis: [
+          { type: 'value', name: '招生人数/分数', position: 'left', splitLine: { lineStyle: { type: 'dashed' } } },
+          { type: 'value', name: '位次', position: 'right', inverse: true, splitLine: { show: false } },
+        ],
+        series: [
+          { name: '招生人数', type: 'bar', data: planData, itemStyle: { color: '#3B82F6', borderRadius: [4, 4, 0, 0] }, barMaxWidth: 24 },
+          { name: '组最低分', type: 'line', yAxisIndex: 0, data: scoreData, smooth: true, symbol: 'circle', itemStyle: { color: '#16A34A' }, lineStyle: { width: 2 } },
+          { name: '组最低位次', type: 'line', yAxisIndex: 1, data: rankData, smooth: true, symbol: 'diamond', itemStyle: { color: '#DC2626' }, lineStyle: { width: 2 } },
+        ],
+      },
+      true
+    )
+  }, [groupsData, getOrCreateChart, loading])
+
+  // Render distribution chart
+  useEffect(() => {
+    const chart = getOrCreateChart('distribution', distributionChartRef.current)
+    if (!chart || !distributionData?.majors?.length) {
+      chart?.clear()
+      return
+    }
+
+    const majors = distributionData.majors.slice(0, 15)
+    const names = majors.map((m) => m.local_major_name)
+    const scoreData = majors.map((m) => m.min_score ?? null)
+    const rankData = majors.map((m) => m.min_rank ?? null)
+    const planData = majors.map((m) => m.plan_count ?? null)
+
+    const highlightIndex = selectedMajor
+      ? majors.findIndex((m) => m.local_major_code === selectedMajor.local_major_code)
+      : -1
+
+    chart.setOption(
+      {
+        title: { text: `${distributionData.group_code} 专业分数分布`, left: 'center', textStyle: { fontSize: 14, fontWeight: 600 } },
+        tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+        legend: { bottom: 0 },
+        grid: { left: '8%', right: '8%', bottom: '14%', top: '14%', containLabel: true },
+        xAxis: { type: 'category', data: names, axisLabel: { rotate: 30, fontSize: 10 } },
+        yAxis: [
+          { type: 'value', name: '分数/人数', position: 'left', splitLine: { lineStyle: { type: 'dashed' } } },
+          { type: 'value', name: '位次', position: 'right', inverse: true, splitLine: { show: false } },
+        ],
+        series: [
+          {
+            name: '计划招生',
+            type: 'bar',
+            data: planData.map((v, i) => ({
+              value: v,
+              itemStyle: i === highlightIndex ? { color: '#D97706' } : { color: '#3B82F6' },
+            })),
+            barMaxWidth: 20,
+          },
+          { name: '最低分', type: 'line', yAxisIndex: 0, data: scoreData, smooth: true, symbol: 'circle', itemStyle: { color: '#16A34A' }, lineStyle: { width: 2 } },
+          { name: '最低位次', type: 'line', yAxisIndex: 1, data: rankData, smooth: true, symbol: 'diamond', itemStyle: { color: '#DC2626' }, lineStyle: { width: 2 } },
+        ],
+      },
+      true
+    )
+  }, [distributionData, selectedMajor, getOrCreateChart, loading])
+
+  // Render comparison chart
+  useEffect(() => {
+    const chart = getOrCreateChart('comparison', comparisonChartRef.current)
+    if (!chart || !comparisonData?.items?.length) {
+      chart?.clear()
+      return
+    }
+
+    const items = comparisonData.items
+    const names = items.map((i) => i.university_name)
+    const scoreData = items.map((i) => i.min_score ?? null)
+    const rankData = items.map((i) => i.min_rank ?? null)
+    const planData = items.map((i) => i.plan_count ?? null)
+
+    chart.setOption(
+      {
+        title: { text: `${comparisonData.local_major_name} 跨校对比`, left: 'center', textStyle: { fontSize: 14, fontWeight: 600 } },
+        tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+        legend: { bottom: 0 },
+        grid: { left: '8%', right: '8%', bottom: '14%', top: '14%', containLabel: true },
+        xAxis: { type: 'category', data: names, axisLabel: { rotate: 30, fontSize: 10 } },
+        yAxis: [
+          { type: 'value', name: '分数/人数', position: 'left', splitLine: { lineStyle: { type: 'dashed' } } },
+          { type: 'value', name: '位次', position: 'right', inverse: true, splitLine: { show: false } },
+        ],
+        series: [
+          { name: '计划招生', type: 'bar', data: planData, itemStyle: { color: '#3B82F6', borderRadius: [4, 4, 0, 0] }, barMaxWidth: 20 },
+          { name: '最低分', type: 'line', yAxisIndex: 0, data: scoreData, smooth: true, symbol: 'circle', itemStyle: { color: '#16A34A' }, lineStyle: { width: 2 } },
+          { name: '最低位次', type: 'line', yAxisIndex: 1, data: rankData, smooth: true, symbol: 'diamond', itemStyle: { color: '#DC2626' }, lineStyle: { width: 2 } },
+        ],
+      },
+      true
+    )
+  }, [comparisonData, getOrCreateChart, loading])
+
+  // Resize all charts
+  useEffect(() => {
+    const handleResize = () => {
+      Object.values(chartInstances.current).forEach((instance) => instance.chart?.resize())
+    }
     window.addEventListener('resize', handleResize)
-    return () => {
-      window.removeEventListener('resize', handleResize)
-    }
-  }, [option])
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
 
+  // Dispose charts on unmount
   useEffect(() => {
     return () => {
-      if (chartInstanceRef.current) {
-        chartInstanceRef.current.dispose()
-        chartInstanceRef.current = null
-      }
+      Object.values(chartInstances.current).forEach((instance) => {
+        instance.chart?.dispose()
+      })
+      Object.values(observersRef.current).forEach((o) => o?.disconnect())
     }
   }, [])
 
-  if (loading && displayLines.length === 0) {
-    return (
-      <Card size="small" style={{ height: 320, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <Spin />
-      </Card>
-    )
-  }
+  const renderChartContent = (key: string) => {
+    if (loading || tabLoading) {
+      return (
+        <Card size="small" style={{ height: 360, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <Spin />
+        </Card>
+      )
+    }
 
-  if (displayLines.length === 0) {
+    if (key === 'distribution' && !selectedGroupCode) {
+      return (
+        <Card size="small" style={{ height: 360 }}>
+          <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="请先选择专业组" />
+        </Card>
+      )
+    }
+
+    if (key === 'comparison' && !selectedMajor) {
+      return (
+        <Card size="small" style={{ height: 360 }}>
+          <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="请先选择专业" />
+        </Card>
+      )
+    }
+
+    const dataMap: Record<string, unknown[]> = {
+      trend: trendData?.years ?? [],
+      groups: groupsData?.groups ?? [],
+      distribution: distributionData?.majors ?? [],
+      comparison: comparisonData?.items ?? [],
+    }
+
+    const data = dataMap[key]
+    const hasData = data.length > 0
+
+    const hasValidData = (() => {
+      if (!hasData) return false
+      if (key === 'trend') {
+        return (data as TrendYear[]).some(
+          (y) =>
+            y.plan_count != null ||
+            y.min_score != null ||
+            y.min_rank != null ||
+            y.group_min_score != null ||
+            y.group_min_rank != null
+        )
+      }
+      if (key === 'groups') {
+        return (data as GroupComparisonItem[]).some(
+          (g) => g.plan_count > 0 || g.group_min_score != null || g.group_min_rank != null
+        )
+      }
+      return true
+    })()
+
+    if (!hasValidData) {
+      return (
+        <Card size="small" style={{ height: 360 }}>
+          <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="暂无数据" />
+        </Card>
+      )
+    }
+
+    const refMap: Record<string, React.RefObject<HTMLDivElement | null>> = {
+      trend: trendChartRef,
+      groups: groupsChartRef,
+      distribution: distributionChartRef,
+      comparison: comparisonChartRef,
+    }
+
     return (
-      <Card size="small" style={{ height: 320 }}>
-        <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="暂无数据" />
+      <Card size="small" style={{ padding: 0 }} bodyStyle={{ padding: 8 }}>
+        <div ref={refMap[key]} style={{ width: '100%', height: 360 }} />
       </Card>
     )
   }
 
   return (
-    <Card size="small" style={{ padding: 0 }} bodyStyle={{ padding: 8 }}>
-      <div ref={chartRef} style={{ width: '100%', height: 320 }} />
-    </Card>
+    <Tabs
+      activeKey={activeTab}
+      onChange={setActiveTab}
+      items={tabItems.map((item) => ({
+        key: item.key,
+        label: (
+          <span>
+            {item.icon}
+            <span style={{ marginLeft: 4 }}>{item.label}</span>
+          </span>
+        ),
+        children: renderChartContent(item.key),
+      }))}
+    />
   )
 }

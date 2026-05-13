@@ -95,4 +95,23 @@ export const admissionApi = {
 
   listVolunteerPlans: () =>
     api.get<AdmissionEnvelope<VolunteerPlansResponse>>('/api/v1/admission/volunteer-plans'),
+  getTrend: (id: number, params?: { group_code?: string; local_major_code?: string; years?: number }) =>
+    api.get<AdmissionEnvelope<TrendResponse>>(`/api/v1/analysis/universities/${id}/trend`, {
+      params: cleanParams(params || {}),
+    }),
+
+  getGroupComparison: (id: number, params?: { admission_year?: number; region_code?: string; subject_category_code?: string }) =>
+    api.get<AdmissionEnvelope<GroupComparisonResponse>>(`/api/v1/analysis/universities/${id}/groups`, {
+      params: cleanParams(params || {}),
+    }),
+
+  getMajorDistribution: (id: number, params?: { group_code?: string; admission_year?: number; region_code?: string; subject_category_code?: string }) =>
+    api.get<AdmissionEnvelope<MajorDistributionResponse>>(`/api/v1/analysis/universities/${id}/majors/distribution`, {
+      params: cleanParams(params || {}),
+    }),
+
+  getMajorComparison: (params: { local_major_name: string; admission_year?: number; region_code?: string; subject_category_code?: string; limit?: number }) =>
+    api.get<AdmissionEnvelope<MajorComparisonResponse>>('/api/v1/analysis/majors/comparison', {
+      params: cleanParams(params),
+    }),
 }

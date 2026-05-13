@@ -153,7 +153,8 @@ export default function UniversityPage() {
         <div className="university-center">
           <div className="university-charts">
             <DataCharts
-              displayLines={selectedGroupCode ? selectedGroupLines : lines}
+              universityId={universityId}
+              selectedGroupCode={selectedGroupCode}
               selectedMajor={selectedMajor}
               loading={loading}
             />
