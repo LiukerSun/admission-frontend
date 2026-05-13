@@ -16,6 +16,7 @@ import { Bubble, Sender, Welcome } from '@ant-design/x'
 import type { BubbleItemType } from '@ant-design/x/es/bubble'
 import { conversationApi, type Conversation, type Message } from '@/services/conversation'
 import { streamChatWithConversation, streamRegenerateWithConversation, type SSEEvent } from '@/services/ai'
+import { volunteerPlansApi } from '@/services/volunteerPlans'
 import MessageEditor from '@/components/ai-chat/MessageEditor'
 import SegmentRenderer from '@/components/ai-chat/SegmentRenderer'
 import SuggestionPills from '@/components/ai-chat/SuggestionPills'
@@ -42,6 +43,7 @@ export default function AdmissionAIPage() {
 
   const { token } = theme.useToken()
   const [conversations, setConversations] = useState<Conversation[]>([])
+  const [activeConversation, setActiveConversation] = useState<Conversation | null>(null)
   const [messages, setMessages] = useState<ChatItem[]>([])
   const [inputValue, setInputValue] = useState('')
   const [loading, setLoading] = useState(false)
@@ -82,6 +84,7 @@ export default function AdmissionAIPage() {
   const loadMessages = useCallback(async (id: number): Promise<ChatItem[]> => {
     const res = await conversationApi.get(id)
     const data = res.data?.data
+    setActiveConversation(data?.conversation ?? null)
     return (data?.messages ?? []).map((m: Message) => {
       const role = m.role === 'user' ? 'user' : 'ai'
       const segments: Segment[] = [{ type: 'text', content: m.content || '' }]
@@ -143,6 +146,7 @@ export default function AdmissionAIPage() {
       setInputValue(pendingDraft || '')
       pendingDraftRef.current = null
       setMessages([])
+      setActiveConversation(null)
       setEditingKey(null)
 
       if (!conversationId) return
@@ -189,6 +193,24 @@ export default function AdmissionAIPage() {
       }
     }
   }, [conversationId, loadMessages, navigate])
+
+  const isArchived = activeConversation?.status === 'archived'
+
+  const draftToAdopt = useMemo(() => {
+    if (isArchived) return null
+    const lastAI = [...messages].reverse().find((m) => m.role === 'ai')
+    const content = lastAI?.content || ''
+    const match = content.match(/```volunteer_plan_draft\s*([\s\S]*?)```/i)
+    if (!match) return null
+    try {
+      const parsed = JSON.parse(match[1])
+      const draftId = Number(parsed?.draft_id ?? parsed?.id)
+      if (!Number.isFinite(draftId) || draftId <= 0) return null
+      return { draftId }
+    } catch {
+      return null
+    }
+  }, [isArchived, messages])
 
   const scrollToBottom = () => {
     if (listRef.current) {
@@ -381,6 +403,12 @@ export default function AdmissionAIPage() {
         (event) => onStreamEvent(convId, aiKey, event),
         (err) => {
           setLoading(false)
+          if (String(err.message || '').includes('HTTP 409')) {
+            message.info('该对话已归档，仅可查看')
+            void syncConversation(convId)
+            void loadConversations()
+            return
+          }
           setMessages((prev) =>
             prev.map((m) =>
               m.key === aiKey
@@ -399,7 +427,7 @@ export default function AdmissionAIPage() {
         }
       )
     },
-    [onStreamEvent]
+    [loadConversations, onStreamEvent, syncConversation]
   )
 
   const startRegenerateStream = useCallback(
@@ -414,6 +442,12 @@ export default function AdmissionAIPage() {
         (event) => onStreamEvent(convId, aiKey, event),
         (err) => {
           setLoading(false)
+          if (String(err.message || '').includes('HTTP 409')) {
+            message.info('该对话已归档，仅可查看')
+            void syncConversation(convId)
+            void loadConversations()
+            return
+          }
           setMessages((prev) =>
             prev.map((m) =>
               m.key === aiKey
@@ -432,7 +466,7 @@ export default function AdmissionAIPage() {
         }
       )
     },
-    [onStreamEvent]
+    [loadConversations, onStreamEvent, syncConversation]
   )
 
   const handleCreateConversation = async () => {
@@ -467,6 +501,10 @@ export default function AdmissionAIPage() {
 
   const handleSubmit = async (value: string) => {
     if (!value.trim() || loading) return
+    if (isArchived) {
+      message.info('该对话已归档，仅可查看')
+      return
+    }
 
     let convId = conversationId
     if (!convId) {
@@ -543,6 +581,7 @@ export default function AdmissionAIPage() {
   }
 
   const handlePickSuggestion = (value: string) => {
+    if (isArchived) return
     setInputValue(value)
   }
 
@@ -566,13 +605,34 @@ export default function AdmissionAIPage() {
   }
 
   const handleEdit = (item: ChatItem) => {
+    if (isArchived) return
     if (!item.serverId || item.role !== 'user') return
     if (loading) return
     if (item.key !== lastUserKey) return
     setEditingKey(item.key)
   }
 
+  const handleAdopt = async () => {
+    if (!draftToAdopt) return
+    if (isArchived) return
+    try {
+      await volunteerPlansApi.adopt(draftToAdopt.draftId)
+      message.success('方案已采纳，对话已归档')
+      void loadConversations()
+      if (conversationId) {
+        void syncConversation(conversationId)
+      }
+      navigate('/admission/plans')
+    } catch {
+      message.error('采纳失败，请稍后重试')
+    }
+  }
+
   const handleSaveEdit = async (item: ChatItem, nextValue: string) => {
+    if (isArchived) {
+      message.info('该对话已归档，仅可查看')
+      return
+    }
     if (!conversationId) return
     if (!item.serverId) return
     if (!nextValue.trim()) return
@@ -597,6 +657,10 @@ export default function AdmissionAIPage() {
   }
 
   const handleRegenerate = () => {
+    if (isArchived) {
+      message.info('该对话已归档，仅可查看')
+      return
+    }
     if (!conversationId) return
     if (!lastAIKey) return
     const last = messages.find((m) => m.key === lastAIKey)
@@ -828,13 +892,26 @@ export default function AdmissionAIPage() {
           }}
         >
           <SuggestionPills suggestions={suggestions} disabled={!!inputValue.trim()} onPick={handlePickSuggestion} />
+          {draftToAdopt && !isArchived ? (
+            <div style={{ marginBottom: 12 }}>
+              <Button type="primary" onClick={() => void handleAdopt()}>
+                采纳方案
+              </Button>
+            </div>
+          ) : null}
+          {isArchived ? (
+            <div style={{ marginBottom: 12, color: token.colorTextSecondary }}>该对话已归档，仅可查看</div>
+          ) : null}
           <Sender
             value={inputValue}
-            onChange={setInputValue}
+            onChange={(v) => {
+              if (isArchived) return
+              setInputValue(v)
+            }}
             onSubmit={handleSubmit}
             onCancel={handleCancel}
             loading={loading}
-            placeholder="输入你的问题，例如：我不想去北京的学校..."
+            placeholder={isArchived ? '该对话已归档，仅可查看' : '输入你的问题，例如：我不想去北京的学校...'}
             allowSpeech={false}
           />
         </div>
