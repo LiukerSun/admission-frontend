@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { Avatar, Button, Collapse, Drawer, Empty, InputNumber, Layout, Select, Spin, Table, Tag, Typography, message, theme } from 'antd'
+import { Avatar, Button, Drawer, Empty, Layout, Popover, Spin, Table, Tag, Typography, message, theme } from 'antd'
 import type { AxiosError } from 'axios'
 import {
   BulbOutlined,
@@ -20,6 +20,7 @@ import { planDraftsApi, type PlanDraft } from '@/services/planDrafts'
 import { volunteerPlansApi } from '@/services/volunteerPlans'
 import MessageEditor from '@/components/ai-chat/MessageEditor'
 import SegmentRenderer from '@/components/ai-chat/SegmentRenderer'
+import RecommendationPromptCard, { type RecommendationSnapshot } from '@/components/ai-chat/RecommendationPromptCard'
 import SuggestionPills from '@/components/ai-chat/SuggestionPills'
 import type { ChatStatus, Segment, ToolCallStatus } from '@/components/ai-chat/types'
 
@@ -36,14 +37,16 @@ interface ChatItem extends BubbleItemType {
   serverId?: number
 }
 
-type RecommendationRequestSnapshot = {
-  region_code: string
-  subject_category_code?: 'physics' | 'history'
-  total_score?: number
-  provincial_rank?: number
-  priority_strategy?: 'auto' | 'school' | 'major'
-  enable_llm_tuning?: boolean
-  plan_size?: number
+function parseRecommendationSnapshot(content: string): Partial<RecommendationSnapshot> | null {
+  const match = content.match(/```recommendation_snapshot\s*([\s\S]*?)```/i)
+  if (!match) return null
+  try {
+    const parsed = JSON.parse(match[1]) as Partial<RecommendationSnapshot>
+    if (!parsed || typeof parsed !== 'object') return null
+    return parsed
+  } catch {
+    return null
+  }
 }
 
 export default function AdmissionAIPage() {
@@ -76,12 +79,15 @@ export default function AdmissionAIPage() {
   const syncTimerRef = useRef<number | null>(null)
   const pendingDraftRef = useRef<string | null>(null)
 
-  const [recommendationSnapshot, setRecommendationSnapshot] = useState<RecommendationRequestSnapshot>({
+  const [recommendationSnapshot, setRecommendationSnapshot] = useState<RecommendationSnapshot>({
     region_code: '230000',
     priority_strategy: 'auto',
     enable_llm_tuning: false,
     plan_size: 40,
   })
+  const touchedRecommendationSnapshotRef = useRef<Set<keyof RecommendationSnapshot>>(new Set())
+  const [promptCardEditing, setPromptCardEditing] = useState(false)
+  const [promptCardOpen, setPromptCardOpen] = useState(false)
   const [draftPreview, setDraftPreview] = useState<PlanDraft | null>(null)
   const [draftPreviewLoading, setDraftPreviewLoading] = useState(false)
   const [planDrawerOpen, setPlanDrawerOpen] = useState(false)
@@ -171,6 +177,15 @@ export default function AdmissionAIPage() {
       setEditingKey(null)
       setDraftPreview(null)
       setPlanDrawerOpen(false)
+      touchedRecommendationSnapshotRef.current = new Set()
+      setPromptCardEditing(false)
+      setPromptCardOpen(false)
+      setRecommendationSnapshot({
+        region_code: '230000',
+        priority_strategy: 'auto',
+        enable_llm_tuning: false,
+        plan_size: 40,
+      })
 
       if (!conversationId) return
 
@@ -259,23 +274,59 @@ export default function AdmissionAIPage() {
     }
   }, [draftToAdopt, isArchived])
 
-  const missingRecommendationFields = useMemo(() => {
-    const missing: string[] = []
-    if (!recommendationSnapshot.subject_category_code) missing.push('科类')
-    if (!recommendationSnapshot.total_score) missing.push('分数')
-    if (!recommendationSnapshot.provincial_rank) missing.push('位次')
-    return missing
-  }, [recommendationSnapshot.provincial_rank, recommendationSnapshot.subject_category_code, recommendationSnapshot.total_score])
+  const parsedRecommendationSnapshot = useMemo(() => {
+    const lastAI = [...messages].reverse().find((m) => m.role === 'ai' && m.chatStatus === 'done')
+    const content = lastAI?.content || ''
+    return parseRecommendationSnapshot(content)
+  }, [messages])
+
+  useEffect(() => {
+    if (isArchived) return
+    if (!parsedRecommendationSnapshot) return
+
+    setRecommendationSnapshot((prev) => {
+      const touched = touchedRecommendationSnapshotRef.current
+      const next: RecommendationSnapshot = { ...prev, region_code: '230000' }
+      ;(Object.keys(parsedRecommendationSnapshot) as (keyof RecommendationSnapshot)[]).forEach((k) => {
+        const v = parsedRecommendationSnapshot[k]
+        if (v === undefined || v === null) return
+        if (touched.has(k)) return
+        next[k] = v as never
+      })
+      return next
+    })
+  }, [isArchived, parsedRecommendationSnapshot])
+
+  const hasRequiredRecommendationFields = useMemo(() => {
+    return (
+      recommendationSnapshot.region_code === '230000' &&
+      !!recommendationSnapshot.subject_category_code &&
+      typeof recommendationSnapshot.total_score === 'number' &&
+      recommendationSnapshot.total_score > 0 &&
+      typeof recommendationSnapshot.provincial_rank === 'number' &&
+      recommendationSnapshot.provincial_rank > 0
+    )
+  }, [recommendationSnapshot.provincial_rank, recommendationSnapshot.region_code, recommendationSnapshot.subject_category_code, recommendationSnapshot.total_score])
+
+  const showPromptFab = useMemo(() => {
+    if (isArchived) return false
+    return hasRequiredRecommendationFields
+  }, [hasRequiredRecommendationFields, isArchived])
 
   const canGeneratePlan = useMemo(() => {
-    if (isArchived) return false
+    if (!showPromptFab) return false
     if (loading) return false
-    return missingRecommendationFields.length === 0
-  }, [isArchived, loading, missingRecommendationFields.length])
+    return true
+  }, [loading, showPromptFab])
+
+  const handleRecommendationSnapshotChange = useCallback((next: Partial<RecommendationSnapshot>, touchedKeys: (keyof RecommendationSnapshot)[]) => {
+    touchedKeys.forEach((k) => touchedRecommendationSnapshotRef.current.add(k))
+    setRecommendationSnapshot((prev) => ({ ...prev, ...next, region_code: '230000' }))
+  }, [])
 
   const handleGeneratePlan = () => {
     if (!canGeneratePlan) return
-    const payload: RecommendationRequestSnapshot = {
+    const payload = {
       region_code: '230000',
       subject_category_code: recommendationSnapshot.subject_category_code,
       total_score: recommendationSnapshot.total_score,
@@ -970,85 +1021,53 @@ export default function AdmissionAIPage() {
             background: token.colorBgContainer,
           }}
         >
-          {!isArchived ? (
-            <div style={{ marginBottom: 12 }}>
-              <Collapse
-                size="small"
-                items={[
-                  {
-                    key: 'recommendation',
-                    label: '生成志愿方案（recommendations v1）',
-                    children: (
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'center' }}>
-                          <Tag>地区：黑龙江(230000)</Tag>
-                          <Select
-                            style={{ width: 140 }}
-                            placeholder="科类"
-                            value={recommendationSnapshot.subject_category_code}
-                            options={[
-                              { label: '物理', value: 'physics' },
-                              { label: '历史', value: 'history' },
-                            ]}
-                            onChange={(v) =>
-                              setRecommendationSnapshot((prev) => ({ ...prev, subject_category_code: v as 'physics' | 'history' }))
-                            }
-                          />
-                          <InputNumber
-                            style={{ width: 140 }}
-                            placeholder="分数"
-                            min={0}
-                            value={recommendationSnapshot.total_score}
-                            onChange={(v) => setRecommendationSnapshot((prev) => ({ ...prev, total_score: typeof v === 'number' ? v : undefined }))}
-                          />
-                          <InputNumber
-                            style={{ width: 140 }}
-                            placeholder="位次"
-                            min={0}
-                            value={recommendationSnapshot.provincial_rank}
-                            onChange={(v) =>
-                              setRecommendationSnapshot((prev) => ({ ...prev, provincial_rank: typeof v === 'number' ? v : undefined }))
-                            }
-                          />
-                          <Select
-                            style={{ width: 160 }}
-                            placeholder="院校/专业优先"
-                            value={recommendationSnapshot.priority_strategy || 'auto'}
-                            options={[
-                              { label: '自动', value: 'auto' },
-                              { label: '院校优先', value: 'school' },
-                              { label: '专业优先', value: 'major' },
-                            ]}
-                            onChange={(v) =>
-                              setRecommendationSnapshot((prev) => ({ ...prev, priority_strategy: v as 'auto' | 'school' | 'major' }))
-                            }
-                          />
-                        </div>
-                        {missingRecommendationFields.length > 0 ? (
-                          <Text type="secondary">还缺：{missingRecommendationFields.join('、')}</Text>
-                        ) : null}
-                        <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-                          <Button type="primary" disabled={!canGeneratePlan} onClick={handleGeneratePlan}>
-                            生成志愿方案
-                          </Button>
-                          {draftToAdopt ? (
-                            <Button
-                              loading={draftPreviewLoading}
-                              disabled={!draftPreview?.plan_json}
-                              onClick={() => setPlanDrawerOpen(true)}
-                            >
-                              查看生成结果
-                            </Button>
-                          ) : null}
-                        </div>
-                      </div>
-                    ),
-                  },
-                ]}
-              />
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <SuggestionPills suggestions={suggestions} disabled={!!inputValue.trim()} onPick={handlePickSuggestion} />
             </div>
-          ) : null}
-          <SuggestionPills suggestions={suggestions} disabled={!!inputValue.trim()} onPick={handlePickSuggestion} />
+            {showPromptFab ? (
+              <Popover
+                trigger="click"
+                placement="topRight"
+                open={promptCardOpen}
+                onOpenChange={(open) => {
+                  setPromptCardOpen(open)
+                  if (!open) setPromptCardEditing(false)
+                }}
+                content={
+                  <RecommendationPromptCard
+                    snapshot={recommendationSnapshot}
+                    editing={promptCardEditing}
+                    onToggleEditing={() => setPromptCardEditing((prev) => !prev)}
+                    onChange={handleRecommendationSnapshotChange}
+                    onGenerate={handleGeneratePlan}
+                    canGenerate={canGeneratePlan}
+                    disabled={loading || isArchived}
+                    showPreview={!!draftToAdopt}
+                    previewLoading={draftPreviewLoading}
+                    onPreview={() => setPlanDrawerOpen(true)}
+                  />
+                }
+              >
+                <Button
+                  type="primary"
+                  shape="round"
+                  size="small"
+                  icon={<BulbOutlined />}
+                  style={{
+                    height: 32,
+                    paddingInline: 14,
+                    fontWeight: 600,
+                    background: `linear-gradient(135deg, ${token.colorPrimary} 0%, ${token.colorPrimaryHover} 100%)`,
+                    borderColor: 'transparent',
+                    boxShadow: '0 8px 20px rgba(22, 119, 255, 0.25)',
+                  }}
+                >
+                  生成方案
+                </Button>
+              </Popover>
+            ) : null}
+          </div>
           {draftToAdopt && !isArchived ? (
             <div style={{ marginBottom: 12 }}>
               <Button type="primary" onClick={() => void handleAdopt()}>

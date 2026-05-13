@@ -10,6 +10,7 @@ type Props = {
 function stripPrivateBlocks(content: string) {
   return content
     .replace(/```recommendation_request[\s\S]*?```/gi, '')
+    .replace(/```recommendation_snapshot[\s\S]*?```/gi, '')
     .replace(/```volunteer_plan_draft[\s\S]*?```/gi, '')
     .trim()
 }
