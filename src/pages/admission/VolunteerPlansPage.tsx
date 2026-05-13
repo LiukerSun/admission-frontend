@@ -17,6 +17,7 @@ import {
 import { EditOutlined, FileTextOutlined, SaveOutlined, SendOutlined } from '@ant-design/icons'
 import type { TableColumnsType } from 'antd'
 import { admissionApi, type VolunteerPlan } from '@/services/admission'
+import { volunteerPlansApi } from '@/services/volunteerPlans'
 
 const { Paragraph, Text, Title } = Typography
 
@@ -229,6 +230,7 @@ export default function VolunteerPlansPage() {
   const [plans, setPlans] = useState<VolunteerPlan[]>([])
   const [activePlanId, setActivePlanId] = useState('')
   const [loading, setLoading] = useState(true)
+  const [showingTemplates, setShowingTemplates] = useState(false)
   const [drafts, setDrafts] = useState<Record<string, PlanDraft>>({})
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('saved')
   const [renameOpen, setRenameOpen] = useState(false)
@@ -244,11 +246,25 @@ export default function VolunteerPlansPage() {
 
     async function init() {
       try {
-        const res = await admissionApi.listVolunteerPlans()
+        const res = await volunteerPlansApi.list()
         if (!isMounted) return
-        const nextPlans = res.data.data?.plans ?? []
+        const userPlans = res.data.data ?? []
+        const nextPlans = userPlans
+          .map((p) => {
+            const plan = p.plan_json as VolunteerPlan
+            const name = plan?.name || p.title || '志愿方案'
+            const description = plan?.description ?? ''
+            return {
+              ...plan,
+              id: String(p.id),
+              name,
+              description,
+            }
+          })
+          .filter((p): p is VolunteerPlan => !!p)
         setPlans(nextPlans)
         setActivePlanId(nextPlans[0]?.id ?? '')
+        setShowingTemplates(false)
       } catch (error) {
         message.error('获取志愿方案失败')
         console.error(error)
@@ -264,6 +280,22 @@ export default function VolunteerPlansPage() {
       isMounted = false
     }
   }, [message])
+
+  const loadTemplates = async () => {
+    setLoading(true)
+    try {
+      const res = await admissionApi.listVolunteerPlans()
+      const nextPlans = res.data.data?.plans ?? []
+      setPlans(nextPlans)
+      setActivePlanId(nextPlans[0]?.id ?? '')
+      setShowingTemplates(true)
+    } catch (error) {
+      message.error('获取示例方案失败')
+      console.error(error)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   const activePlan = useMemo(() => {
     return plans.find((plan) => plan.id === activePlanId) ?? plans[0]
@@ -516,7 +548,20 @@ export default function VolunteerPlansPage() {
                   </Button>
                 )
               })}
-              {plans.length === 0 && !loading && <Empty description="暂无生成方案" />}
+              {plans.length === 0 && !loading && (
+                <Empty
+                  description={
+                    showingTemplates ? (
+                      '暂无示例方案'
+                    ) : (
+                      <Space direction="vertical" size={8}>
+                        <div>暂无我的方案</div>
+                        <Button onClick={() => void loadTemplates()}>查看示例方案</Button>
+                      </Space>
+                    )
+                  }
+                />
+              )}
             </Space>
           </Card>
         </Col>
