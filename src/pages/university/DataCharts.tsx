@@ -7,7 +7,7 @@ import {
   TrophyOutlined,
 } from '@ant-design/icons'
 import * as echarts from 'echarts'
-import { admissionApi, type AdmissionLine, type TrendYear, type GroupComparisonItem } from '@/services/admission'
+import { admissionApi, type AdmissionLine, type TrendYear } from '@/services/admission'
 import type {
   TrendResponse,
   GroupComparisonResponse,
@@ -383,7 +383,7 @@ export default function DataCharts({ universityId, selectedGroupCode, selectedMa
   const renderChartContent = (key: string) => {
     if (loading || tabLoading) {
       return (
-        <Card size="small" style={{ height: 360, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <Card size="small" style={{ height: '100%' }} bodyStyle={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <Spin />
         </Card>
       )
@@ -391,7 +391,7 @@ export default function DataCharts({ universityId, selectedGroupCode, selectedMa
 
     if (key === 'distribution' && !selectedGroupCode) {
       return (
-        <Card size="small" style={{ height: 360 }}>
+        <Card size="small" style={{ height: '100%' }} bodyStyle={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="请先选择专业组" />
         </Card>
       )
@@ -399,7 +399,7 @@ export default function DataCharts({ universityId, selectedGroupCode, selectedMa
 
     if (key === 'comparison' && !selectedMajor) {
       return (
-        <Card size="small" style={{ height: 360 }}>
+        <Card size="small" style={{ height: '100%' }} bodyStyle={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="请先选择专业" />
         </Card>
       )
@@ -428,17 +428,15 @@ export default function DataCharts({ universityId, selectedGroupCode, selectedMa
         )
       }
       if (key === 'groups') {
-        return (data as GroupComparisonItem[]).some(
-          (g) => g.plan_count > 0 || g.group_min_score != null || g.group_min_rank != null
-        )
+        return hasData
       }
       return true
     })()
 
     if (!hasValidData) {
       return (
-        <Card size="small" style={{ height: 360 }}>
-          <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="暂无数据" />
+        <Card size="small" style={{ height: '100%' }} bodyStyle={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="暂无相关数据" />
         </Card>
       )
     }
@@ -451,26 +449,28 @@ export default function DataCharts({ universityId, selectedGroupCode, selectedMa
     }
 
     return (
-      <Card size="small" style={{ padding: 0 }} bodyStyle={{ padding: 8 }}>
-        <div ref={refMap[key]} style={{ width: '100%', height: 360 }} />
+      <Card size="small" style={{ padding: 0, height: '100%' }} bodyStyle={{ padding: 8, height: '100%' }}>
+        <div ref={refMap[key]} style={{ width: '100%', height: '100%' }} />
       </Card>
     )
   }
 
   return (
-    <Tabs
-      activeKey={activeTab}
-      onChange={setActiveTab}
-      items={tabItems.map((item) => ({
-        key: item.key,
-        label: (
-          <span>
-            {item.icon}
-            <span style={{ marginLeft: 4 }}>{item.label}</span>
-          </span>
-        ),
-        children: renderChartContent(item.key),
-      }))}
-    />
+    <div className="data-charts-wrapper">
+      <Tabs
+        activeKey={activeTab}
+        onChange={setActiveTab}
+        items={tabItems.map((item) => ({
+          key: item.key,
+          label: (
+            <span>
+              {item.icon}
+              <span style={{ marginLeft: 4 }}>{item.label}</span>
+            </span>
+          ),
+          children: renderChartContent(item.key),
+        }))}
+      />
+    </div>
   )
 }
