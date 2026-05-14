@@ -102,7 +102,7 @@ export default function GroupSidebar({
       </Card>
 
       {/* 搜索学校 */}
-      <div style={{ position: 'relative', marginBottom: 12 }}>
+      <div style={{ position: 'relative', marginBottom: 12, flexShrink: 0 }}>
         <Input
           size="small"
           allowClear
@@ -160,59 +160,61 @@ export default function GroupSidebar({
       </div>
 
       {/* 专业组列表 */}
-      <div className="group-list-header">
+      <div className="group-list-header" style={{ flexShrink: 0 }}>
         <Typography.Text strong>专业组</Typography.Text>
         <Typography.Text type="secondary" style={{ fontSize: 12 }}>
           共 {groups.length} 个
         </Typography.Text>
       </div>
 
-      {loading && groups.length === 0 ? (
-        <div style={{ padding: 24, textAlign: 'center' }}>
-          <Spin size="small" />
-        </div>
-      ) : groups.length === 0 ? (
-        <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="暂无数据" style={{ marginTop: 24 }} />
-      ) : (
-        <List
-          size="small"
-          dataSource={groups}
-          renderItem={(group) => (
-            <List.Item
-              className={`group-list-item ${selectedGroupCode === group.code ? 'group-list-item-active' : ''}`}
-              onClick={() => onSelectGroup(group.code === selectedGroupCode ? null : group.code)}
-              style={{ cursor: 'pointer', padding: '8px 12px' }}
-            >
-              <div style={{ width: '100%' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-                  <Tag color={selectedGroupCode === group.code ? '#1E40AF' : 'default'}>
-                    {group.code}
-                  </Tag>
-                  <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                    {group.lineCount} 个专业
-                  </Typography.Text>
-                </div>
-                {group.name && (
-                  <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                    {group.name}
-                  </Typography.Text>
-                )}
-                {(group.minScore !== undefined || group.minRank !== undefined) && (
-                  <div style={{ display: 'flex', gap: 4, marginTop: 4 }}>
-                    {group.minScore !== undefined && (
-                      <Tag color="blue" style={{ fontSize: 11, lineHeight: '18px', padding: '0 4px' }}>{group.minScore}分</Tag>
-                    )}
-                    {group.minRank !== undefined && (
-                      <Tag color="geekblue" style={{ fontSize: 11, lineHeight: '18px', padding: '0 4px' }}>{group.minRank}位</Tag>
-                    )}
+      <div style={{ flex: 1, overflowY: 'auto', minHeight: 0 }}>
+        {loading && groups.length === 0 ? (
+          <div style={{ padding: 24, textAlign: 'center' }}>
+            <Spin size="small" />
+          </div>
+        ) : groups.length === 0 ? (
+          <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="暂无数据" style={{ marginTop: 24 }} />
+        ) : (
+          <List
+            size="small"
+            dataSource={groups}
+            renderItem={(group) => (
+              <List.Item
+                className={`group-list-item ${selectedGroupCode === group.code ? 'group-list-item-active' : ''}`}
+                onClick={() => onSelectGroup(group.code === selectedGroupCode ? null : group.code)}
+                style={{ cursor: 'pointer', padding: '8px 12px' }}
+              >
+                <div style={{ width: '100%' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                    <Tag color={selectedGroupCode === group.code ? '#1E40AF' : 'default'}>
+                      {group.code}
+                    </Tag>
+                    <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                      {group.lineCount} 个专业
+                    </Typography.Text>
                   </div>
-                )}
-              </div>
-            </List.Item>
-          )}
-          style={{ border: '1px solid #E9EEF6', borderRadius: 6 }}
-        />
-      )}
+                  {group.name && (
+                    <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                      {group.name}
+                    </Typography.Text>
+                  )}
+                  {(group.minScore !== undefined || group.minRank !== undefined) && (
+                    <div style={{ display: 'flex', gap: 4, marginTop: 4 }}>
+                      {group.minScore !== undefined && (
+                        <Tag color="blue" style={{ fontSize: 11, lineHeight: '18px', padding: '0 4px' }}>{group.minScore}分</Tag>
+                      )}
+                      {group.minRank !== undefined && (
+                        <Tag color="geekblue" style={{ fontSize: 11, lineHeight: '18px', padding: '0 4px' }}>{group.minRank}位</Tag>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </List.Item>
+            )}
+            style={{ border: '1px solid #E9EEF6', borderRadius: 6 }}
+          />
+        )}
+      </div>
     </div>
   )
 }

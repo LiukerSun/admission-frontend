@@ -1199,6 +1199,285 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/analysis/majors/comparison": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Cross-university major comparison
+         * @description Returns the same major across multiple universities for comparison.
+         */
+        get: {
+            parameters: {
+                query: {
+                    /** @description Local major name */
+                    local_major_name: string;
+                    /** @description Admission year (default latest) */
+                    admission_year?: number;
+                    /** @description Region code */
+                    region_code?: string;
+                    /** @description Subject category code */
+                    subject_category_code?: string;
+                    /** @description Max results (default 50) */
+                    limit?: number;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"] & {
+                            data?: components["schemas"]["analysis.MajorComparisonResponse"];
+                        };
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+                /** @description Internal Server Error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/analysis/universities/{id}/groups": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * University group comparison
+         * @description Returns all admission groups for a university in a given year with aggregated metrics.
+         */
+        get: {
+            parameters: {
+                query?: {
+                    /** @description Admission year (default latest) */
+                    admission_year?: number;
+                    /** @description Region code */
+                    region_code?: string;
+                    /** @description Subject category code */
+                    subject_category_code?: string;
+                };
+                header?: never;
+                path: {
+                    /** @description University ID */
+                    id: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"] & {
+                            data?: components["schemas"]["analysis.GroupComparisonResponse"];
+                        };
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+                /** @description Internal Server Error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/analysis/universities/{id}/majors/distribution": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Major distribution within a group
+         * @description Returns per-major metrics for a university admission group.
+         */
+        get: {
+            parameters: {
+                query: {
+                    /** @description Admission group code */
+                    group_code: string;
+                    /** @description Admission year (default latest) */
+                    admission_year?: number;
+                    /** @description Region code */
+                    region_code?: string;
+                    /** @description Subject category code */
+                    subject_category_code?: string;
+                };
+                header?: never;
+                path: {
+                    /** @description University ID */
+                    id: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"] & {
+                            data?: components["schemas"]["analysis.MajorDistributionResponse"];
+                        };
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+                /** @description Internal Server Error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/analysis/universities/{id}/trend": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * University admission trend
+         * @description Returns multi-year admission data for a university, optionally filtered by group and major.
+         */
+        get: {
+            parameters: {
+                query?: {
+                    /** @description Admission group code */
+                    group_code?: string;
+                    /** @description Local major code */
+                    local_major_code?: string;
+                    /** @description Number of years to return (default 5) */
+                    years?: number;
+                };
+                header?: never;
+                path: {
+                    /** @description University ID */
+                    id: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"] & {
+                            data?: components["schemas"]["analysis.TrendResponse"];
+                        };
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+                /** @description Internal Server Error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/auth/login": {
         parameters: {
             query?: never;
@@ -2860,6 +3139,76 @@ export interface components {
             };
             id?: string;
             type?: string;
+        };
+        "analysis.EquivalentScore": {
+            reference_year?: number;
+            score?: number;
+        };
+        "analysis.GroupComparisonItem": {
+            admitted_count?: number;
+            batch_name?: string;
+            group_code?: string;
+            group_major_names?: string;
+            group_min_rank?: number;
+            group_min_score?: number;
+            major_count?: number;
+            plan_count?: number;
+            subject_requirement_name?: string;
+        };
+        "analysis.GroupComparisonResponse": {
+            admission_year?: number;
+            groups?: components["schemas"]["analysis.GroupComparisonItem"][];
+            university_id?: number;
+            university_name?: string;
+        };
+        "analysis.MajorComparisonItem": {
+            admitted_count?: number;
+            equivalent_min_score?: number;
+            group_code?: string;
+            local_major_code?: string;
+            min_rank?: number;
+            min_score?: number;
+            plan_count?: number;
+            university_id?: number;
+            university_name?: string;
+        };
+        "analysis.MajorComparisonResponse": {
+            admission_year?: number;
+            items?: components["schemas"]["analysis.MajorComparisonItem"][];
+            local_major_name?: string;
+        };
+        "analysis.MajorDistributionItem": {
+            admitted_count?: number;
+            local_major_code?: string;
+            local_major_name?: string;
+            min_rank?: number;
+            min_score?: number;
+            plan_count?: number;
+            tuition?: number;
+        };
+        "analysis.MajorDistributionResponse": {
+            admission_year?: number;
+            group_code?: string;
+            majors?: components["schemas"]["analysis.MajorDistributionItem"][];
+            university_id?: number;
+        };
+        "analysis.TrendResponse": {
+            group_code?: string;
+            local_major_code?: string;
+            local_major_name?: string;
+            university_id?: number;
+            university_name?: string;
+            years?: components["schemas"]["analysis.TrendYear"][];
+        };
+        "analysis.TrendYear": {
+            admitted_count?: number;
+            equivalent_scores?: components["schemas"]["analysis.EquivalentScore"][];
+            group_min_rank?: number;
+            group_min_score?: number;
+            min_rank?: number;
+            min_score?: number;
+            plan_count?: number;
+            year?: number;
         };
         "conversation.AddMessageRequest": {
             content?: string;

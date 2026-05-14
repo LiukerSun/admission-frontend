@@ -4,9 +4,9 @@
 
 .university-layout {
   display: grid;
-  grid-template-columns: 260px 1fr 320px;
+  grid-template-columns: minmax(200px, 260px) 1fr minmax(260px, 320px);
   grid-template-rows: 1fr;
-  gap: 16px;
+  gap: clamp(8px, 1.2vw, 16px);
   height: calc(100vh - 168px);
   min-height: 500px;
 }
@@ -25,13 +25,17 @@
 }
 
 .university-charts {
-  flex: 0 0 auto;
+  flex: 0 1 auto;
+  height: 360px;
+  min-height: 240px;
+  min-width: 320px;
 }
 
 .university-info {
-  flex: 1 1 auto;
+  flex: 1 1 200px;
   overflow: hidden;
-  min-height: 0;
+  min-height: 200px;
+  min-width: 320px;
 }
 
 .university-right {
@@ -144,4 +148,57 @@
 
 .university-search-item:hover {
   background-color: #F1F5F9;
+}
+
+/* Tabs 内容区域高度占满父容器 */
+.data-charts-wrapper {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.data-charts-wrapper .ant-tabs {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.data-charts-wrapper .ant-tabs-nav {
+  flex-shrink: 0;
+}
+
+.data-charts-wrapper .ant-tabs-content-holder {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.data-charts-wrapper .ant-tabs-content {
+  height: 100%;
+}
+
+.data-charts-wrapper .ant-tabs-tabpane {
+  height: 100%;
+}
+
+/* 窄屏：定宽 + 横向滚动 */
+@media (max-width: 767px) {
+  .university-page {
+    overflow-x: auto;
+    scroll-behavior: smooth;
+    overscroll-behavior-x: contain;
+  }
+
+  .university-layout {
+    min-width: 900px;
+    grid-template-columns: 220px 420px 260px;
+    gap: 12px;
+    padding: 0 12px;
+  }
+
+  .info-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px 12px;
+  }
 }
