@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { Form, Input, Button, Card, message } from 'antd'
 import { useAuthStore } from '@/stores/authStore'
+import type { AxiosError } from 'axios'
 
 interface LoginForm {
   email: string
@@ -19,8 +20,9 @@ export default function LoginPage() {
       await login(values.email, values.password)
       message.success('登录成功')
       navigate('/dashboard')
-    } catch {
-      message.error('登录失败，请检查邮箱和密码')
+    } catch (err) {
+      const axiosErr = err as AxiosError<{ message?: string }>
+      message.error(axiosErr.response?.data?.message || '登录失败，请检查邮箱和密码')
     } finally {
       setLoading(false)
     }
@@ -43,7 +45,11 @@ export default function LoginPage() {
         <Form.Item
           label="密码"
           name="password"
-          rules={[{ required: true, message: '请输入密码' }]}
+          rules={[
+            { required: true, message: '请输入密码' },
+            { min: 8, message: '密码至少 8 位' },
+            { pattern: /^[a-zA-Z0-9]+$/, message: '密码仅支持字母和数字' },
+          ]}
         >
           <Input.Password placeholder="请输入密码" />
         </Form.Item>
