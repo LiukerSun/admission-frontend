@@ -1048,7 +1048,7 @@ export default function AdmissionAIPage() {
 
         <div
           style={{
-            padding: '16px 32px',
+            padding: '12px 32px 16px',
             borderTop: `1px solid ${token.colorBorderSecondary}`,
             background: token.colorBgContainer,
           }}
