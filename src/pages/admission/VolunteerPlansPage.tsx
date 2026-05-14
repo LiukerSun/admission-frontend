@@ -160,7 +160,6 @@ export default function VolunteerPlansPage() {
   const [plans, setPlans] = useState<VolunteerPlan[]>([])
   const [activePlanId, setActivePlanId] = useState('')
   const [loading, setLoading] = useState(true)
-  const [showingTemplates, setShowingTemplates] = useState(false)
   const [drafts, setDrafts] = useState<Record<string, PlanDraft>>({})
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('saved')
   const [renameOpen, setRenameOpen] = useState(false)
@@ -176,7 +175,7 @@ export default function VolunteerPlansPage() {
     try {
       const res = await admissionApi.listVolunteerPlans()
       if (res.data?.data) {
-        const newPlans = res.data.data.plans
+        const newPlans = res.data.data.plans ?? []
         setPlans(newPlans)
         if (targetId) {
           setActivePlanId(targetId)
@@ -199,7 +198,7 @@ export default function VolunteerPlansPage() {
         setLoading(true)
         const res = await admissionApi.listVolunteerPlans()
         if (isMounted && res.data?.data) {
-          const newPlans = res.data.data.plans
+          const newPlans = res.data.data.plans ?? []
           setPlans(newPlans)
           if (newPlans.length > 0) {
             setActivePlanId(newPlans[0].id)
@@ -219,22 +218,6 @@ export default function VolunteerPlansPage() {
     }
   }, [])
 
-  const loadTemplates = async () => {
-    setLoading(true)
-    try {
-      const res = await admissionApi.listVolunteerPlans()
-      const nextPlans = res.data.data?.plans ?? []
-      setPlans(nextPlans)
-      setActivePlanId(nextPlans[0]?.id ?? '')
-      setShowingTemplates(true)
-    } catch (error) {
-      message.error('获取示例方案失败')
-      console.error(error)
-    } finally {
-      setLoading(false)
-    }
-  }
-
   const activePlan = useMemo(() => {
     return plans.find(p => p.id === activePlanId) || plans[0]
   }, [activePlanId, plans])
@@ -247,10 +230,10 @@ export default function VolunteerPlansPage() {
   const tableData = useMemo(() => {
     if (!activePlan) return []
     const data: VolunteerTableRow[] = []
-    activePlan.groups.forEach((group) => {
+    ;(activePlan.groups ?? []).forEach((group) => {
       // 每个组固定展示 6 行专业
       for (let i = 1; i <= 6; i++) {
-        const major = group.majors.find(m => m.majorOrder === i)
+        const major = (group.majors ?? []).find(m => m.majorOrder === i)
         data.push({
           key: `${group.id}-${i}`,
           group,
@@ -428,7 +411,7 @@ export default function VolunteerPlansPage() {
         // Calculate merges
         const merges: XLSX.Range[] = []
         let currentRow = 1 // Start after header row
-        activePlan.groups.forEach(() => {
+        ;(activePlan.groups ?? []).forEach(() => {
           const startRow = currentRow
           const endRow = currentRow + 5 // Each group has 6 rows
 
