@@ -1144,8 +1144,32 @@ export default function AdmissionAIPage() {
               bordered
               rowKey={(_, idx) => String(idx)}
               pagination={{ pageSize: 20 }}
-              columns={(draftPreview.plan_json.columns || []).map((c) => ({ title: c, dataIndex: c, key: c }))}
-              dataSource={draftPreview.plan_json.rows || []}
+              columns={[
+                { title: '志愿顺序', dataIndex: 'orderNo', key: 'orderNo' },
+                { title: '院校代码', dataIndex: 'universityCode', key: 'universityCode' },
+                { title: '院校名称', dataIndex: 'universityName', key: 'universityName' },
+                { title: '专业组代号', dataIndex: 'groupCode', key: 'groupCode' },
+                { title: '专业组名称', dataIndex: 'groupName', key: 'groupName' },
+                { title: '专业顺序', dataIndex: 'majorOrder', key: 'majorOrder' },
+                { title: '专业代号', dataIndex: 'majorCode', key: 'majorCode' },
+                { title: '专业名称', dataIndex: 'majorName', key: 'majorName' },
+                { title: '是否服从调剂', dataIndex: 'isObeyAdjustment', key: 'isObeyAdjustment', render: (v: boolean) => (v ? '服从' : '不服从') },
+                { title: '备注', dataIndex: 'remark', key: 'remark' },
+              ]}
+              dataSource={(draftPreview.plan_json.groups ?? []).flatMap((g) =>
+                (g.majors ?? []).map((m) => ({
+                  orderNo: g.orderNo,
+                  universityCode: g.universityCode,
+                  universityName: g.universityName,
+                  groupCode: g.groupCode,
+                  groupName: g.groupName,
+                  majorOrder: m.majorOrder,
+                  majorCode: m.majorCode,
+                  majorName: m.majorName,
+                  isObeyAdjustment: g.isObeyAdjustment,
+                  remark: g.remark,
+                }))
+              )}
               scroll={{ x: true }}
             />
           </div>
