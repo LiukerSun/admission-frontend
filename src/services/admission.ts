@@ -56,6 +56,15 @@ export interface VolunteerPlanGroup {
   majors: VolunteerPlanMajor[]
 }
 
+export type TrendResponse = components['schemas']['analysis.TrendResponse']
+export type TrendYear = components['schemas']['analysis.TrendYear']
+export type GroupComparisonResponse = components['schemas']['analysis.GroupComparisonResponse']
+export type GroupComparisonItem = components['schemas']['analysis.GroupComparisonItem']
+export type MajorDistributionResponse = components['schemas']['analysis.MajorDistributionResponse']
+export type MajorDistributionItem = components['schemas']['analysis.MajorDistributionItem']
+export type MajorComparisonResponse = components['schemas']['analysis.MajorComparisonResponse']
+export type MajorComparisonItem = components['schemas']['analysis.MajorComparisonItem']
+
 export interface VolunteerPlan {
   id: string
   name: string
@@ -170,4 +179,24 @@ export const admissionApi = {
 
   getRichVolunteerPlan: (planId: string | number) =>
     api.get<AdmissionEnvelope<RichVolunteerPlan>>(`/api/v1/admission/volunteer-plans/${planId}/rich-details`),
+
+  getTrend: (id: number, params?: { group_code?: string; local_major_code?: string; years?: number }) =>
+    api.get<AdmissionEnvelope<TrendResponse>>(`/api/v1/analysis/universities/${id}/trend`, {
+      params: cleanParams(params || {}),
+    }),
+
+  getGroupComparison: (id: number, params?: { admission_year?: number; region_code?: string; subject_category_code?: string }) =>
+    api.get<AdmissionEnvelope<GroupComparisonResponse>>(`/api/v1/analysis/universities/${id}/groups`, {
+      params: cleanParams(params || {}),
+    }),
+
+  getMajorDistribution: (id: number, params?: { group_code?: string; admission_year?: number; region_code?: string; subject_category_code?: string }) =>
+    api.get<AdmissionEnvelope<MajorDistributionResponse>>(`/api/v1/analysis/universities/${id}/majors/distribution`, {
+      params: cleanParams(params || {}),
+    }),
+
+  getMajorComparison: (params: { local_major_name: string; admission_year?: number; region_code?: string; subject_category_code?: string; limit?: number }) =>
+    api.get<AdmissionEnvelope<MajorComparisonResponse>>('/api/v1/analysis/majors/comparison', {
+      params: cleanParams(params),
+    }),
 }
