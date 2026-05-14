@@ -6,6 +6,7 @@ import { createOrderIdempotencyKey, showOrderCreatedSuccess, OrderStatusBadge } 
 import { membershipApi, type CurrentMembership, type MembershipPlan } from '@/services/membership'
 import { paymentApi, type OrderResponse } from '@/services/payment'
 import { canPayOrder, formatDateTime, formatMoney, formatRelativeTime } from '@/utils/paymentFormat'
+import { useAuthStore } from '@/stores/authStore'
 
 export default function MembershipOrdersPanel() {
   const [plans, setPlans] = useState<MembershipPlan[]>([])
@@ -99,6 +100,9 @@ export default function MembershipOrdersPanel() {
           applyUpdatedOrder(res.data.data)
           message.success('Mock 支付完成')
           await Promise.all([loadMembership(), loadOrders()])
+          // Mirror the latest membership into authStore so paywalled features
+          // unlock immediately without requiring a page refresh.
+          void useAuthStore.getState().refreshMembership().catch(() => undefined)
         } catch {
           message.error('Mock 支付失败')
         } finally {

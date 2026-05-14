@@ -1,20 +1,35 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Alert, Button, Card, Col, Empty, Modal, Row, Skeleton, Space, Statistic, Tag, Typography, message } from 'antd'
 import { CheckCircleOutlined, CrownOutlined, ShoppingCartOutlined } from '@ant-design/icons'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { createOrderIdempotencyKey, showOrderCreatedSuccess } from '@/components/orders'
 import { membershipApi, type CurrentMembership, type MembershipPlan } from '@/services/membership'
 import { paymentApi } from '@/services/payment'
 import { formatDateTime, formatMoney } from '@/utils/paymentFormat'
+import { selectHighlightedPlan } from '@/utils/membershipHighlight'
 
 const { Paragraph, Title } = Typography
 
 export default function MembershipPage() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const [plans, setPlans] = useState<MembershipPlan[]>([])
   const [membership, setMembership] = useState<CurrentMembership | null>(null)
   const [loading, setLoading] = useState(true)
   const [creatingPlanCode, setCreatingPlanCode] = useState('')
+  const highlightedPlanCode = useMemo(
+    () => selectHighlightedPlan(plans, searchParams.get('plan')),
+    [plans, searchParams],
+  )
+  const highlightedRef = useRef<HTMLDivElement | null>(null)
+  const scrolledForKeyRef = useRef<string | null>(null)
+
+  useEffect(() => {
+    if (!highlightedPlanCode || !highlightedRef.current) return
+    if (scrolledForKeyRef.current === highlightedPlanCode) return
+    highlightedRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    scrolledForKeyRef.current = highlightedPlanCode
+  }, [highlightedPlanCode])
 
   const loadData = async () => {
     setLoading(true)
@@ -107,14 +122,26 @@ export default function MembershipPage() {
         </Card>
       ) : (
         <Row gutter={[24, 24]}>
-          {plans.map((plan) => (
+          {plans.map((plan) => {
+            const isHighlighted = plan.plan_code === highlightedPlanCode
+            return (
             <Col xs={24} md={8} key={plan.plan_code}>
+              <div ref={isHighlighted ? highlightedRef : undefined}>
               <Card
                 title={
                   <Space>
                     <CrownOutlined style={{ color: '#D97706' }} />
                     {plan.plan_name}
+                    {isHighlighted && <Tag color="gold" style={{ marginLeft: 8 }}>推荐</Tag>}
                   </Space>
+                }
+                style={
+                  isHighlighted
+                    ? {
+                        borderColor: '#F59E0B',
+                        boxShadow: '0 0 0 2px rgba(245, 158, 11, 0.18)',
+                      }
+                    : undefined
                 }
                 extra={<Tag color={plan.status === 'active' ? 'green' : 'default'}>{plan.status}</Tag>}
                 actions={[
@@ -142,8 +169,10 @@ export default function MembershipPage() {
                   <Alert type="info" showIcon message="支付方式：Mock 支付" />
                 </Space>
               </Card>
+              </div>
             </Col>
-          ))}
+            )
+          })}
         </Row>
       )}
     </div>
