@@ -37,16 +37,48 @@ interface ChatItem extends BubbleItemType {
   serverId?: number
 }
 
-function parseRecommendationSnapshot(content: string): Partial<RecommendationSnapshot> | null {
-  const match = content.match(/```recommendation_snapshot\s*([\s\S]*?)```/i)
-  if (!match) return null
-  try {
-    const parsed = JSON.parse(match[1]) as Partial<RecommendationSnapshot>
-    if (!parsed || typeof parsed !== 'object') return null
-    return parsed
-  } catch {
-    return null
+function parseRecommendationSnapshotJSONFromCodeBlocks(content: string): Partial<RecommendationSnapshot> | null {
+  const codeBlockRe = /```([^\n`]*)\n([\s\S]*?)```/g
+  for (const match of content.matchAll(codeBlockRe)) {
+    const lang = (match[1] || '').trim().toLowerCase()
+    const body = (match[2] || '').trim()
+
+    if (lang !== 'recommendation_snapshot' && lang !== '' && lang !== 'json') continue
+    if (!body.startsWith('{') || !body.endsWith('}')) continue
+
+    try {
+      const parsed = JSON.parse(body) as Partial<RecommendationSnapshot>
+      if (!parsed || typeof parsed !== 'object') continue
+      const keys: (keyof RecommendationSnapshot)[] = [
+        'region_code',
+        'subject_category_code',
+        'total_score',
+        'provincial_rank',
+        'priority_strategy',
+        'plan_size',
+        'enable_llm_tuning',
+      ]
+      if (!keys.some((k) => parsed[k] !== undefined)) continue
+      return parsed
+    } catch {
+      continue
+    }
   }
+
+  return null
+}
+
+function parseRecommendationSnapshot(content: string): Partial<RecommendationSnapshot> | null {
+  const match = content.match(/```[^\S\r\n]*recommendation_snapshot[^\n]*\s*([\s\S]*?)```/i)
+  if (match) {
+    try {
+      const parsed = JSON.parse(match[1]) as Partial<RecommendationSnapshot>
+      if (parsed && typeof parsed === 'object') return parsed
+    } catch {
+      // fallthrough
+    }
+  }
+  return parseRecommendationSnapshotJSONFromCodeBlocks(content)
 }
 
 export default function AdmissionAIPage() {
@@ -238,7 +270,7 @@ export default function AdmissionAIPage() {
     if (isArchived) return null
     const lastAI = [...messages].reverse().find((m) => m.role === 'ai')
     const content = lastAI?.content || ''
-    const match = content.match(/```volunteer_plan_draft\s*([\s\S]*?)```/i)
+    const match = content.match(/```[^\S\r\n]*volunteer_plan_draft[^\n]*\s*([\s\S]*?)```/i)
     if (!match) return null
     try {
       const parsed = JSON.parse(match[1])
