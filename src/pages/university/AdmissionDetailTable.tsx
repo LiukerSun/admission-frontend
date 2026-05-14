@@ -1,30 +1,12 @@
-import { useEffect, useMemo, useState } from 'react'
-import {
-  Button,
-  Col,
-  Grid,
-  Input,
-  Modal,
-  Row,
-  Space,
-  Statistic,
-  Table,
-  Tag,
-  Tooltip,
-  Typography,
-  message,
-} from 'antd'
+import { useMemo, useState } from 'react'
+import { Button, Grid, Modal, Space, Table, Tag, Tooltip, Typography } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 import {
+  CaretDownOutlined,
+  CaretRightOutlined,
   InfoCircleOutlined,
-  ReloadOutlined,
-  SearchOutlined,
-  TagsOutlined,
 } from '@ant-design/icons'
-import {
-  admissionApi,
-  type AdmissionLine,
-} from '@/services/admission'
+import type { AdmissionLine } from '@/services/admission'
 
 type AdmissionLineGroup = AdmissionLine & {
   key: string
@@ -40,20 +22,6 @@ type AdmissionLineGroup = AdmissionLine & {
 
 function uniqueCount(lines: AdmissionLine[], selector: (line: AdmissionLine) => string | number | undefined) {
   return new Set(lines.map(selector).filter(Boolean)).size
-}
-
-function minNumeric(lines: AdmissionLine[], selector: (line: AdmissionLine) => number | undefined) {
-  const values = lines.map(selector).filter((value): value is number => typeof value === 'number')
-  return values.length ? Math.min(...values) : undefined
-}
-
-function matchesUniversity(line: AdmissionLine, query: string) {
-  const keyword = query.trim().toLowerCase()
-  if (!keyword) return true
-
-  return [line.university_name, line.university_code]
-    .filter(Boolean)
-    .some((value) => value?.toLowerCase().includes(keyword))
 }
 
 function universityKey(line: AdmissionLine) {
@@ -305,34 +273,23 @@ function buildAdmissionTree(lines: AdmissionLine[]): AdmissionLineGroup[] {
   })
 }
 
-export default function AdmissionPage() {
+export type AdmissionDetailTableProps = {
+  lines: AdmissionLine[]
+  loading?: boolean
+}
+
+export default function AdmissionDetailTable({ lines, loading }: AdmissionDetailTableProps) {
   const screens = Grid.useBreakpoint()
-  const [lines, setLines] = useState<AdmissionLine[]>([])
-  const [universityQuery, setUniversityQuery] = useState('')
   const [detailRow, setDetailRow] = useState<AdmissionLineGroup>()
-  const [loading, setLoading] = useState(false)
+  const [expandedRowKeys, setExpandedRowKeys] = useState<React.Key[]>([])
 
-  useEffect(() => {
-    let cancelled = false
+  const toggleRowExpansion = (rowKey: React.Key) => {
+    setExpandedRowKeys((prev) =>
+      prev.includes(rowKey) ? prev.filter((key) => key !== rowKey) : [...prev, rowKey]
+    )
+  }
 
-    const run = async () => {
-      setLoading(true)
-      try {
-        const res = await admissionApi.listAdmissionLines()
-        if (cancelled) return
-        setLines(res.data.data || [])
-      } catch {
-        if (!cancelled) message.error('招生数据加载失败')
-      } finally {
-        if (!cancelled) setLoading(false)
-      }
-    }
-
-    void run()
-    return () => {
-      cancelled = true
-    }
-  }, [])
+  const groupedLines = useMemo(() => buildAdmissionTree(lines), [lines])
 
   const columns: ColumnsType<AdmissionLineGroup> = useMemo(
     () => [
@@ -467,87 +424,8 @@ export default function AdmissionPage() {
     [screens.lg]
   )
 
-  const filteredLines = useMemo(
-    () => lines.filter((line) => matchesUniversity(line, universityQuery)),
-    [lines, universityQuery]
-  )
-
-  const groupedLines = useMemo(() => buildAdmissionTree(filteredLines), [filteredLines])
-
-  const stats = useMemo(() => {
-    const bestRank = minNumeric(filteredLines, (line) => line.min_rank)
-    const bestScore = minNumeric(filteredLines, (line) => line.min_score)
-    return {
-      lineCount: filteredLines.length,
-      universityCount: uniqueCount(filteredLines, (line) => line.university_id || line.university_code),
-      groupCount: uniqueCount(filteredLines, (line) => `${line.university_id}-${line.group_code}`),
-      bestRank,
-      bestScore,
-    }
-  }, [filteredLines])
-
-  const refreshLines = async () => {
-    setLoading(true)
-    try {
-      const res = await admissionApi.listAdmissionLines()
-      setLines(res.data.data || [])
-    } catch {
-      message.error('招生数据查询失败')
-    } finally {
-      setLoading(false)
-    }
-  }
-
   return (
-    <div className="admission-page">
-      <section className="admission-interest-panel">
-        <div className="admission-interest-copy">
-          <Tag icon={<TagsOutlined />} color="blue">全部招生数据</Tag>
-          <Typography.Title level={2} className="admission-interest-title">
-            按专业组查看学校招生专业
-          </Typography.Title>
-          <Typography.Text type="secondary">
-            当前接口先返回全部学校招生专业，前端仅按学校名称或院校代码搜索展示，并按学校专业组归类。
-          </Typography.Text>
-        </div>
-        <Input
-          className="admission-university-search"
-          size="large"
-          allowClear
-          prefix={<SearchOutlined />}
-          placeholder="搜索学校名称或院校代码"
-          value={universityQuery}
-          onChange={(event) => setUniversityQuery(event.target.value)}
-        />
-      </section>
-
-      <Row gutter={[16, 16]} className="admission-stat-row">
-        <Col xs={12} md={6}>
-          <Statistic title="招生专业" value={stats.lineCount} />
-        </Col>
-        <Col xs={12} md={6}>
-          <Statistic title="可选学校" value={stats.universityCount} />
-        </Col>
-        <Col xs={12} md={6}>
-          <Statistic title="涉及专业组" value={stats.groupCount} />
-        </Col>
-        <Col xs={12} md={6}>
-          <Statistic title="最好位次" value={stats.bestRank ?? '-'} suffix={stats.bestScore ? `/${stats.bestScore}分` : undefined} />
-        </Col>
-      </Row>
-
-      <div className="admission-result-header">
-        <div>
-          <Typography.Title level={4} style={{ margin: 0 }}>
-            全部学校专业
-          </Typography.Title>
-          <Typography.Text type="secondary">结果展示学校发布的招生专业名称，不用 CHSI 名称覆盖学校原始名称。</Typography.Text>
-        </div>
-        <Button icon={<ReloadOutlined />} onClick={() => void refreshLines()} loading={loading}>
-          刷新结果
-        </Button>
-      </div>
-
+    <>
       <Table
         rowKey={(row) => row.key}
         loading={loading}
@@ -556,6 +434,41 @@ export default function AdmissionPage() {
         size="middle"
         scroll={{ x: 1720 }}
         pagination={{ pageSize: 10, showSizeChanger: true }}
+        className="admission-tree-table"
+        rowClassName={(row) =>
+          row.nodeType === 'major' ? 'admission-tree-row admission-tree-row--leaf' : 'admission-tree-row'
+        }
+        expandable={{
+          expandedRowKeys,
+          onExpandedRowsChange: (keys) => setExpandedRowKeys([...keys]),
+          expandIcon: ({ expanded, onExpand, record }) => {
+            const hasChildren = Array.isArray((record as AdmissionLineGroup).children) &&
+              ((record as AdmissionLineGroup).children?.length || 0) > 0
+            if (!hasChildren) {
+              return <span className="admission-tree-indent" aria-hidden />
+            }
+            return (
+              <span
+                className="admission-tree-caret"
+                role="button"
+                tabIndex={-1}
+                aria-label={expanded ? '收起' : '展开'}
+                onClick={(event) => {
+                  event.stopPropagation()
+                  onExpand(record, event)
+                }}
+              >
+                {expanded ? <CaretDownOutlined /> : <CaretRightOutlined />}
+              </span>
+            )
+          },
+        }}
+        onRow={(row) => ({
+          onClick: () => {
+            const hasChildren = Array.isArray(row.children) && row.children.length > 0
+            if (hasChildren) toggleRowExpansion(row.key)
+          },
+        })}
       />
 
       <Modal
@@ -567,6 +480,6 @@ export default function AdmissionPage() {
       >
         {detailRow ? renderExpandedRow(detailRow) : null}
       </Modal>
-    </div>
+    </>
   )
 }

@@ -148,6 +148,60 @@ body {
   margin-bottom: 0;
 }
 
+/* VSCode-style tree table */
+.admission-tree-table .ant-table-tbody > tr.admission-tree-row {
+  transition: background-color 120ms ease;
+}
+
+.admission-tree-table .ant-table-tbody > tr.admission-tree-row:not(.admission-tree-row--leaf) {
+  cursor: pointer;
+}
+
+.admission-tree-table .ant-table-tbody > tr.admission-tree-row:not(.admission-tree-row--leaf):hover > td {
+  background: #EEF4FF !important;
+}
+
+.admission-tree-table .ant-table-tbody > tr.admission-tree-row--leaf:hover > td {
+  background: #F8FAFC !important;
+}
+
+/* Hide AntD's default +/- expand button entirely — we render our own caret */
+.admission-tree-table .ant-table-row-expand-icon-cell {
+  width: 28px;
+  min-width: 28px;
+  padding-right: 0 !important;
+  padding-left: 8px !important;
+}
+
+.admission-tree-table .ant-table-thead .ant-table-row-expand-icon-cell {
+  background: transparent;
+}
+
+.admission-tree-caret {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  color: #64748B;
+  font-size: 11px;
+  cursor: pointer;
+  transition: background-color 120ms ease, color 120ms ease;
+  user-select: none;
+}
+
+.admission-tree-caret:hover {
+  background: rgba(30, 64, 175, 0.12);
+  color: #1E40AF;
+}
+
+.admission-tree-indent {
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+}
+
 .volunteer-table-header-title {
   display: block;
   padding-right: 10px;

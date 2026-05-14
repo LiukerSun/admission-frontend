@@ -8,7 +8,6 @@ import BasicLayout from '@/layouts/BasicLayout'
 import LandingPage from '@/pages/landing'
 import LoginPage from '@/pages/auth/LoginPage'
 import RegisterPage from '@/pages/auth/RegisterPage'
-import AdmissionPage from '@/pages/admission'
 import AdmissionAIPage from '@/pages/admission-ai'
 import VolunteerPlansPage from '@/pages/admission/VolunteerPlansPage'
 import DashboardPage from '@/pages/dashboard'
@@ -61,14 +60,6 @@ const router = createBrowserRouter([
         element: (
           <RequireAuth>
             <DashboardPage />
-          </RequireAuth>
-        ),
-      },
-      {
-        path: 'admission',
-        element: (
-          <RequireAuth>
-            <AdmissionPage />
           </RequireAuth>
         ),
       },
