@@ -3,7 +3,6 @@ import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom'
 import { Avatar, Breadcrumb, Button, Drawer, Dropdown, Grid, Layout, Menu, Spin } from 'antd'
 import {
   BarChartOutlined,
-  BankOutlined,
   DashboardOutlined,
   FileTextOutlined,
   HomeOutlined,
@@ -26,7 +25,6 @@ const { useBreakpoint } = Grid
 
 const ROUTE_TITLE_MAP: Record<string, string> = {
   '/dashboard': '工作台',
-  '/admission': '招生数据',
   '/admission/ai': '智能填报',
   '/admission/plans': '志愿方案',
   '/university': '学校详情',
@@ -69,9 +67,9 @@ export default function BasicLayout() {
       label: <Link to="/dashboard">工作台</Link>,
     },
     {
-      key: '/admission',
-      icon: <BankOutlined />,
-      label: <Link to="/admission">招生数据</Link>,
+      key: '/university',
+      icon: <SchoolOutlined />,
+      label: <Link to="/university">学校详情</Link>,
     },
     {
       key: '/admission/ai',
@@ -82,11 +80,6 @@ export default function BasicLayout() {
       key: '/admission/plans',
       icon: <FileTextOutlined />,
       label: <Link to="/admission/plans">志愿方案</Link>,
-    },
-    {
-      key: '/university',
-      icon: <SchoolOutlined />,
-      label: <Link to="/university">学校详情</Link>,
     },
   ]
 

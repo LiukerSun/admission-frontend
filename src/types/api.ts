@@ -4,6 +4,61 @@
  */
 
 export interface paths {
+    "/api/v1/admin/recommendation/scores/refresh": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 刷新推荐打分缓存（管理员）
+         * @description 扫描 recommendation_precomputed_scores 中缺失或过期（默认 90 天）的 (university × major) 行，逐个调用评估器（默认 LLM）填充五维基准分。可指定批量大小。
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            /** @description 刷新参数 */
+            requestBody?: {
+                content: {
+                    "application/json": components["schemas"]["admission.refreshScoreRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"] & {
+                            data?: components["schemas"]["admission.RefreshResult"];
+                        };
+                    };
+                };
+                /** @description Internal Server Error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/stats": {
         parameters: {
             query?: never;
@@ -326,11 +381,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["web.Response"] & {
-                            data?: {
-                                [key: string]: string;
-                            };
-                        };
+                        "application/json": components["schemas"]["web.Response"];
                     };
                 };
                 /** @description Unauthorized */
@@ -399,11 +450,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["web.Response"] & {
-                            data?: {
-                                [key: string]: string;
-                            };
-                        };
+                        "application/json": components["schemas"]["web.Response"];
                     };
                 };
                 /** @description Unauthorized */
@@ -476,11 +523,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["web.Response"] & {
-                            data?: {
-                                [key: string]: string;
-                            };
-                        };
+                        "application/json": components["schemas"]["web.Response"];
                     };
                 };
                 /** @description Bad Request */
@@ -563,11 +606,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["web.Response"] & {
-                            data?: {
-                                [key: string]: string;
-                            };
-                        };
+                        "application/json": components["schemas"]["web.Response"];
                     };
                 };
                 /** @description Bad Request */
@@ -772,9 +811,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["web.Response"] & {
-                            data?: components["schemas"]["admission.AggregateResponse"];
-                        };
+                        "application/json": components["schemas"]["web.Response"];
                     };
                 };
                 /** @description Bad Request */
@@ -905,6 +942,70 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admission/recommendations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 生成志愿推荐表
+         * @description 基于学生省份、选科、分数、位次、单科成绩、家庭资源、个人画像、地域偏好、专业偏好、职业规划，输出冲/稳/保三档志愿表，并对每个志愿给出综合评分与推荐理由。
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            /** @description 学生画像与偏好 */
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["admission.RecommendationRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"] & {
+                            data?: components["schemas"]["admission.RecommendationResponse"];
+                        };
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+                /** @description Internal Server Error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admission/standard-majors": {
         parameters: {
             query?: never;
@@ -978,13 +1079,33 @@ export interface paths {
         };
         /**
          * List universities
-         * @description Returns university identities.
+         * @description Returns university identities enriched with latest profile information. Filters can narrow the result by region, school category, ownership type, education level, and university-tier flags.
          */
         get: {
             parameters: {
                 query?: {
                     /** @description Search university code or name */
                     q?: string;
+                    /** @description Comma-separated region codes */
+                    region_codes?: string;
+                    /** @description Comma-separated school category codes */
+                    school_category_codes?: string;
+                    /** @description Comma-separated school ownership type codes */
+                    ownership_type_codes?: string;
+                    /** @description Education level code */
+                    education_level_code?: string;
+                    /** @description Filter by 985 (1/0) */
+                    is_985?: string;
+                    /** @description Filter by 211 (1/0) */
+                    is_211?: string;
+                    /** @description Filter by double-first-class (1/0) */
+                    is_double_first_class?: string;
+                    /** @description Filter by national-key (1/0) */
+                    is_national_key?: string;
+                    /** @description Filter by provincial-key (1/0) */
+                    is_provincial_key?: string;
+                    /** @description Filter by postgraduate-recommendation eligibility (1/0) */
+                    has_postgraduate_recommendation?: string;
                 };
                 header?: never;
                 path?: never;
@@ -1113,9 +1234,78 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+                /** @description Internal Server Error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admission/volunteer-plans/{id}/rich-details": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get rich volunteer plan details
+         * @description Returns a detailed volunteer plan with user details, statistics, and rich group/major info.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Volunteer Plan ID */
+                    id: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
                         "application/json": components["schemas"]["web.Response"] & {
-                            data?: components["schemas"]["admission.VolunteerPlansResponse"];
+                            data?: components["schemas"]["admission.RichVolunteerPlan"];
                         };
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
                     };
                 };
                 /** @description Internal Server Error */
@@ -1148,7 +1338,7 @@ export interface paths {
         put?: never;
         /**
          * AI chat with SSE streaming
-         * @description Streams AI responses via SSE. Send messages array; receive step_start/step_finish/text_delta/done events.
+         * @description Streams AI responses via SSE. Send messages array; receive text_delta / tool_call_start / tool_call_end / widget / done events.
          */
         post: {
             parameters: {
@@ -1690,9 +1880,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["web.Response"] & {
-                            data?: components["schemas"]["conversation.Conversation"][];
-                        };
+                        "application/json": components["schemas"]["web.Response"];
                     };
                 };
                 /** @description Internal Server Error */
@@ -1731,9 +1919,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["web.Response"] & {
-                            data?: components["schemas"]["conversation.Conversation"];
-                        };
+                        "application/json": components["schemas"]["web.Response"];
                     };
                 };
                 /** @description Bad Request */
@@ -1791,9 +1977,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["web.Response"] & {
-                            data?: components["schemas"]["conversation.WithMessages"];
-                        };
+                        "application/json": components["schemas"]["web.Response"];
                     };
                 };
                 /** @description Not Found */
@@ -2038,9 +2222,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["web.Response"] & {
-                            data?: components["schemas"]["conversation.Message"];
-                        };
+                        "application/json": components["schemas"]["web.Response"];
                     };
                 };
                 /** @description Bad Request */
@@ -2072,6 +2254,209 @@ export interface paths {
                 };
             };
         };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/conversations/{id}/regenerate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Regenerate the last assistant reply
+         * @description Discards the most recent assistant turn (if any) and re-runs the agent on the resulting history. SSE stream identical to ChatWithConversation.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Conversation ID */
+                    id: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description SSE stream */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/event-stream": string;
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/event-stream": components["schemas"]["web.Response"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/event-stream": components["schemas"]["web.Response"];
+                    };
+                };
+                /** @description Internal Server Error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/event-stream": components["schemas"]["web.Response"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/conversations/{id}/rollback": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Rollback conversation history
+         * @description Deletes messages at or after the specified message_id (inclusive by default). Used by the frontend "edit / regenerate" flows. Non-owners receive 404 to avoid leaking conversation existence.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Conversation ID */
+                    id: number;
+                };
+                cookie?: never;
+            };
+            /** @description Rollback target */
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["conversation.RollbackRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+                /** @description Internal Server Error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/conversations/{id}/suggestions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Suggested follow-up questions
+         * @description Generates 2-4 follow-up question chips for a conversation. Cached in Redis keyed by (conversation_id, last_message_id).
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Conversation ID */
+                    id: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -2160,11 +2545,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["web.Response"] & {
-                            data?: {
-                                [key: string]: string;
-                            };
-                        };
+                        "application/json": components["schemas"]["web.Response"];
                     };
                 };
                 /** @description Bad Request */
@@ -2227,11 +2608,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["web.Response"] & {
-                            data?: {
-                                [key: string]: string;
-                            };
-                        };
+                        "application/json": components["schemas"]["web.Response"];
                     };
                 };
                 /** @description Bad Request */
@@ -2302,11 +2679,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["web.Response"] & {
-                            data?: {
-                                [key: string]: string;
-                            };
-                        };
+                        "application/json": components["schemas"]["web.Response"];
                     };
                 };
                 /** @description Bad Request */
@@ -2370,9 +2743,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["web.Response"] & {
-                            data?: components["schemas"]["membership.CurrentMembershipResponse"];
-                        };
+                        "application/json": components["schemas"]["web.Response"];
                     };
                 };
                 /** @description Unauthorized */
@@ -2429,9 +2800,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["web.Response"] & {
-                            data?: components["schemas"]["membership.PlanResponse"][];
-                        };
+                        "application/json": components["schemas"]["web.Response"];
                     };
                 };
                 /** @description Unauthorized */
@@ -2456,6 +2825,56 @@ export interface paths {
         };
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/payment/callbacks/alipay": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** 支付宝异步通知回调 */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            /** @description 支付宝异步通知参数 */
+            requestBody: {
+                content: {
+                    "application/x-www-form-urlencoded": string;
+                };
+            };
+            responses: {
+                /** @description success */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": string;
+                    };
+                };
+                /** @description fail */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": string;
+                    };
+                };
+            };
+        };
         delete?: never;
         options?: never;
         head?: never;
@@ -2495,9 +2914,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["web.Response"] & {
-                            data?: components["schemas"]["payment.OrderResponse"];
-                        };
+                        "application/json": components["schemas"]["web.Response"];
                     };
                 };
                 /** @description Bad Request */
@@ -2554,9 +2971,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["web.Response"] & {
-                            data?: components["schemas"]["payment.OrderListResponse"];
-                        };
+                        "application/json": components["schemas"]["web.Response"];
                     };
                 };
                 /** @description Unauthorized */
@@ -2592,9 +3007,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["web.Response"] & {
-                            data?: components["schemas"]["payment.OrderResponse"];
-                        };
+                        "application/json": components["schemas"]["web.Response"];
                     };
                 };
                 /** @description Bad Request */
@@ -2667,9 +3080,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["web.Response"] & {
-                            data?: components["schemas"]["payment.OrderResponse"];
-                        };
+                        "application/json": components["schemas"]["web.Response"];
                     };
                 };
                 /** @description Unauthorized */
@@ -2728,9 +3139,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["web.Response"] & {
-                            data?: components["schemas"]["payment.OrderResponse"];
-                        };
+                        "application/json": components["schemas"]["web.Response"];
                     };
                 };
                 /** @description Unauthorized */
@@ -2787,8 +3196,65 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/payment/orders/{order_no}/pay/alipay": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** 支付宝支付（电脑网站支付） */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description 订单号 */
+                    order_no: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
                         "application/json": components["schemas"]["web.Response"] & {
-                            data?: components["schemas"]["payment.OrderResponse"];
+                            data?: components["schemas"]["payment.AlipayPayResponse"];
                         };
                     };
                 };
@@ -2803,6 +3269,15 @@ export interface paths {
                 };
                 /** @description Unauthorized */
                 401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -2844,11 +3319,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["web.Response"] & {
-                            data?: {
-                                [key: string]: string;
-                            };
-                        };
+                        "application/json": components["schemas"]["web.Response"];
                     };
                 };
                 /** @description Service Unavailable */
@@ -3022,21 +3493,36 @@ export interface components {
             university_major_line_id?: number;
             university_name?: string;
         };
-        "admission.AggregateItem": {
-            avg_min_rank?: number;
-            avg_min_score?: number;
-            avg_tuition?: number;
-            code?: string;
-            count?: number;
-            is_211_count?: number;
-            is_985_count?: number;
-            is_double_first_class_count?: number;
-            name?: string;
+        "admission.DetailedVolunteerPlanGroup": {
+            detailedMajors?: components["schemas"]["admission.DetailedVolunteerPlanMajor"][];
+            groupAdmissionDetails?: components["schemas"]["admission.GroupAdmissionDetails"];
+            groupCode?: string;
+            groupId?: number;
+            groupName?: string;
+            id?: number;
+            isObeyAdjustment?: boolean;
+            /** @description Existing majors */
+            majors?: components["schemas"]["admission.VolunteerPlanMajor"][];
+            orderNo?: number;
+            planId?: number;
+            remark?: string;
+            universityCode?: string;
+            /** @description Additional fields for rich export */
+            universityDetails?: components["schemas"]["admission.UniversityDetails"];
+            universityId?: number;
+            universityName?: string;
         };
-        "admission.AggregateResponse": {
-            group_by?: string;
-            items?: components["schemas"]["admission.AggregateItem"][];
-            total?: number;
+        "admission.DetailedVolunteerPlanMajor": {
+            employmentDirection?: string;
+            majorCode?: string;
+            majorIntro?: string;
+            majorName?: string;
+            /** @description Added for consistency with frontend */
+            majorOrder?: number;
+            minRank?: number;
+            minScore?: number;
+            trainingGoal?: string;
+            tuition?: number;
         };
         "admission.DictionaryItem": {
             code?: string;
@@ -3051,8 +3537,179 @@ export interface components {
             subject_categories?: components["schemas"]["admission.DictionaryItem"][];
             subject_requirements?: components["schemas"]["admission.DictionaryItem"][];
         };
+        "admission.GroupAdmissionDetails": {
+            minScore2022?: number;
+            minScore2023?: number;
+            minScore2024?: number;
+        };
         "admission.LatestCatalogYearResponse": {
             catalog_year?: number;
+        };
+        "admission.PlanStatistics": {
+            /** @description e.g., { '计算机科学与技术': 10, '软件工程': 8 } */
+            majorDistribution?: {
+                [key: string]: number;
+            };
+            totalGroups?: number;
+            totalMajors?: number;
+            totalUniversities?: number;
+        };
+        "admission.RankWindow": {
+            match_max?: number;
+            match_min?: number;
+            rush_max?: number;
+            rush_min?: number;
+            safe_max?: number;
+            safe_min?: number;
+        };
+        "admission.RecommendationItem": {
+            admission_group_id?: number;
+            batch_code?: string;
+            city?: string;
+            composite_score?: number;
+            discipline_category?: string;
+            equivalent_min_score?: number;
+            group_code?: string;
+            historical_min_rank?: number;
+            historical_min_score?: number;
+            is_211?: boolean;
+            is_985?: boolean;
+            is_double_first_class?: boolean;
+            is_national_feature?: boolean;
+            local_major_code?: string;
+            local_major_name?: string;
+            major_priority_score?: number;
+            major_rank?: string;
+            /** @description 在志愿表里的顺序（1 起，跨冲/稳/保连续编号） */
+            order?: number;
+            plan_count?: number;
+            /** @description 估算的录取概率 [0,1] */
+            probability?: number;
+            province_code?: string;
+            reason?: string;
+            score_breakdown?: components["schemas"]["admission.ScoreBreakdown"];
+            soft_rank?: string;
+            /** @description "rush" | "match" | "safe" */
+            tier?: string;
+            tuition?: number;
+            university_code?: string;
+            university_id?: number;
+            university_name?: string;
+            warnings?: string[];
+        };
+        "admission.RecommendationRequest": {
+            /** @description 默认取数据库中最新年份 */
+            admission_year?: number;
+            /** @description 经济 */
+            budget_tuition_max?: number;
+            /** @description 职业规划 */
+            career_plans?: string[];
+            chinese_score?: number;
+            /** @description 可选: 是否调用大模型做最终调优 */
+            enable_llm_tuning?: boolean;
+            english_score?: number;
+            excluded_cities?: string[];
+            /** @description 张雪峰式避雷词 */
+            excluded_keywords?: string[];
+            /** @description 主观排除的专业关键词 */
+            excluded_majors?: string[];
+            excluded_provinces?: string[];
+            /** @description "充裕" / "普通" / "紧张" */
+            family_economy?: string;
+            /** @description 家庭资源 */
+            family_resources?: string[];
+            /** @description 体检/性别/语种 等一刀切硬门槛 */
+            gender?: string;
+            /** @description 已确诊不可报考的限制 */
+            health?: string[];
+            /** @description 个人画像 */
+            holland_code?: string;
+            language?: string;
+            /** @description 单科成绩 (硬门槛 + 能力匹配) */
+            math_score?: number;
+            physics_score?: number;
+            /**
+             * @description 输出规模。HLJ 新高考一次 40 个院校专业组，所以 default=40；上限放宽到 500
+             *     允许"批量分析"使用方式，常规用户不必关心。
+             */
+            plan_size?: number;
+            /** @description 地域偏好 */
+            preferred_cities?: string[];
+            /** @description CHSI 标准专业 / 大类 / 关键词 */
+            preferred_majors?: string[];
+            /** @description region_code 列表 */
+            preferred_provinces?: string[];
+            /** @description 学校 vs 专业 优先策略 */
+            priority_strategy?: string;
+            /** @description 省内位次（来自一分一段） */
+            provincial_rank: number;
+            /** @description 基础（必填） */
+            region_code: string;
+            /** @description 选科列表，例如 ["物理","化学","生物"] */
+            selected_subjects?: string[];
+            /** @description 物理类 / 历史类 */
+            subject_category_code: string;
+            /** @description 选科 / 年份 */
+            subject_requirement_code?: string;
+            /** @description 高考总分 */
+            total_score: number;
+        };
+        "admission.RecommendationResponse": {
+            /** @description 全部 ≤ planSize 条，按冲→稳→保顺序排列 */
+            items?: components["schemas"]["admission.RecommendationItem"][];
+            llm_summary?: string;
+            match_count?: number;
+            /** @description 顶层提示 */
+            notes?: string[];
+            /** @description 冲/稳/保三段位次区间 */
+            rank_window?: components["schemas"]["admission.RankWindow"];
+            rush_count?: number;
+            safe_count?: number;
+            /** @description "school" | "major" | "rank_window" */
+            strategy?: string;
+            /** @description 解释为什么走这个路线 */
+            strategy_reason?: string;
+            /** @description 草稿载体，给 toolExecutor 用 */
+            volunteer_plan?: Record<string, never>;
+        };
+        "admission.RefreshResult": {
+            errors?: string[];
+            evaluated?: number;
+            failed?: number;
+            source?: string;
+        };
+        "admission.RichVolunteerPlan": {
+            createdAt?: string;
+            description?: string;
+            detailedGroups?: components["schemas"]["admission.DetailedVolunteerPlanGroup"][];
+            groups?: components["schemas"]["admission.VolunteerPlanGroup"][];
+            id?: number;
+            name?: string;
+            planStatistics?: components["schemas"]["admission.PlanStatistics"];
+            stats?: components["schemas"]["admission.VolunteerPlanStats"];
+            userDetails?: components["schemas"]["admission.UserDetails"];
+            userId?: number;
+        };
+        "admission.ScoreBreakdown": {
+            ability_improvement_base?: number;
+            ability_improvement_reason?: string;
+            ability_improvement_score?: number;
+            city_base?: number;
+            city_reason?: string;
+            city_score?: number;
+            /** @description 'algorithm' | 'llm' | 'manual' */
+            evaluated_by?: string;
+            /** @description e.g. claude-opus-4-7 */
+            evaluator_model?: string;
+            future_competitiveness_base?: number;
+            future_competitiveness_reason?: string;
+            future_competitiveness_score?: number;
+            major_base?: number;
+            major_reason?: string;
+            major_score?: number;
+            school_base?: number;
+            school_reason?: string;
+            school_score?: number;
         };
         "admission.StandardMajorResponse": {
             catalog_year?: number;
@@ -3066,6 +3723,12 @@ export interface components {
             major_code?: string;
             name?: string;
             source_url?: string;
+        };
+        "admission.UniversityDetails": {
+            is211?: boolean;
+            is985?: boolean;
+            region?: string;
+            schoolCategory?: string;
         };
         "admission.UniversityProfileResponse": {
             affiliation?: string;
@@ -3097,28 +3760,65 @@ export interface components {
             university_id?: number;
         };
         "admission.UniversityResponse": {
+            affiliation?: string;
+            city?: string;
+            doctoral_program_count?: number;
+            education_level_code?: string;
+            education_level_name?: string;
+            has_postgraduate_recommendation?: boolean;
             id?: number;
+            is_211?: boolean;
+            is_985?: boolean;
+            is_double_first_class?: boolean;
+            is_national_key?: boolean;
+            is_provincial_key?: boolean;
+            master_program_count?: number;
             name?: string;
             normalized_name?: string;
+            ownership_type_code?: string;
+            ownership_type_name?: string;
+            profile_year?: number;
+            region_code?: string;
+            region_name?: string;
+            school_category_code?: string;
+            school_category_name?: string;
+            soft_rank?: string;
             university_code?: string;
         };
-        "admission.VolunteerPlan": {
-            columns?: string[];
-            description?: string;
-            id?: string;
-            name?: string;
-            rows?: {
-                [key: string]: unknown;
-            }[];
-            stats?: components["schemas"]["admission.VolunteerPlanStats"];
+        "admission.UserDetails": {
+            email?: string;
+            username?: string;
+        };
+        "admission.VolunteerPlanGroup": {
+            groupCode?: string;
+            groupId?: number;
+            groupName?: string;
+            id?: number;
+            isObeyAdjustment?: boolean;
+            majors?: components["schemas"]["admission.VolunteerPlanMajor"][];
+            orderNo?: number;
+            remark?: string;
+            universityCode?: string;
+            universityId?: number;
+            universityName?: string;
+        };
+        "admission.VolunteerPlanMajor": {
+            id?: number;
+            majorAdmissionId?: number;
+            majorCode?: string;
+            majorName?: string;
+            majorOrder?: number;
         };
         "admission.VolunteerPlanStats": {
             groupCount?: number;
             recordCount?: number;
             schoolCount?: number;
         };
-        "admission.VolunteerPlansResponse": {
-            plans?: components["schemas"]["admission.VolunteerPlan"][];
+        "admission.refreshScoreRequest": {
+            /** @description default 50 */
+            limit?: number;
+            /** @description default 90 */
+            max_age_days?: number;
         };
         "ai.ChatRequest": {
             messages?: components["schemas"]["ai.Message"][];
@@ -3213,62 +3913,27 @@ export interface components {
         "conversation.AddMessageRequest": {
             content?: string;
         };
-        "conversation.Conversation": {
-            created_at?: string;
-            id?: number;
-            status?: string;
-            title?: string;
-            updated_at?: string;
-            user_id?: number;
-        };
         "conversation.CreateConversationRequest": {
             title?: string;
             user_id?: number;
         };
-        "conversation.Message": {
-            content?: string;
-            conversation_id?: number;
-            created_at?: string;
-            id?: number;
-            role?: string;
-            tool_calls?: number[];
-            tool_results?: number[];
+        "conversation.RollbackRequest": {
+            inclusive?: boolean;
+            message_id?: number;
         };
-        "conversation.WithMessages": {
-            conversation?: components["schemas"]["conversation.Conversation"];
-            messages?: components["schemas"]["conversation.Message"][];
-        };
-        "membership.CurrentMembershipResponse": {
-            /** @example true */
-            active?: boolean;
-            /** @example 2026-05-23T10:00:00Z */
-            ends_at?: string;
-            /** @example premium */
-            membership_level?: string;
-            /** @example 2026-04-23T10:00:00Z */
-            started_at?: string;
-            /** @example active */
-            status?: string;
-        };
-        "membership.PlanResponse": {
-            /** @example CNY */
-            currency?: string;
-            /** @example 30 */
-            duration_days?: number;
-            /** @example 1 */
-            id?: number;
-            /** @example premium */
-            membership_level?: string;
-            /** @example monthly */
-            plan_code?: string;
-            /** @example 月度会员 */
-            plan_name?: string;
-            /** @example 990 */
-            price_amount?: number;
-            /** @example active */
-            status?: string;
+        "payment.AlipayPayResponse": {
+            expires_at?: string;
+            /** @example MO202605101200000001 */
+            order_no?: string;
+            /** @example https://openapi-sandbox.dl.alipaydev.com/gateway.do?... */
+            pay_url?: string;
         };
         "payment.CreateOrderRequest": {
+            /**
+             * @example alipay
+             * @enum {string}
+             */
+            channel?: "mock" | "alipay";
             /** @example checkout-123 */
             idempotency_key?: string;
             /**
@@ -3286,45 +3951,6 @@ export interface components {
             order_no: string;
             /** @example true */
             success?: boolean;
-        };
-        "payment.OrderListResponse": {
-            items?: components["schemas"]["payment.OrderResponse"][];
-            /** @example 1 */
-            page?: number;
-            /** @example 20 */
-            page_size?: number;
-            /** @example 1 */
-            total?: number;
-        };
-        "payment.OrderResponse": {
-            /** @example 990 */
-            amount?: number;
-            /** @example 2026-04-23T10:15:00Z */
-            closed_at?: string;
-            /** @example 2026-04-23T10:00:00Z */
-            created_at?: string;
-            /** @example CNY */
-            currency?: string;
-            /** @example pending */
-            entitlement_status?: string;
-            /** @example 2026-04-23T10:15:00Z */
-            expires_at?: string;
-            /** @example MO202604231200000001 */
-            order_no?: string;
-            /** @example awaiting_payment */
-            order_status?: string;
-            /** @example 2026-04-23T10:01:00Z */
-            paid_at?: string;
-            /** @example mock */
-            payment_channel?: string;
-            /** @example unpaid */
-            payment_status?: string;
-            /** @example monthly */
-            plan_code?: string;
-            /** @example 月度会员 */
-            subject?: string;
-            /** @example 1 */
-            user_id?: number;
         };
         "user.ChangePasswordRequest": {
             /** @example oldpass123 */

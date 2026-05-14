@@ -131,6 +131,20 @@ export interface VolunteerPlansResponse {
 export type AdmissionLineQuery =
   NonNullable<paths['/api/v1/admission/admission-lines']['get']['parameters']['query']>
 
+export type UniversityListQuery = {
+  q?: string
+  region_codes?: string[]
+  school_category_codes?: string[]
+  ownership_type_codes?: string[]
+  education_level_code?: string
+  is_985?: boolean
+  is_211?: boolean
+  is_double_first_class?: boolean
+  is_national_key?: boolean
+  is_provincial_key?: boolean
+  has_postgraduate_recommendation?: boolean
+}
+
 type AdmissionEnvelope<T> = {
   code: number
   message?: string
@@ -141,6 +155,28 @@ function cleanParams<T extends Record<string, unknown>>(params: T) {
   return Object.fromEntries(
     Object.entries(params).filter(([, value]) => value !== undefined && value !== null && value !== '')
   )
+}
+
+function toUniversityQueryParams(input: UniversityListQuery): Record<string, string> {
+  const result: Record<string, string> = {}
+  if (input.q && input.q.trim()) result.q = input.q.trim()
+  if (input.region_codes?.length) result.region_codes = input.region_codes.join(',')
+  if (input.school_category_codes?.length) result.school_category_codes = input.school_category_codes.join(',')
+  if (input.ownership_type_codes?.length) result.ownership_type_codes = input.ownership_type_codes.join(',')
+  if (input.education_level_code) result.education_level_code = input.education_level_code
+  const triBool: Record<string, boolean | undefined> = {
+    is_985: input.is_985,
+    is_211: input.is_211,
+    is_double_first_class: input.is_double_first_class,
+    is_national_key: input.is_national_key,
+    is_provincial_key: input.is_provincial_key,
+    has_postgraduate_recommendation: input.has_postgraduate_recommendation,
+  }
+  Object.entries(triBool).forEach(([key, value]) => {
+    if (value === true) result[key] = '1'
+    else if (value === false) result[key] = '0'
+  })
+  return result
 }
 
 export const admissionApi = {
@@ -156,9 +192,9 @@ export const admissionApi = {
       params: cleanParams(params),
     }),
 
-  listUniversities: (params: { q?: string }) =>
+  listUniversities: (params: UniversityListQuery = {}) =>
     api.get<AdmissionEnvelope<University[]>>('/api/v1/admission/universities', {
-      params: cleanParams(params),
+      params: toUniversityQueryParams(params),
     }),
 
   getUniversityProfile: (id: number, params?: { profile_year?: number }) =>
