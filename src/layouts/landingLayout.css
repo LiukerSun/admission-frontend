@@ -1,0 +1,346 @@
+ .landingRoot {
+   min-height: 100vh;
+   position: relative;
+   overflow: hidden;
+   background:
+     radial-gradient(circle at 12% 18%, rgba(255, 230, 218, 0.88) 0%, rgba(255, 230, 218, 0) 28%),
+     radial-gradient(circle at 82% 12%, rgba(142, 211, 255, 0.62) 0%, rgba(142, 211, 255, 0) 30%),
+     linear-gradient(135deg, #edf8fb 0%, #d9edf6 48%, #c5ddf2 100%);
+ }
+
+ .landingRootMarketing {
+   overflow-x: hidden;
+   overflow-y: auto;
+   background: #fff;
+ }
+
+ .landingRootMarketing::before {
+   display: none;
+ }
+
+ .marketingNav {
+   position: sticky;
+   top: 0;
+   z-index: 20;
+   height: 76px;
+   display: grid;
+   grid-template-columns: auto 1fr auto;
+   align-items: center;
+   gap: 28px;
+   max-width: 1280px;
+   margin: 0 auto;
+   padding: 0 32px;
+   border-bottom: 1px solid rgba(10, 37, 64, 0.08);
+   background: rgba(255, 255, 255, 0.82);
+   backdrop-filter: blur(18px);
+ }
+
+ .marketingBrand {
+   display: inline-flex;
+   align-items: center;
+   gap: 10px;
+   border: 0;
+   padding: 0;
+   background: transparent;
+   color: #0a2540;
+   font-size: 22px;
+   font-weight: 900;
+   cursor: pointer;
+ }
+
+ .marketingBrandMark {
+   width: 28px;
+   height: 28px;
+   border-radius: 8px;
+   background: linear-gradient(135deg, #635bff 0%, #00d4ff 52%, #00a889 100%);
+ }
+
+ .marketingLinks {
+   display: flex;
+   align-items: center;
+   gap: 28px;
+ }
+
+ .marketingLinks a {
+   color: rgba(10, 37, 64, 0.72);
+   text-decoration: none;
+   font-size: 14px;
+   font-weight: 800;
+ }
+
+ .marketingLinks a:hover,
+ .marketingLinks a.active {
+   color: #0a2540;
+ }
+
+ .marketingActions {
+   display: flex;
+   align-items: center;
+   gap: 10px;
+ }
+
+ .marketingActions .ant-btn {
+   border-radius: 6px;
+   font-weight: 800;
+ }
+
+ .marketingAvatar {
+   display: inline-flex;
+   align-items: center;
+   cursor: pointer;
+ }
+
+ .marketingMain {
+   position: relative;
+ }
+
+ @media (max-width: 760px) {
+   .marketingNav {
+     grid-template-columns: 1fr auto;
+     height: auto;
+     padding: 18px 20px;
+   }
+
+   .marketingLinks {
+     display: none;
+   }
+ }
+
+ .landingRoot::before {
+   content: '';
+   position: absolute;
+   inset: -200px;
+   background:
+     radial-gradient(closest-side at 20% 60%, rgba(252, 96, 177, 0.18) 0%, rgba(240, 151, 139, 0.1) 45%, rgba(250, 140, 5, 0) 75%),
+     radial-gradient(closest-side at 70% 82%, rgba(58, 172, 230, 0.18) 0%, rgba(139, 240, 203, 0.1) 45%, rgba(250, 217, 5, 0) 75%);
+   filter: blur(58px);
+   pointer-events: none;
+ }
+
+ .landingShell {
+   position: relative;
+   z-index: 1;
+   max-width: 1560px;
+   margin: 0 auto;
+  padding: clamp(14px, 2.2vw, 24px);
+   display: flex;
+  gap: clamp(14px, 2.2vw, 24px);
+ }
+
+ .landingSider {
+  width: clamp(236px, 20vw, 320px);
+  flex: 0 0 clamp(236px, 20vw, 320px);
+   border: 1px solid rgba(28, 74, 112, 0.12);
+   border-radius: 18px;
+  padding: clamp(14px, 1.8vw, 18px) clamp(14px, 1.8vw, 18px) clamp(16px, 2vw, 20px);
+   background: rgba(255, 255, 255, 0.58);
+   box-shadow: 0 16px 38px rgba(7, 32, 60, 0.08);
+   backdrop-filter: blur(24px);
+ }
+
+ .landingBrand {
+   display: flex;
+   align-items: center;
+   gap: 12px;
+   font-weight: 800;
+   font-size: 20px;
+   color: #063966;
+   padding: 8px 10px 14px;
+ }
+
+ .landingBrandMark {
+   width: 26px;
+   height: 26px;
+   border-radius: 9px;
+   background: linear-gradient(135deg, #1e40af, #18b7b0);
+   box-shadow: 0 8px 18px rgba(30, 64, 175, 0.2);
+ }
+
+ .landingNav {
+   display: grid;
+  gap: clamp(10px, 1.2vw, 12px);
+  padding: 0 clamp(8px, 1.1vw, 10px);
+ }
+
+ .landingNavItem {
+   display: flex;
+   align-items: center;
+   gap: 12px;
+  height: clamp(52px, 4.8vw, 72px);
+   border-radius: 14px;
+  padding: 0 clamp(12px, 1.4vw, 18px);
+   text-decoration: none;
+   color: rgba(9, 43, 72, 0.75);
+  font-size: clamp(15px, 1.2vw, 19px);
+   font-weight: 800;
+   transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease;
+ }
+
+ .landingNavItemActive {
+   background: rgba(255, 255, 255, 0.72);
+   color: #092b48;
+   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8), 0 10px 24px rgba(21, 55, 91, 0.08);
+ }
+
+ .landingNavItem:hover {
+   background: rgba(255, 255, 255, 0.5);
+   color: #092b48;
+ }
+
+ .landingSideCard {
+   margin-top: 18px;
+   border-radius: 18px;
+   padding: 16px;
+   background: rgba(225, 246, 248, 0.72);
+ }
+
+ .landingSideCardHeader {
+   display: flex;
+   align-items: center;
+   gap: 10px;
+   font-size: 18px;
+   font-weight: 900;
+   color: #092b48;
+   padding: 2px 6px 12px;
+ }
+
+ .landingSideCardGlass {
+   display: grid;
+   gap: 14px;
+   min-height: 250px;
+   border-radius: 16px;
+   padding: 16px;
+   background: rgba(255, 255, 255, 0.56);
+   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.82), 0 12px 26px rgba(7, 32, 60, 0.08);
+   backdrop-filter: blur(24px);
+ }
+
+ .calendarMonth {
+   color: rgba(9, 43, 72, 0.58);
+   font-size: 12px;
+   font-weight: 900;
+ }
+
+ .calendarGrid {
+   display: grid;
+   grid-template-columns: 1fr 1fr;
+   gap: 10px;
+ }
+
+ .calendarDay {
+   min-height: 72px;
+   display: grid;
+   align-content: center;
+   gap: 4px;
+   border-radius: 14px;
+   padding: 12px;
+   background: rgba(235, 247, 250, 0.76);
+ }
+
+ .calendarDay strong {
+   color: #092b48;
+   font-size: 22px;
+   line-height: 1;
+ }
+
+ .calendarDay span {
+   color: rgba(9, 43, 72, 0.56);
+   font-size: 12px;
+   font-weight: 800;
+ }
+
+ .calendarDayActive {
+   background: #092b48;
+ }
+
+ .calendarDayActive strong,
+ .calendarDayActive span {
+   color: #fff;
+ }
+
+ .calendarNote {
+   display: grid;
+   gap: 5px;
+   margin-top: auto;
+   border-top: 1px solid rgba(9, 43, 72, 0.08);
+   padding-top: 12px;
+ }
+
+ .calendarNote span {
+   color: rgba(9, 43, 72, 0.5);
+   font-size: 12px;
+   font-weight: 900;
+ }
+
+ .calendarNote strong {
+   color: #092b48;
+   line-height: 1.35;
+ }
+
+ .landingMain {
+   min-width: 0;
+   flex: 1;
+   display: flex;
+   flex-direction: column;
+   gap: 18px;
+ }
+
+ .landingTopbar {
+  height: clamp(88px, 8vw, 117px);
+   border: 1px solid rgba(28, 74, 112, 0.1);
+   border-radius: 18px;
+   background: rgba(255, 255, 255, 0.7);
+   box-shadow: 0 16px 38px rgba(7, 32, 60, 0.08);
+   backdrop-filter: blur(24px);
+   display: flex;
+   align-items: center;
+  padding: clamp(14px, 1.8vw, 18px) clamp(16px, 2vw, 22px);
+   gap: 16px;
+ }
+
+ .landingTopbarLeft {
+   display: flex;
+   align-items: center;
+   gap: 12px;
+ }
+
+ .landingSearch {
+   flex: 1;
+   display: flex;
+   justify-content: center;
+ }
+
+ .landingSearch .ant-input-affix-wrapper {
+   width: min(611px, 100%);
+   border-radius: 40px;
+   background: rgba(237, 248, 251, 0.78);
+   border: 1px solid rgba(28, 74, 112, 0.1);
+   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.78);
+ }
+
+ .landingSearch .ant-input {
+   background: transparent;
+ }
+
+ .landingActions {
+   display: flex;
+   align-items: center;
+   gap: 10px;
+ }
+
+ @media (max-width: 1024px) {
+   .landingShell {
+     flex-direction: column;
+   }
+
+   .landingSider {
+     width: 100%;
+     flex: 0 0 auto;
+   }
+ }
+
+@media (max-width: 1280px) {
+  .landingNavItem {
+    border-radius: 12px;
+  }
+}
