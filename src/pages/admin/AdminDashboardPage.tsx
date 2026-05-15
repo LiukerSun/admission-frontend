@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Alert, Card, Col, Row, Spin, Statistic, Typography } from 'antd'
-import { BarChartOutlined, CloudServerOutlined, StopOutlined, TeamOutlined, UserAddOutlined, WalletOutlined } from '@ant-design/icons'
+import { BarChartOutlined, CloudServerOutlined, GoldOutlined, StopOutlined, TeamOutlined, UserAddOutlined, WalletOutlined } from '@ant-design/icons'
 import { Link } from 'react-router-dom'
 import { adminApi, type StatsResponse } from '@/services/admin'
 
@@ -22,6 +22,12 @@ const adminEntryItems = [
     description: '导出当前数据库快照（.dump），或上传备份文件恢复整个数据库。',
     href: '/admin/db/backup',
     icon: <CloudServerOutlined />,
+  },
+  {
+    title: '套餐管理',
+    description: '编辑 premium 套餐的价格、时长、展示顺序与权益描述。',
+    href: '/admin/membership/plans',
+    icon: <GoldOutlined />,
   },
 ]
 

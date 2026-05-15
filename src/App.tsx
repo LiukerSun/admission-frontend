@@ -17,6 +17,7 @@ import UniversityPage from '@/pages/university/UniversityPage'
 import AdminDashboardPage from '@/pages/admin/AdminDashboardPage'
 import AdminUsersPage from '@/pages/admin/AdminUsersPage'
 import AdminBackupPage from '@/pages/admin/AdminBackupPage'
+import AdminMembershipPlansPage from '@/pages/admin/AdminMembershipPlansPage'
 import AdminPaymentOrdersPage from '@/pages/admin/AdminPaymentOrdersPage'
 import RequireAuth from '@/components/RequireAuth'
 import RequireAdmin from '@/components/RequireAdmin'
@@ -149,6 +150,14 @@ const router = createBrowserRouter([
         element: (
           <RequireAdmin>
             <AdminBackupPage />
+          </RequireAdmin>
+        ),
+      },
+      {
+        path: 'admin/membership/plans',
+        element: (
+          <RequireAdmin>
+            <AdminMembershipPlansPage />
           </RequireAdmin>
         ),
       },

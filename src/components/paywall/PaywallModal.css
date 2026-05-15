@@ -177,6 +177,18 @@
   color: rgba(248, 250, 252, 0.5);
 }
 
+.paywall-plan-description {
+  margin: 0 0 16px;
+  padding: 12px 14px;
+  font-size: 13px;
+  line-height: 1.55;
+  color: rgba(248, 250, 252, 0.78);
+  background: rgba(245, 158, 11, 0.08);
+  border: 1px solid rgba(245, 158, 11, 0.2);
+  border-radius: 10px;
+  text-align: center;
+}
+
 .paywall-cta {
   display: block;
   width: 100%;

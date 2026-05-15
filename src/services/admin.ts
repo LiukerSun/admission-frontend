@@ -6,6 +6,11 @@ export type UserListResponse = components['schemas']['admin.UserListResponse']
 export type UserListItem = components['schemas']['admin.UserListItem']
 export type UpdateRoleRequest = components['schemas']['admin.UpdateRoleRequest']
 
+export type MembershipPlan = components['schemas']['membership.PlanResponse']
+export type MembershipPlanCreate = components['schemas']['membership.PlanCreateRequest']
+export type MembershipPlanUpdate = components['schemas']['membership.PlanUpdateRequest']
+export type MembershipPlanDeleteResult = components['schemas']['membership.PlanDeleteResult']
+
 export interface ResetPasswordRequest {
   new_password: string
 }
@@ -67,6 +72,22 @@ export const adminApi = {
 
   exportBackup: () =>
     api.get<Blob>('/api/v1/admin/db/backup', { responseType: 'blob' }),
+
+  // ── Membership plans ─────────────────────────────────────────────────────
+  listMembershipPlans: () =>
+    api.get<{ data: MembershipPlan[] }>('/api/v1/admin/membership/plans'),
+
+  getMembershipPlan: (id: number) =>
+    api.get<{ data: MembershipPlan }>(`/api/v1/admin/membership/plans/${id}`),
+
+  createMembershipPlan: (data: MembershipPlanCreate) =>
+    api.post<{ data: MembershipPlan }>('/api/v1/admin/membership/plans', data),
+
+  updateMembershipPlan: (id: number, data: MembershipPlanUpdate) =>
+    api.put<{ data: MembershipPlan }>(`/api/v1/admin/membership/plans/${id}`, data),
+
+  deleteMembershipPlan: (id: number) =>
+    api.delete<{ data: MembershipPlanDeleteResult }>(`/api/v1/admin/membership/plans/${id}`),
 
   restoreBackup: (file: File, onProgress?: (percent: number) => void) => {
     const form = new FormData()

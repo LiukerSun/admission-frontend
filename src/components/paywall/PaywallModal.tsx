@@ -24,6 +24,19 @@ export default function PaywallModal() {
   const [loading, setLoading] = useState(false)
   const [selectedCode, setSelectedCode] = useState<string>(recommendedPlan || DEFAULT_RECOMMENDED_PLAN)
 
+  const sortedPlans = useMemo(
+    () =>
+      [...plans].sort(
+        (a, b) => (a.sort_order ?? Number.MAX_SAFE_INTEGER) - (b.sort_order ?? Number.MAX_SAFE_INTEGER),
+      ),
+    [plans],
+  )
+
+  const selectedPlan = useMemo(
+    () => sortedPlans.find((p) => p.plan_code === selectedCode),
+    [sortedPlans, selectedCode],
+  )
+
   // Fetch on the Modal's open-change event (an event handler, not an effect),
   // so plans refresh every time the paywall is shown without tripping
   // react-hooks/set-state-in-effect.
@@ -103,10 +116,10 @@ export default function PaywallModal() {
             <div className="paywall-loading">
               <Spin />
             </div>
-          ) : plans.length === 0 ? (
+          ) : sortedPlans.length === 0 ? (
             <div className="paywall-empty">暂无可购买套餐，请稍后再试。</div>
           ) : (
-            plans.map((plan) => {
+            sortedPlans.map((plan) => {
               const recommended = isRecommendedPlan(plan.plan_code, recommendedPlan)
               const selected = selectedCode === plan.plan_code
               return (
@@ -132,11 +145,15 @@ export default function PaywallModal() {
           )}
         </div>
 
+        {selectedPlan?.description && (
+          <p className="paywall-plan-description">{selectedPlan.description}</p>
+        )}
+
         <button
           type="button"
           className="paywall-cta"
           onClick={handleUpgrade}
-          disabled={loading || plans.length === 0}
+          disabled={loading || sortedPlans.length === 0}
         >
           立即开通
         </button>
