@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Alert, Card, Col, Row, Spin, Statistic, Typography } from 'antd'
-import { BarChartOutlined, StopOutlined, TeamOutlined, UserAddOutlined, WalletOutlined } from '@ant-design/icons'
+import { BarChartOutlined, CloudServerOutlined, StopOutlined, TeamOutlined, UserAddOutlined, WalletOutlined } from '@ant-design/icons'
 import { Link } from 'react-router-dom'
 import { adminApi, type StatsResponse } from '@/services/admin'
 
@@ -16,6 +16,12 @@ const adminEntryItems = [
     description: '查看订单、Mock 支付、关闭订单和补发会员权益。',
     href: '/admin/payment/orders',
     icon: <WalletOutlined />,
+  },
+  {
+    title: '数据库备份',
+    description: '导出当前数据库快照（.dump），或上传备份文件恢复整个数据库。',
+    href: '/admin/db/backup',
+    icon: <CloudServerOutlined />,
   },
 ]
 
