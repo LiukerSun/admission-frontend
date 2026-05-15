@@ -103,7 +103,7 @@ export default function LandingLayout() {
                 onPressEnter={(e) => {
                   const val = (e.target as HTMLInputElement).value
                   const q = val.trim()
-                  navigate(q ? `/colleges?keyword=${encodeURIComponent(q)}` : '/colleges')
+                  navigate(q ? `/university?keyword=${encodeURIComponent(q)}` : '/university')
                 }}
               />
             </div>
