@@ -35,7 +35,9 @@ export default function DataCharts({ universityId, selectedGroupCode, selectedMa
   const [groupsData, setGroupsData] = useState<GroupComparisonResponse | null>(null)
   const [distributionData, setDistributionData] = useState<MajorDistributionResponse | null>(null)
   const [comparisonData, setComparisonData] = useState<MajorComparisonResponse | null>(null)
-  const [tabLoading, setTabLoading] = useState(false)
+  const [trendLoading, setTrendLoading] = useState(false)
+  const [distributionLoading, setDistributionLoading] = useState(false)
+  const [comparisonLoading, setComparisonLoading] = useState(false)
 
   const trendChartRef = useRef<HTMLDivElement>(null)
   const groupsChartRef = useRef<HTMLDivElement>(null)
@@ -82,7 +84,7 @@ export default function DataCharts({ universityId, selectedGroupCode, selectedMa
     if (!universityId) return
     let cancelled = false
     queueMicrotask(() => {
-      if (!cancelled) setTabLoading(true)
+      if (!cancelled) setTrendLoading(true)
     })
     admissionApi
       .getTrend(universityId, {
@@ -97,7 +99,7 @@ export default function DataCharts({ universityId, selectedGroupCode, selectedMa
         if (!cancelled) setTrendData(null)
       })
       .finally(() => {
-        if (!cancelled) setTabLoading(false)
+        if (!cancelled) setTrendLoading(false)
       })
     return () => {
       cancelled = true
@@ -128,6 +130,9 @@ export default function DataCharts({ universityId, selectedGroupCode, selectedMa
       return
     }
     let cancelled = false
+    queueMicrotask(() => {
+      if (!cancelled) setDistributionLoading(true)
+    })
     admissionApi
       .getMajorDistribution(universityId, { group_code: selectedGroupCode })
       .then((res) => {
@@ -135,6 +140,9 @@ export default function DataCharts({ universityId, selectedGroupCode, selectedMa
       })
       .catch(() => {
         if (!cancelled) setDistributionData(null)
+      })
+      .finally(() => {
+        if (!cancelled) setDistributionLoading(false)
       })
     return () => {
       cancelled = true
@@ -148,6 +156,9 @@ export default function DataCharts({ universityId, selectedGroupCode, selectedMa
       return
     }
     let cancelled = false
+    queueMicrotask(() => {
+      if (!cancelled) setComparisonLoading(true)
+    })
     admissionApi
       .getMajorComparison({ local_major_name: selectedMajor.local_major_name, limit: 50 })
       .then((res) => {
@@ -155,6 +166,9 @@ export default function DataCharts({ universityId, selectedGroupCode, selectedMa
       })
       .catch(() => {
         if (!cancelled) setComparisonData(null)
+      })
+      .finally(() => {
+        if (!cancelled) setComparisonLoading(false)
       })
     return () => {
       cancelled = true
@@ -461,7 +475,14 @@ export default function DataCharts({ universityId, selectedGroupCode, selectedMa
   }, [])
 
   const renderChartContent = (key: string) => {
-    if (loading || tabLoading) {
+    const isTabLoading = (() => {
+      if (key === 'trend' && trendLoading) return true
+      if (key === 'distribution' && distributionLoading) return true
+      if (key === 'comparison' && comparisonLoading) return true
+      return false
+    })()
+
+    if (loading || isTabLoading) {
       return (
         <Card size="small" style={{ height: '100%' }} bodyStyle={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <Spin />
