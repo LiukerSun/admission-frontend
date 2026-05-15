@@ -167,16 +167,29 @@ export default function ProfilePage() {
 
   const phoneBound = Boolean(user.phone && user.phone_verified)
 
+  const maskPhone = (phone?: string) =>
+    phone && phone.length === 11 ? `${phone.slice(0, 3)}****${phone.slice(7)}` : phone || ''
+
+  const primaryIdentity =
+    user.username
+    || (user.phone ? maskPhone(user.phone) : '')
+    || (user.email ? user.email.split('@')[0] : '')
+    || '用户'
+
+  const secondaryIdentity = user.phone ? maskPhone(user.phone) : user.email || ''
+
   const profileSummaryCard = (
     <Card>
       <Space size={24} align="center" wrap>
         <Avatar size={64} icon={<UserOutlined />} style={{ backgroundColor: '#1E40AF' }} />
         <Space direction="vertical" size={4}>
           <Typography.Text strong style={{ fontSize: 18 }}>
-            {user.username || user.email.split('@')[0]}
+            {primaryIdentity}
           </Typography.Text>
           <Space size={8} wrap>
-            <Typography.Text type="secondary">{user.email}</Typography.Text>
+            {secondaryIdentity && (
+              <Typography.Text type="secondary">{secondaryIdentity}</Typography.Text>
+            )}
             <Tag color={user.is_admin ? 'blue' : 'default'}>
               {user.is_admin ? '管理员' : '用户'}
             </Tag>
@@ -198,7 +211,7 @@ export default function ProfilePage() {
       contentStyle={{ fontWeight: 500 }}
     >
       <Descriptions.Item label="用户 ID">{user.id}</Descriptions.Item>
-      <Descriptions.Item label="邮箱">{user.email}</Descriptions.Item>
+      <Descriptions.Item label="邮箱">{user.email || '-'}</Descriptions.Item>
       <Descriptions.Item label="用户名">{user.username || '-'}</Descriptions.Item>
       <Descriptions.Item label="手机号">{user.phone || '-'}</Descriptions.Item>
       <Descriptions.Item label="手机号状态">
