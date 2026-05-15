@@ -94,6 +94,30 @@ export default function OrdersPage() {
   }
 
   const handlePay = (order: OrderResponse) => {
+    if (order.payment_channel === 'alipay') {
+      // 支付宝走整页跳转。后端会创建新的 attempt 然后返回 pay_url，用户支付完
+      // 走 ReturnURL 回到订单页，由 detect 拉一次新状态。
+      Modal.confirm({
+        title: '前往支付宝完成支付？',
+        content: `订单 ${order.order_no} 将在新页面跳转到支付宝完成支付。`,
+        okText: '前往支付宝',
+        cancelText: '取消',
+        onOk: async () => {
+          setActionLoading(`pay:${order.order_no}`)
+          try {
+            const res = await paymentApi.payAlipay(order.order_no)
+            window.location.href = res.data.data.pay_url
+          } catch (err: unknown) {
+            const axiosErr = err as { response?: { data?: { message?: string } } }
+            message.error(axiosErr.response?.data?.message || '获取支付链接失败')
+            setActionLoading('')
+          }
+        },
+      })
+      return
+    }
+
+    // Mock 支付：本地联调通道，直接调用 mock 回调一步完成。
     Modal.confirm({
       title: '确认执行 Mock 支付？',
       content: `订单 ${order.order_no} 将调用本地 Mock 支付接口完成支付和会员权益发放。`,
@@ -202,7 +226,7 @@ export default function OrdersPage() {
           ...(canPayOrder(record)
             ? [{
                 key: 'pay',
-                label: 'Mock 支付',
+                label: record.payment_channel === 'alipay' ? '前往支付宝支付' : 'Mock 支付',
                 icon: <WalletOutlined />,
                 disabled: acting,
                 onClick: () => handlePay(record),
@@ -326,7 +350,7 @@ export default function OrdersPage() {
                 loading={actionLoading === `pay:${selectedOrder.order_no}`}
                 onClick={() => handlePay(selectedOrder)}
               >
-                Mock 支付
+                {selectedOrder.payment_channel === 'alipay' ? '前往支付宝支付' : 'Mock 支付'}
               </Button>
             </div>
           </Space>

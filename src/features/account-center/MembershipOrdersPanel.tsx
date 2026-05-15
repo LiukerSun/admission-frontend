@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Alert, Button, Card, Col, Empty, Modal, Row, Skeleton, Space, Statistic, Table, Tag, message } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
-import { CheckCircleOutlined, CrownOutlined, ReloadOutlined, ShoppingCartOutlined, WalletOutlined } from '@ant-design/icons'
+import { AlipayCircleFilled, CheckCircleOutlined, CrownOutlined, ReloadOutlined, ShoppingCartOutlined, WalletOutlined } from '@ant-design/icons'
 import { createOrderIdempotencyKey, showOrderCreatedSuccess, OrderStatusBadge } from '@/components/orders'
 import { membershipApi, type CurrentMembership, type MembershipPlan } from '@/services/membership'
-import { paymentApi, type OrderResponse } from '@/services/payment'
+import { paymentApi, type OrderResponse, type PaymentChannel } from '@/services/payment'
 import { canPayOrder, formatDateTime, formatMoney, formatRelativeTime } from '@/utils/paymentFormat'
 import { useAuthStore } from '@/stores/authStore'
 
@@ -56,20 +56,26 @@ export default function MembershipOrdersPanel() {
     return () => window.clearTimeout(timer)
   }, [loadData])
 
-  const handleCreateOrder = (plan: MembershipPlan) => {
+  const handleCreateOrder = (plan: MembershipPlan, channel: PaymentChannel = 'alipay') => {
     Modal.confirm({
       title: `购买${plan.plan_name}？`,
-      content: `应付金额 ${formatMoney(plan.price_amount, plan.currency)}，未支付订单将在过期后关闭。`,
-      okText: '创建订单',
+      content: `应付金额 ${formatMoney(plan.price_amount, plan.currency)}。支付方式：${channel === 'alipay' ? '支付宝' : 'Mock（仅开发）'}。`,
+      okText: channel === 'alipay' ? '前往支付宝' : '创建订单',
       cancelText: '取消',
       onOk: async () => {
-        setCreatingPlanCode(plan.plan_code)
+        setCreatingPlanCode(`${plan.plan_code}:${channel}`)
         try {
-          const res = await paymentApi.createOrder({
+          const orderRes = await paymentApi.createOrder({
             plan_code: plan.plan_code,
             idempotency_key: createOrderIdempotencyKey(plan.plan_code),
+            channel,
           })
-          const order = res.data.data
+          const order = orderRes.data.data
+          if (channel === 'alipay') {
+            const payRes = await paymentApi.payAlipay(order.order_no)
+            window.location.href = payRes.data.data.pay_url
+            return
+          }
           message.success('订单已创建')
           showOrderCreatedSuccess(order, () => void loadOrders())
           await loadOrders()
@@ -88,6 +94,25 @@ export default function MembershipOrdersPanel() {
   }
 
   const handlePay = (order: OrderResponse) => {
+    if (order.payment_channel === 'alipay') {
+      Modal.confirm({
+        title: '前往支付宝完成支付？',
+        content: `订单 ${order.order_no} 将跳转支付宝。`,
+        okText: '前往支付宝',
+        cancelText: '取消',
+        onOk: async () => {
+          setActionLoading(`pay:${order.order_no}`)
+          try {
+            const res = await paymentApi.payAlipay(order.order_no)
+            window.location.href = res.data.data.pay_url
+          } catch {
+            message.error('获取支付链接失败')
+            setActionLoading('')
+          }
+        },
+      })
+      return
+    }
     Modal.confirm({
       title: '执行 Mock 支付？',
       content: `订单 ${order.order_no} 将通过本地 Mock 支付接口完成支付。`,
@@ -164,7 +189,7 @@ export default function MembershipOrdersPanel() {
           loading={actionLoading === `pay:${record.order_no}`}
           onClick={() => handlePay(record)}
         >
-          Mock 支付
+          {record.payment_channel === 'alipay' ? '前往支付宝' : 'Mock 支付'}
         </Button>
       ),
     },
@@ -216,13 +241,25 @@ export default function MembershipOrdersPanel() {
                   actions={[
                     <Button
                       type="primary"
-                      icon={<ShoppingCartOutlined />}
-                      loading={creatingPlanCode === plan.plan_code}
-                      disabled={plan.status !== 'active'}
-                      onClick={() => handleCreateOrder(plan)}
+                      icon={<AlipayCircleFilled />}
+                      loading={creatingPlanCode === `${plan.plan_code}:alipay`}
+                      disabled={plan.status !== 'active' || !!creatingPlanCode}
+                      onClick={() => handleCreateOrder(plan, 'alipay')}
                     >
-                      购买套餐
+                      支付宝
                     </Button>,
+                    ...(import.meta.env.DEV
+                      ? [
+                          <Button
+                            icon={<ShoppingCartOutlined />}
+                            loading={creatingPlanCode === `${plan.plan_code}:mock`}
+                            disabled={plan.status !== 'active' || !!creatingPlanCode}
+                            onClick={() => handleCreateOrder(plan, 'mock')}
+                          >
+                            Mock
+                          </Button>,
+                        ]
+                      : []),
                   ]}
                 >
                   <Space direction="vertical" size={12} style={{ width: '100%' }}>
@@ -231,7 +268,11 @@ export default function MembershipOrdersPanel() {
                       <CheckCircleOutlined style={{ color: '#16A34A', marginRight: 8 }} />
                       有效期 {plan.duration_days} 天
                     </div>
-                    <Alert type="info" showIcon message="支付方式：Mock 支付" />
+                    <Alert
+                      type="info"
+                      showIcon
+                      message={import.meta.env.DEV ? '支付宝 / Mock 双通道（开发）' : '支付宝支付'}
+                    />
                   </Space>
                 </Card>
               </Col>

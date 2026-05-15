@@ -3,11 +3,19 @@ import api from './api'
 export type OrderStatus = 'created' | 'awaiting_payment' | 'paid' | 'fulfilled' | 'closed' | 'failed'
 export type PaymentStatus = 'unpaid' | 'paying' | 'paid' | 'failed'
 export type EntitlementStatus = 'pending' | 'granted' | 'failed'
-export type PaymentChannel = 'mock' | string
+export type PaymentChannel = 'mock' | 'alipay' | string
 
 export interface CreateOrderRequest {
   plan_code: string
   idempotency_key?: string
+  channel?: PaymentChannel
+}
+
+export interface AlipayPayResponse {
+  order_no: string
+  pay_url: string
+  expires_at: string
+  channel: PaymentChannel
 }
 
 export interface OrderResponse {
@@ -92,6 +100,9 @@ export const paymentApi = {
 
   payMock: (orderNo: string) =>
     api.post<{ data: OrderResponse }>(`/api/v1/payment/orders/${orderNo}/pay`),
+
+  payAlipay: (orderNo: string) =>
+    api.post<{ data: AlipayPayResponse }>(`/api/v1/payment/orders/${orderNo}/pay/alipay`),
 
   detect: (orderNo: string) =>
     api.post<{ data: OrderResponse }>(`/api/v1/payment/orders/${orderNo}/detect`),

@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Alert, Button, Card, Col, Empty, Modal, Row, Skeleton, Space, Statistic, Tag, Typography, message } from 'antd'
-import { CheckCircleOutlined, CrownOutlined, ShoppingCartOutlined } from '@ant-design/icons'
+import { AlipayCircleFilled, CheckCircleOutlined, CrownOutlined, ShoppingCartOutlined } from '@ant-design/icons'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { createOrderIdempotencyKey, showOrderCreatedSuccess } from '@/components/orders'
 import { membershipApi, type CurrentMembership, type MembershipPlan } from '@/services/membership'
-import { paymentApi } from '@/services/payment'
+import { paymentApi, type PaymentChannel } from '@/services/payment'
 import { formatDateTime, formatMoney } from '@/utils/paymentFormat'
 import { selectHighlightedPlan } from '@/utils/membershipHighlight'
 
@@ -61,20 +61,32 @@ export default function MembershipPage() {
     return () => window.clearTimeout(timer)
   }, [])
 
-  const handleCreateOrder = (plan: MembershipPlan) => {
+  // 创建订单并根据通道分发：
+  //   - alipay：拿 pay_url 直接跳支付宝（支付完毕走 ReturnURL 回到本站订单页）
+  //   - mock：跳订单页让用户用 Mock 支付按钮模拟回调（仅本地联调使用）
+  const handleBuy = (plan: MembershipPlan, channel: PaymentChannel) => {
     Modal.confirm({
       title: `确认购买${plan.plan_name}？`,
-      content: `应付金额 ${formatMoney(plan.price_amount, plan.currency)}，订单未支付会在过期后关闭。`,
-      okText: '创建订单',
+      content: `应付金额 ${formatMoney(plan.price_amount, plan.currency)}，订单未支付会在过期后关闭。支付方式：${channel === 'alipay' ? '支付宝' : 'Mock（仅开发）'}。`,
+      okText: channel === 'alipay' ? '前往支付宝' : '创建订单',
       cancelText: '取消',
       onOk: async () => {
-        setCreatingPlanCode(plan.plan_code)
+        setCreatingPlanCode(`${plan.plan_code}:${channel}`)
         try {
-          const res = await paymentApi.createOrder({
+          const orderRes = await paymentApi.createOrder({
             plan_code: plan.plan_code,
             idempotency_key: createOrderIdempotencyKey(plan.plan_code),
+            channel,
           })
-          const order = res.data.data
+          const order = orderRes.data.data
+          if (channel === 'alipay') {
+            // 拿 pay_url 之后用 window.location 整页跳转支付宝。等用户付完款，
+            // 支付宝会回跳到 ALIPAY_RETURN_URL（应配置成 /orders?orderNo=xxx），
+            // 此时订单页会通过 detect 拉一次最新状态。
+            const payRes = await paymentApi.payAlipay(order.order_no)
+            window.location.href = payRes.data.data.pay_url
+            return
+          }
           message.success('订单已创建')
           showOrderCreatedSuccess(order, (orderNo) => navigate(`/orders?orderNo=${orderNo}`))
         } catch (err: unknown) {
@@ -154,13 +166,25 @@ export default function MembershipPage() {
                 actions={[
                   <Button
                     type="primary"
-                    icon={<ShoppingCartOutlined />}
-                    loading={creatingPlanCode === plan.plan_code}
-                    disabled={plan.status !== 'active'}
-                    onClick={() => handleCreateOrder(plan)}
+                    icon={<AlipayCircleFilled />}
+                    loading={creatingPlanCode === `${plan.plan_code}:alipay`}
+                    disabled={plan.status !== 'active' || !!creatingPlanCode}
+                    onClick={() => handleBuy(plan, 'alipay')}
                   >
-                    购买套餐
+                    支付宝支付
                   </Button>,
+                  ...(import.meta.env.DEV
+                    ? [
+                        <Button
+                          icon={<ShoppingCartOutlined />}
+                          loading={creatingPlanCode === `${plan.plan_code}:mock`}
+                          disabled={plan.status !== 'active' || !!creatingPlanCode}
+                          onClick={() => handleBuy(plan, 'mock')}
+                        >
+                          Mock（开发）
+                        </Button>,
+                      ]
+                    : []),
                 ]}
               >
                 <Space direction="vertical" size={12} style={{ width: '100%' }}>
@@ -178,7 +202,11 @@ export default function MembershipPage() {
                     <CheckCircleOutlined style={{ color: '#16A34A', marginRight: 8 }} />
                     会员等级 {plan.membership_level}
                   </div>
-                  <Alert type="info" showIcon message="支付方式：Mock 支付" />
+                  <Alert
+                    type="info"
+                    showIcon
+                    message={import.meta.env.DEV ? '支持支付宝 / Mock 两种支付通道' : '通过支付宝完成支付'}
+                  />
                 </Space>
               </Card>
               </div>
