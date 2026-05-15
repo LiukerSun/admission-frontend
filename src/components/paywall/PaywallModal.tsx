@@ -32,6 +32,13 @@ export default function PaywallModal() {
     [plans],
   )
 
+  const layoutClass = (() => {
+    const n = sortedPlans.length
+    if (n === 0) return 'paywall-plans--count-1' // 让 loading/empty 也居中
+    if (n <= 4) return `paywall-plans--count-${n}`
+    return 'paywall-plans--count-many'
+  })()
+
   const selectedPlan = useMemo(
     () => sortedPlans.find((p) => p.plan_code === selectedCode),
     [sortedPlans, selectedCode],
@@ -111,7 +118,7 @@ export default function PaywallModal() {
           </p>
         </div>
 
-        <div className="paywall-plans">
+        <div className={`paywall-plans ${layoutClass}`}>
           {loading ? (
             <div className="paywall-loading">
               <Spin />

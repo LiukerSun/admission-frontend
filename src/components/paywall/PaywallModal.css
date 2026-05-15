@@ -94,10 +94,31 @@
 
 .paywall-plans {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
   gap: 12px;
   margin-bottom: 24px;
   min-height: 148px;
+}
+
+.paywall-plans--count-1 {
+  grid-template-columns: minmax(0, 280px);
+  justify-content: center;
+}
+
+.paywall-plans--count-2 {
+  grid-template-columns: repeat(2, minmax(0, 220px));
+  justify-content: center;
+}
+
+.paywall-plans--count-3 {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.paywall-plans--count-4 {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.paywall-plans--count-many {
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
 }
 
 .paywall-loading,
@@ -240,8 +261,14 @@
   .paywall-modal {
     padding: 32px 20px 24px;
   }
-  .paywall-plans {
+  .paywall-plans,
+  .paywall-plans--count-1,
+  .paywall-plans--count-2,
+  .paywall-plans--count-3,
+  .paywall-plans--count-4,
+  .paywall-plans--count-many {
     grid-template-columns: 1fr;
+    justify-content: stretch;
   }
   .paywall-plan {
     flex-direction: row;
