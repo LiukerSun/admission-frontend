@@ -70,11 +70,11 @@ export default function GroupSidebar({
   }
 
   const tags = [
-    profile?.is_985 && <Tag color="red">985</Tag>,
-    profile?.is_211 && <Tag color="orange">211</Tag>,
-    profile?.is_double_first_class && <Tag color="blue">双一流</Tag>,
-    profile?.is_national_key && <Tag color="green">国重点</Tag>,
-    profile?.has_postgraduate_recommendation && <Tag color="purple">推免</Tag>,
+    profile?.is_985 && <Tag key="985" color="red">985</Tag>,
+    profile?.is_211 && <Tag key="211" color="orange">211</Tag>,
+    profile?.is_double_first_class && <Tag key="dfc" color="blue">双一流</Tag>,
+    profile?.is_national_key && <Tag key="nk" color="green">国重点</Tag>,
+    profile?.has_postgraduate_recommendation && <Tag key="pgr" color="purple">推免</Tag>,
   ].filter(Boolean)
 
   return (
