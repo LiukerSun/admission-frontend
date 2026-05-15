@@ -1,11 +1,18 @@
 import CardWidget from './CardWidget'
 import ChartWidget from './ChartWidget'
 import Markdown from './Markdown'
+import ToolCallCard from './ToolCallCard'
 import type { Segment } from './types'
 
 type Props = {
   segments: Segment[]
 }
+
+// ITERATION_BREAK is the protocol marker the backend inserts between
+// successive assistant text turns within a single agent run. When a
+// loadMessages payload still carries it (e.g. the splitter ran into a
+// malformed run), strip it here so it never leaks into rendered prose.
+const ITERATION_BREAK_RE = /\n\n\[\[ITERATION_BREAK\]\]\n\n/g
 
 function looksLikeRecommendationSnapshotJSON(input: string) {
   const trimmed = input.trim()
@@ -32,7 +39,7 @@ function stripPrivateBlocks(content: string) {
   const privateLang = new Set(['recommendation_request', 'recommendation_snapshot', 'volunteer_plan_draft'])
   const codeBlockRe = /```([^\n`]*)\n([\s\S]*?)```/g
 
-  const stripped = content.replace(codeBlockRe, (full, langRaw, bodyRaw) => {
+  const stripped = content.replace(ITERATION_BREAK_RE, '\n\n').replace(codeBlockRe, (full, langRaw, bodyRaw) => {
     const lang = String(langRaw || '').trim().toLowerCase()
     const body = String(bodyRaw || '')
 
@@ -54,6 +61,19 @@ export default function SegmentRenderer({ segments }: Props) {
           const display = stripPrivateBlocks(seg.content || '')
           if (!display) return null
           return <Markdown key={`t-${idx}`} content={display} />
+        }
+
+        if (seg.type === 'tool_call') {
+          return (
+            <div key={`tc-${seg.callId || idx}`} className="ai-chat-tool-call">
+              <ToolCallCard
+                toolName={seg.toolName}
+                status={seg.status}
+                result={seg.result}
+                errorMsg={seg.errorMsg}
+              />
+            </div>
+          )
         }
 
         if (seg.kind === 'chart') {

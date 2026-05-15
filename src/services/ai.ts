@@ -11,7 +11,7 @@ export type SSEEvent =
   | { type: 'text_delta'; content: string }
   | { type: 'widget'; id: string; kind: 'chart' | 'card'; payload: Record<string, unknown> }
   | { type: 'tool_call_start'; call_id: string; tool_name: string }
-  | { type: 'tool_call_end'; call_id: string; success: boolean }
+  | { type: 'tool_call_end'; call_id: string; success: boolean; error?: string; result_content?: string }
   | { type: 'done'; data?: unknown }
   | { type: 'error'; content: string }
   | { type: 'warning'; content: string }

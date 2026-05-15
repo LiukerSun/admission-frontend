@@ -14,7 +14,7 @@ import {
 } from '@ant-design/icons'
 import { Bubble, Sender, Welcome } from '@ant-design/x'
 import type { BubbleItemType } from '@ant-design/x/es/bubble'
-import { conversationApi, type Conversation, type Message } from '@/services/conversation'
+import { conversationApi, type Conversation, type Message, type ToolCallRecord, type ToolResultRecord } from '@/services/conversation'
 import { streamChatWithConversation, streamRegenerateWithConversation, type SSEEvent } from '@/services/ai'
 import { useAuthStore } from '@/stores/authStore'
 import { usePaywallStore } from '@/stores/paywallStore'
@@ -39,13 +39,19 @@ interface ChatItem extends BubbleItemType {
   serverId?: number
 }
 
+// Fallback: scans all code blocks but only accepts the explicit
+// `recommendation_snapshot` tag. We deliberately do NOT accept `json` or
+// empty-lang fences here — those are commonly used for general JSON
+// payloads in the chat (e.g. tool input previews) and would otherwise be
+// misinterpreted as user-input snapshots.
 function parseRecommendationSnapshotJSONFromCodeBlocks(content: string): Partial<RecommendationSnapshot> | null {
-  const codeBlockRe = /```([^\n`]*)\n([\s\S]*?)```/g
+  const codeBlockRe = /```\s*(\w+)\s*\n([\s\S]*?)\n?```/g
+  let last: Partial<RecommendationSnapshot> | null = null
   for (const match of content.matchAll(codeBlockRe)) {
     const lang = (match[1] || '').trim().toLowerCase()
     const body = (match[2] || '').trim()
 
-    if (lang !== 'recommendation_snapshot' && lang !== '' && lang !== 'json') continue
+    if (lang !== 'recommendation_snapshot') continue
     if (!body.startsWith('{') || !body.endsWith('}')) continue
 
     try {
@@ -61,26 +67,134 @@ function parseRecommendationSnapshotJSONFromCodeBlocks(content: string): Partial
         'enable_llm_tuning',
       ]
       if (!keys.some((k) => parsed[k] !== undefined)) continue
-      return parsed
+      last = parsed
     } catch {
       continue
     }
   }
 
-  return null
+  return last
 }
 
 function parseRecommendationSnapshot(content: string): Partial<RecommendationSnapshot> | null {
-  const match = content.match(/```[^\S\r\n]*recommendation_snapshot[^\n]*\s*([\s\S]*?)```/i)
-  if (match) {
+  // Walk all code fences and pick the last `recommendation_snapshot`
+  // block. Streaming chunks can stitch together multiple blocks in one
+  // message; the latest one wins.
+  const codeBlockRe = /```\s*(\w+)\s*\n([\s\S]*?)\n?```/g
+  let last: Partial<RecommendationSnapshot> | null = null
+  for (const match of content.matchAll(codeBlockRe)) {
+    const lang = (match[1] || '').trim().toLowerCase()
+    if (lang !== 'recommendation_snapshot') continue
+    const body = (match[2] || '').trim()
     try {
-      const parsed = JSON.parse(match[1]) as Partial<RecommendationSnapshot>
-      if (parsed && typeof parsed === 'object') return parsed
+      const parsed = JSON.parse(body) as Partial<RecommendationSnapshot>
+      if (parsed && typeof parsed === 'object') last = parsed
     } catch {
-      // fallthrough
+      // partial / malformed block — keep looking
     }
   }
+  if (last) return last
+  // Old code paths produced subtly different fences; fall back to the
+  // scanner before giving up.
   return parseRecommendationSnapshotJSONFromCodeBlocks(content)
+}
+
+// ITERATION_BREAK mirrors the backend's agent.IterationBreak. The
+// server joins each iteration's assistant text with this marker; we
+// split on it to reconstruct the timeline (text → tool → text → tool
+// → text) when re-loading a conversation from history.
+const ITERATION_BREAK = '\n\n[[ITERATION_BREAK]]\n\n'
+
+function tryParseJSON(value: string): unknown {
+  if (!value) return undefined
+  try {
+    return JSON.parse(value)
+  } catch {
+    return value
+  }
+}
+
+// messageToSegments rebuilds the rendered timeline from a persisted
+// assistant Message. The backend stores content as
+//   text_chunk[0] ITERATION_BREAK text_chunk[1] ITERATION_BREAK …
+// alongside parallel tool_calls / tool_results arrays. We interleave
+// them so the UI shows the same order the user saw live:
+//   [text_chunk[0], tool_call[0], text_chunk[1], tool_call[1], …,
+//    text_chunk[N], widgets…]
+// Single-iteration messages (no tool calls) keep their original shape
+// so existing chats render unchanged.
+function messageToSegments(m: Message): Segment[] {
+  const content = m.content || ''
+  const widgets = Array.isArray(m.widgets) ? m.widgets : []
+  const toolCalls = Array.isArray(m.tool_calls) ? m.tool_calls : []
+  const toolResults = Array.isArray(m.tool_results) ? m.tool_results : []
+
+  const textChunks = content.split(ITERATION_BREAK)
+  const widgetSegments: Segment[] = []
+  widgets.forEach((w) => {
+    if (w && typeof w.id === 'string' && (w.kind === 'chart' || w.kind === 'card') && w.payload) {
+      widgetSegments.push({ type: 'widget', id: w.id, kind: w.kind, payload: w.payload })
+    }
+  })
+
+  if (textChunks.length <= 1 && toolCalls.length === 0) {
+    const segs: Segment[] = []
+    if (content) segs.push({ type: 'text', content })
+    return segs.concat(widgetSegments)
+  }
+
+  // Pair tool results to their tool calls by id so the card can show
+  // both the call name and the (parsed) returned payload.
+  const resultByCallId = new Map<string, ToolResultRecord>()
+  toolResults.forEach((r) => {
+    if (r && typeof r.tool_call_id === 'string') resultByCallId.set(r.tool_call_id, r)
+  })
+
+  const segs: Segment[] = []
+  const maxLen = Math.max(textChunks.length, toolCalls.length + 1)
+  for (let i = 0; i < maxLen; i++) {
+    const chunk = textChunks[i]
+    if (typeof chunk === 'string' && chunk.length > 0) {
+      segs.push({ type: 'text', content: chunk })
+    }
+    const tc: ToolCallRecord | undefined = toolCalls[i]
+    if (tc) {
+      const result = resultByCallId.get(tc.id)
+      const parsed = result ? tryParseJSON(result.content) : undefined
+      segs.push({
+        type: 'tool_call',
+        callId: tc.id,
+        toolName: tc.function?.name || 'tool',
+        status: 'success',
+        result: parsed,
+      })
+    }
+  }
+
+  return segs.concat(widgetSegments)
+}
+
+function parseVolunteerPlanDraft(content: string): { draftId: number } | null {
+  // Same matchAll strategy as parseRecommendationSnapshot — without it,
+  // a chat that contains both `recommendation_snapshot` and
+  // `volunteer_plan_draft` blocks can have the snapshot fences greedily
+  // swallow the draft body when using a single regex.
+  const codeBlockRe = /```\s*(\w+)\s*\n([\s\S]*?)\n?```/g
+  let last: { draftId: number } | null = null
+  for (const match of content.matchAll(codeBlockRe)) {
+    const lang = (match[1] || '').trim().toLowerCase()
+    if (lang !== 'volunteer_plan_draft') continue
+    const body = (match[2] || '').trim()
+    try {
+      const parsed = JSON.parse(body) as { draft_id?: unknown; id?: unknown }
+      const draftId = Number(parsed?.draft_id ?? parsed?.id)
+      if (!Number.isFinite(draftId) || draftId <= 0) continue
+      last = { draftId }
+    } catch {
+      continue
+    }
+  }
+  return last
 }
 
 export default function AdmissionAIPage() {
@@ -112,6 +226,22 @@ export default function AdmissionAIPage() {
   const suggestionsTimerRef = useRef<number | null>(null)
   const syncTimerRef = useRef<number | null>(null)
   const pendingDraftRef = useRef<string | null>(null)
+  // Mirrors `loading` for use inside setTimeout callbacks where the
+  // closure would otherwise capture a stale value. The sync timers
+  // fire ~300ms after `done`/`error`, by which point the user may have
+  // already started a new turn — we must not overwrite the in-flight
+  // assistant message with server snapshot from the previous turn.
+  const loadingRef = useRef(false)
+  useEffect(() => {
+    loadingRef.current = loading
+  }, [loading])
+  // Always-latest pointer to `handleSubmit`. The conversation-switch
+  // effect needs to auto-submit a pending welcome draft *after* the new
+  // conversation id is in scope, but `handleSubmit` is declared below
+  // (and isn't memoized), so capturing it via deps would either
+  // re-trigger the effect on every render or stale-closure on
+  // `conversationId`. The ref sidesteps both problems.
+  const handleSubmitRef = useRef<(value: string) => Promise<void>>(async () => {})
 
   const [recommendationSnapshot, setRecommendationSnapshot] = useState<RecommendationSnapshot>({
     region_code: '230000',
@@ -148,14 +278,13 @@ export default function AdmissionAIPage() {
     setActiveConversation(data?.conversation ?? null)
     return (data?.messages ?? []).map((m: Message) => {
       const role = m.role === 'user' ? 'user' : 'ai'
-      const segments: Segment[] = [{ type: 'text', content: m.content || '' }]
-      if (Array.isArray(m.widgets)) {
-        m.widgets.forEach((w) => {
-          if (w && typeof w.id === 'string' && (w.kind === 'chart' || w.kind === 'card') && w.payload) {
-            segments.push({ type: 'widget', id: w.id, kind: w.kind, payload: w.payload })
-          }
-        })
-      }
+      // For user messages, keep the plain single-text segment so
+      // user-side prose rendering doesn't accidentally trip on a stray
+      // iteration marker. Only assistant messages contain tool calls
+      // and IterationBreak in practice.
+      const segments: Segment[] = role === 'ai'
+        ? messageToSegments(m)
+        : (m.content ? [{ type: 'text', content: m.content }] : [])
       return {
         key: m.id,
         serverId: m.id,
@@ -203,9 +332,14 @@ export default function AdmissionAIPage() {
       if (ignore) return
 
       setLoading(false)
+      // `pendingDraftRef` carries text that the welcome screen wants
+      // auto-sent into the freshly-created conversation. We capture it
+      // here but defer the actual `handleSubmit` until after state has
+      // settled below — otherwise handleSubmit's `loading` and
+      // `messages` reads would race the resets we're about to do.
       const pendingDraft = pendingDraftRef.current
-      setInputValue(pendingDraft || '')
       pendingDraftRef.current = null
+      setInputValue('')
       setMessages([])
       setActiveConversation(null)
       setEditingKey(null)
@@ -221,7 +355,13 @@ export default function AdmissionAIPage() {
         plan_size: 40,
       })
 
-      if (!conversationId) return
+      if (!conversationId) {
+        // No id yet (e.g. user navigated to bare `/admission/ai`). Keep
+        // the pending draft visible in the input box so they can edit
+        // before sending.
+        if (pendingDraft) setInputValue(pendingDraft)
+        return
+      }
 
       try {
         const items = await loadMessages(conversationId)
@@ -238,6 +378,15 @@ export default function AdmissionAIPage() {
         } else {
           message.error('加载对话内容失败，请稍后重试')
         }
+        return
+      }
+
+      if (ignore) return
+      if (pendingDraft) {
+        // Fire and forget. We go through the ref so we get the
+        // *current* handleSubmit closure — which sees the up-to-date
+        // `conversationId`, not the value at the time this effect ran.
+        void handleSubmitRef.current(pendingDraft)
       }
     })
 
@@ -271,17 +420,13 @@ export default function AdmissionAIPage() {
   const draftToAdopt = useMemo(() => {
     if (isArchived) return null
     const lastAI = [...messages].reverse().find((m) => m.role === 'ai')
-    const content = lastAI?.content || ''
-    const match = content.match(/```[^\S\r\n]*volunteer_plan_draft[^\n]*\s*([\s\S]*?)```/i)
-    if (!match) return null
-    try {
-      const parsed = JSON.parse(match[1])
-      const draftId = Number(parsed?.draft_id ?? parsed?.id)
-      if (!Number.isFinite(draftId) || draftId <= 0) return null
-      return { draftId }
-    } catch {
-      return null
-    }
+    if (!lastAI) return null
+    // Defer parsing until the stream has settled. Mid-stream the body may
+    // contain a half-written ```volunteer_plan_draft fence whose JSON is
+    // not yet valid; trying to parse it throws and flickers the adopt
+    // button on/off as deltas arrive.
+    if (lastAI.chatStatus === 'streaming') return null
+    return parseVolunteerPlanDraft(lastAI.content || '')
   }, [isArchived, messages])
 
   useEffect(() => {
@@ -309,9 +454,13 @@ export default function AdmissionAIPage() {
   }, [draftToAdopt, isArchived])
 
   const parsedRecommendationSnapshot = useMemo(() => {
-    const lastAI = [...messages].reverse().find((m) => m.role === 'ai' && m.chatStatus === 'done')
-    const content = lastAI?.content || ''
-    return parseRecommendationSnapshot(content)
+    // Only parse against a *completed* AI message — half-streamed JSON
+    // inside a code fence will throw inside parseRecommendationSnapshot
+    // and we don't want to repeatedly thrash the form fields as deltas
+    // arrive.
+    const lastAI = [...messages].reverse().find((m) => m.role === 'ai')
+    if (!lastAI || lastAI.chatStatus === 'streaming') return null
+    return parseRecommendationSnapshot(lastAI.content || '')
   }, [messages])
 
   useEffect(() => {
@@ -412,15 +561,25 @@ export default function AdmissionAIPage() {
         if (m.key !== aiKey) return m
         const nextSegments = m.segments.length ? [...m.segments] : []
         const last = nextSegments[nextSegments.length - 1]
+        // Append to the trailing text segment only when nothing else
+        // has been pushed since the model started this turn's text. If
+        // the last segment is a tool_call or widget, we MUST open a new
+        // text segment so the prose lands *after* the tool card rather
+        // than retroactively merging with the previous turn's text.
         if (last && last.type === 'text') {
           nextSegments[nextSegments.length - 1] = { type: 'text', content: (last.content || '') + delta }
         } else {
           nextSegments.push({ type: 'text', content: delta })
         }
+        // `content` is the joined text used by parseRecommendationSnapshot
+        // and parseVolunteerPlanDraft. Both walk *all* code fences via
+        // matchAll, so we join with the protocol marker to preserve
+        // the boundaries between iterations (they don't care about it,
+        // but server-side persistence carries the same delimiter).
         const text = nextSegments
-          .filter((s) => s.type === 'text')
+          .filter((s): s is { type: 'text'; content: string } => s.type === 'text')
           .map((s) => s.content)
-          .join('')
+          .join(ITERATION_BREAK)
         return { ...m, segments: nextSegments, content: text, loading: false, chatStatus: 'streaming', status: 'loading' }
       })
     )
@@ -501,16 +660,49 @@ export default function AdmissionAIPage() {
       }
 
       if (event.type === 'tool_call_start') {
+        // Flush any pending text deltas BEFORE we push the tool card,
+        // otherwise the in-flight text buffer would land after the
+        // card and the timeline would read backwards.
+        flushPending(true)
         setMessages((prev) =>
-          prev.map((m) =>
-            m.key === aiKey ? { ...m, toolCallStatus: { toolName: event.tool_name, callId: event.call_id } } : m
-          )
+          prev.map((m) => {
+            if (m.key !== aiKey) return m
+            const nextSegments = [...m.segments, {
+              type: 'tool_call' as const,
+              callId: event.call_id,
+              toolName: event.tool_name,
+              status: 'pending' as const,
+            }]
+            return {
+              ...m,
+              segments: nextSegments,
+              toolCallStatus: { toolName: event.tool_name, callId: event.call_id },
+            }
+          })
         )
         return
       }
 
       if (event.type === 'tool_call_end') {
-        setMessages((prev) => prev.map((m) => (m.key === aiKey ? { ...m, toolCallStatus: undefined } : m)))
+        const callId = event.call_id
+        const success = event.success
+        const errMsg = event.error || ''
+        const parsedResult = event.result_content ? tryParseJSON(event.result_content) : undefined
+        setMessages((prev) =>
+          prev.map((m) => {
+            if (m.key !== aiKey) return m
+            const nextSegments = m.segments.map((seg) => {
+              if (seg.type !== 'tool_call' || seg.callId !== callId) return seg
+              return {
+                ...seg,
+                status: success ? ('success' as const) : ('error' as const),
+                result: parsedResult,
+                errorMsg: success ? undefined : errMsg,
+              }
+            })
+            return { ...m, segments: nextSegments, toolCallStatus: undefined }
+          })
+        )
         return
       }
 
@@ -528,6 +720,10 @@ export default function AdmissionAIPage() {
         }, 500)
         if (syncTimerRef.current) window.clearTimeout(syncTimerRef.current)
         syncTimerRef.current = window.setTimeout(() => {
+          // Skip if the user has already kicked off another turn — its
+          // local optimistic messages would be replaced by server state
+          // that doesn't yet include the new assistant message.
+          if (loadingRef.current) return
           void syncConversation(convId)
         }, 300)
         return
@@ -546,8 +742,44 @@ export default function AdmissionAIPage() {
         )
         if (syncTimerRef.current) window.clearTimeout(syncTimerRef.current)
         syncTimerRef.current = window.setTimeout(() => {
+          // Guard against re-syncing while a new turn is already
+          // streaming — that would clobber the in-flight assistant
+          // message with stale server state.
+          if (loadingRef.current) return
           void syncConversation(convId)
         }, 300)
+        return
+      }
+
+      if (event.type === 'warning') {
+        // Non-fatal — surface to the user but keep the stream going.
+        if (event.content) message.warning(event.content)
+        return
+      }
+
+      if (event.type === 'step_start' || event.type === 'step_finish') {
+        // Server uses these to label the current pipeline phase
+        // (e.g. "fetching schools", "ranking", "drafting plan"). Map to
+        // the existing toolCallStatus banner so users see progress
+        // beyond the bare "正在调用 xxx" line that tool_call_start
+        // produces. Both `step` and `content` are optional — fall back
+        // silently when missing.
+        const label = event.step || event.content
+        if (!label) return
+        setMessages((prev) =>
+          prev.map((m) => {
+            if (m.key !== aiKey) return m
+            if (event.type === 'step_finish') {
+              // Clear the banner only if it still reflects this step;
+              // a parallel tool_call may have replaced it already.
+              if (m.toolCallStatus?.toolName === label) {
+                return { ...m, toolCallStatus: undefined }
+              }
+              return m
+            }
+            return { ...m, toolCallStatus: { toolName: label, callId: event.step || 'step' } }
+          })
+        )
         return
       }
     },
@@ -731,6 +963,14 @@ export default function AdmissionAIPage() {
     startChatStream(convId, value, aiMessageKey)
   }
 
+  // Keep the ref in sync so the conversation-switch effect can fire
+  // the latest closure when a pending welcome draft is queued.
+  // Done inside an effect (not during render) to satisfy
+  // react-hooks/refs.
+  useEffect(() => {
+    handleSubmitRef.current = handleSubmit
+  })
+
   const handleCancel = () => {
     abortRef.current?.()
     setLoading(false)
@@ -788,6 +1028,15 @@ export default function AdmissionAIPage() {
   const handleAdopt = async () => {
     if (!draftToAdopt) return
     if (isArchived) return
+    // Don't let the user click "采纳" while the draft is still being
+    // generated — the API will 422 and we should preempt that with a
+    // friendlier hint. `draftPreview` is null until the GET resolves,
+    // so we allow null through (the server will then make the final
+    // call) but reject explicit non-ready states.
+    if (draftPreview && draftPreview.status !== 'ready') {
+      message.info('方案还在生成中，请稍候')
+      return
+    }
     try {
       await volunteerPlansApi.adopt(draftToAdopt.draftId)
       message.success('方案已采纳，对话已归档')
@@ -796,8 +1045,23 @@ export default function AdmissionAIPage() {
         void syncConversation(conversationId)
       }
       navigate('/admission/plans')
-    } catch {
-      message.error('采纳失败，请稍后重试')
+    } catch (err) {
+      const axiosErr = err as AxiosError<{ message?: string }>
+      const status = axiosErr.response?.status
+      const errMsg = axiosErr.response?.data?.message || axiosErr.message
+      if (status === 409) {
+        // Already adopted (or conversation archived) — usually means
+        // another tab beat us to it. Send the user to the plan list so
+        // they can see it instead of getting stuck on a dead button.
+        message.warning('该方案已采纳或对话已归档，请到方案中心查看')
+        navigate('/admission/plans')
+      } else if (status === 404) {
+        message.error('草稿已不存在，请重新生成')
+      } else if (status === 422) {
+        message.error('草稿数据异常，请重新生成方案')
+      } else {
+        message.error('采纳失败：' + (errMsg || '请稍后重试'))
+      }
     }
   }
 
@@ -898,38 +1162,47 @@ export default function AdmissionAIPage() {
           ) : conversations.length === 0 ? (
             <Empty description="暂无对话" image={Empty.PRESENTED_IMAGE_SIMPLE} style={{ marginTop: 32 }} />
           ) : (
-            conversations.map((conv) => (
-              <div
-                key={conv.id}
-                onClick={() => handleSelectConversation(conv.id)}
-                style={{
-                  padding: '10px 12px',
-                  borderRadius: token.borderRadius,
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 8,
-                  marginBottom: 4,
-                  background: conversationId === conv.id ? token.colorPrimaryBg : 'transparent',
-                  transition: 'background 0.2s',
-                }}
-              >
-                <MessageOutlined style={{ color: token.colorTextSecondary, flexShrink: 0 }} />
-                <Text
-                  ellipsis
-                  style={{ flex: 1, color: conversationId === conv.id ? token.colorPrimary : token.colorText }}
+            conversations.map((conv) => {
+              const archived = conv.status === 'archived'
+              return (
+                <div
+                  key={conv.id}
+                  onClick={() => handleSelectConversation(conv.id)}
+                  style={{
+                    padding: '10px 12px',
+                    borderRadius: token.borderRadius,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 8,
+                    marginBottom: 4,
+                    background: conversationId === conv.id ? token.colorPrimaryBg : 'transparent',
+                    transition: 'background 0.2s',
+                    opacity: archived ? 0.7 : 1,
+                  }}
                 >
-                  {conv.title || '未命名对话'}
-                </Text>
-                <Button
-                  type="text"
-                  size="small"
-                  icon={<DeleteOutlined />}
-                  onClick={(e) => handleDeleteConversation(conv.id, e)}
-                  style={{ opacity: 0.5 }}
-                />
-              </div>
-            ))
+                  <MessageOutlined style={{ color: token.colorTextSecondary, flexShrink: 0 }} />
+                  <Text
+                    ellipsis
+                    style={{ flex: 1, color: conversationId === conv.id ? token.colorPrimary : token.colorText }}
+                  >
+                    {conv.title || '未命名对话'}
+                  </Text>
+                  {archived ? (
+                    <Tag color="default" style={{ marginInlineEnd: 0, fontSize: 11, lineHeight: '16px', padding: '0 4px' }}>
+                      已归档
+                    </Tag>
+                  ) : null}
+                  <Button
+                    type="text"
+                    size="small"
+                    icon={<DeleteOutlined />}
+                    onClick={(e) => handleDeleteConversation(conv.id, e)}
+                    style={{ opacity: 0.5 }}
+                  />
+                </div>
+              )
+            })
           )}
         </div>
       </Sider>
@@ -1050,10 +1323,13 @@ export default function AdmissionAIPage() {
                         )
                       : null,
                     contentRender: () => (
+                      // The legacy "正在调用 X..." banner is now redundant:
+                      // each tool call is already represented as a
+                      // pending ToolCallCard segment inside the timeline,
+                      // and the card animates between pending → success
+                      // / error states in place. Rendering both would
+                      // double-up the loading indicator.
                       <div className="ai-chat-bubble ai-chat-bubble-ai">
-                        {chatItem.toolCallStatus ? (
-                          <div className="ai-chat-tool-status">正在调用 {chatItem.toolCallStatus.toolName}...</div>
-                        ) : null}
                         <div className="ai-chat-bubble-body">
                           <SegmentRenderer segments={chatItem.segments} />
                         </div>

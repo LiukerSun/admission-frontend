@@ -9,14 +9,25 @@ export interface Conversation {
   updated_at: string
 }
 
+export interface ToolCallRecord {
+  id: string
+  type?: string
+  function: { name: string; arguments: string }
+}
+
+export interface ToolResultRecord {
+  tool_call_id: string
+  content: string
+}
+
 export interface Message {
   id: number
   conversation_id: number
   role: string
   content: string
   widgets?: Array<{ id: string; kind: 'chart' | 'card'; payload: Record<string, unknown> }>
-  tool_calls?: unknown
-  tool_results?: unknown
+  tool_calls?: ToolCallRecord[]
+  tool_results?: ToolResultRecord[]
   created_at: string
 }
 

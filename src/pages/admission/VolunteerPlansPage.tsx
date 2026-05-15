@@ -16,7 +16,8 @@ import {
   type TableColumnsType,
 } from 'antd'
 import { EditOutlined, ExportOutlined, FileTextOutlined, SaveOutlined, SendOutlined } from '@ant-design/icons'
-import { admissionApi, type VolunteerPlan, type VolunteerPlanGroup, type RichVolunteerPlan } from '@/services/admission'
+import { admissionApi, type VolunteerPlanGroup, type RichVolunteerPlan } from '@/services/admission'
+import { volunteerPlansApi, type UserVolunteerPlan } from '@/services/volunteerPlans'
 import { Dropdown } from 'antd'
 import * as XLSX from 'xlsx'
 import { generateHtmlReport, getChartData, getChartOptions } from '@/utils/htmlExportUtils'
@@ -61,17 +62,20 @@ type VolunteerTableRow = {
   isFirstRow: boolean
 }
 
+// 默认列宽汇总 ~1100px。配合右侧 Col lg={19}（79%），在 1366×768 笔记本上
+// 也能基本完整展示，不至于强制水平滚动；> 1440 屏一定富余。用户拖动后会
+// 覆盖到 columnWidths state，所以这里只是首屏体验保底值。
 const defaultColumnWidths: Record<ColumnKey, number> = {
-  volunteerOrder: 92,
-  schoolCode: 96,
-  schoolName: 170,
-  groupCode: 112,
-  groupName: 120,
-  majorOrder: 136,
-  majorCode: 96,
-  majorName: 220,
-  adjustment: 104,
-  note: 260,
+  volunteerOrder: 72,
+  schoolCode: 80,
+  schoolName: 144,
+  groupCode: 88,
+  groupName: 100,
+  majorOrder: 108,
+  majorCode: 80,
+  majorName: 168,
+  adjustment: 80,
+  note: 180,
 }
 
 const minColumnWidths: Record<ColumnKey, number> = {
@@ -157,10 +161,11 @@ function getVolunteerColumnKey(column: TableColumnsType<VolunteerTableRow>[numbe
 
 export default function VolunteerPlansPage() {
   const { message } = App.useApp()
-  const [plans, setPlans] = useState<VolunteerPlan[]>([])
-  const [activePlanId, setActivePlanId] = useState('')
+  const [plans, setPlans] = useState<UserVolunteerPlan[]>([])
+  // V2 plans are keyed by numeric id (was string in V1).
+  const [activePlanId, setActivePlanId] = useState<number | null>(null)
   const [loading, setLoading] = useState(true)
-  const [drafts, setDrafts] = useState<Record<string, PlanDraft>>({})
+  const [drafts, setDrafts] = useState<Record<number, PlanDraft>>({})
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('saved')
   const [renameOpen, setRenameOpen] = useState(false)
   const [planNoteOpen, setPlanNoteOpen] = useState(false)
@@ -170,18 +175,21 @@ export default function VolunteerPlansPage() {
   const [planNoteForm] = Form.useForm<{ note: string }>()
   const [volunteerNoteForm] = Form.useForm<{ note: string }>()
 
-  const fetchPlans = async (targetId?: string) => {
+  const fetchPlans = async (targetId?: number) => {
     setLoading(true)
     try {
-      const res = await admissionApi.listVolunteerPlans()
-      if (res.data?.data) {
-        const newPlans = res.data.data.plans ?? []
-        setPlans(newPlans)
-        if (targetId) {
-          setActivePlanId(targetId)
-        } else if (!activePlanId && newPlans.length > 0) {
-          setActivePlanId(newPlans[0].id)
-        }
+      // Switched to the V2 user-scoped endpoint. The V1
+      // admissionApi.listVolunteerPlans returned `{ plans: [...] }`
+      // with a `name/description/groups/stats` shape; V2 returns a flat
+      // array of `UserVolunteerPlan` where the plan body lives under
+      // `plan_json`.
+      const res = await volunteerPlansApi.list()
+      const newPlans = res.data?.data ?? []
+      setPlans(newPlans)
+      if (targetId != null) {
+        setActivePlanId(targetId)
+      } else if (activePlanId == null && newPlans.length > 0) {
+        setActivePlanId(newPlans[0].id)
       }
     } catch (error) {
       message.error('获取志愿方案失败')
@@ -196,9 +204,9 @@ export default function VolunteerPlansPage() {
     const init = async () => {
       try {
         setLoading(true)
-        const res = await admissionApi.listVolunteerPlans()
-        if (isMounted && res.data?.data) {
-          const newPlans = res.data.data.plans ?? []
+        const res = await volunteerPlansApi.list()
+        if (isMounted) {
+          const newPlans = res.data?.data ?? []
           setPlans(newPlans)
           if (newPlans.length > 0) {
             setActivePlanId(newPlans[0].id)
@@ -219,18 +227,29 @@ export default function VolunteerPlansPage() {
   }, [])
 
   const activePlan = useMemo(() => {
+    if (activePlanId == null) return plans[0]
     return plans.find(p => p.id === activePlanId) || plans[0]
   }, [activePlanId, plans])
 
   const activeDraft = useMemo(() => {
     if (!activePlan) return undefined
-    return drafts[activePlan.id] ?? { name: activePlan.name, note: activePlan.description, volunteerNotes: {} }
+    // V2 carries the user-facing title in `plan.title` and stores the
+    // structured plan under `plan.plan_json`. There is no separate
+    // description column server-side, so the note is purely client-side
+    // draft state until a write endpoint exists.
+    return (
+      drafts[activePlan.id] ?? {
+        name: activePlan.title,
+        note: '',
+        volunteerNotes: {},
+      }
+    )
   }, [activePlan, drafts])
 
   const tableData = useMemo(() => {
     if (!activePlan) return []
     const data: VolunteerTableRow[] = []
-    ;(activePlan.groups ?? []).forEach((group) => {
+    ;(activePlan.plan_json?.groups ?? []).forEach((group) => {
       // 每个组固定展示 6 行专业
       for (let i = 1; i <= 6; i++) {
         const major = (group.majors ?? []).find(m => m.majorOrder === i)
@@ -247,12 +266,12 @@ export default function VolunteerPlansPage() {
     return data
   }, [activePlan])
 
-  const updateDraft = (planId: string, updater: (draft: PlanDraft) => PlanDraft) => {
+  const updateDraft = (planId: number, updater: (draft: PlanDraft) => PlanDraft) => {
     setDrafts((current) => {
       const plan = plans.find((item) => item.id === planId)
       const existing = current[planId] ?? {
-        name: plan?.name ?? '',
-        note: plan?.description ?? '',
+        name: plan?.title ?? '',
+        note: '',
         volunteerNotes: {},
       }
 
@@ -264,7 +283,7 @@ export default function VolunteerPlansPage() {
   }
 
   const openRename = () => {
-    renameForm.setFieldsValue({ name: activeDraft?.name || activePlan?.name || '' })
+    renameForm.setFieldsValue({ name: activeDraft?.name || activePlan?.title || '' })
     setRenameOpen(true)
   }
 
@@ -281,18 +300,15 @@ export default function VolunteerPlansPage() {
   const saveRename = async () => {
     if (!activePlan) return
     const values = await renameForm.validateFields()
-    const newName = values.name.trim() || activePlan.name
+    const newName = values.name.trim() || activePlan.title
     try {
       setSaveStatus('saving')
-      await admissionApi.updateVolunteerPlan(activePlan.id, {
-        name: newName,
-        description: activeDraft?.note || activePlan.description,
-      })
+      // V2 doesn't yet expose a rename endpoint. Persist optimistically
+      // to the client-side draft store so the rename sticks for the
+      // session; once a server endpoint exists we can wire it in here.
       updateDraft(activePlan.id, (draft) => ({ ...draft, name: newName }))
-      // 刷新列表以同步状态
-      void fetchPlans(activePlan.id)
       setRenameOpen(false)
-      message.success('方案名称已更新')
+      message.success('方案名称已更新（本地）')
       setSaveStatus('saved')
     } catch {
       setSaveStatus('failed')
@@ -305,15 +321,11 @@ export default function VolunteerPlansPage() {
     const values = await planNoteForm.validateFields()
     try {
       setSaveStatus('saving')
-      await admissionApi.updateVolunteerPlan(activePlan.id, {
-        name: activeDraft?.name || activePlan.name,
-        description: values.note,
-      })
+      // Same situation as rename: keep the note in local draft state
+      // until V2 provides a write endpoint.
       updateDraft(activePlan.id, (draft) => ({ ...draft, note: values.note }))
-      // 刷新列表以同步状态
-      void fetchPlans(activePlan.id)
       setPlanNoteOpen(false)
-      message.success('方案备注已更新')
+      message.success('方案备注已更新（本地）')
       setSaveStatus('saved')
     } catch {
       setSaveStatus('failed')
@@ -327,7 +339,9 @@ export default function VolunteerPlansPage() {
     const targetId = volunteerNoteTarget.id
     try {
       setSaveStatus('saving')
-      await admissionApi.updateGroupRemark(targetId, values.note)
+      // Local-only for now (see saveRename). The V1 admissionApi
+      // `updateGroupRemark` endpoint operated on V1 group ids and is
+      // not compatible with V2 plan_json groups.
       updateDraft(activePlan.id, (draft) => ({
         ...draft,
         volunteerNotes: {
@@ -335,10 +349,8 @@ export default function VolunteerPlansPage() {
           [targetId]: values.note,
         },
       }))
-      // 刷新数据以同步
-      void fetchPlans(activePlan.id)
       setVolunteerNoteTarget(null)
-      message.success('志愿备注已更新')
+      message.success('志愿备注已更新（本地）')
       setSaveStatus('saved')
     } catch {
       setSaveStatus('failed')
@@ -346,7 +358,7 @@ export default function VolunteerPlansPage() {
     }
   }
 
-  const handlePlanClick = (id: string) => {
+  const handlePlanClick = (id: number) => {
     setActivePlanId(id)
     void fetchPlans(id)
   }
@@ -411,7 +423,7 @@ export default function VolunteerPlansPage() {
         // Calculate merges
         const merges: XLSX.Range[] = []
         let currentRow = 1 // Start after header row
-        ;(activePlan.groups ?? []).forEach(() => {
+        ;(activePlan.plan_json?.groups ?? []).forEach(() => {
           const startRow = currentRow
           const endRow = currentRow + 5 // Each group has 6 rows
 
@@ -430,7 +442,7 @@ export default function VolunteerPlansPage() {
 
         const wb = XLSX.utils.book_new()
         XLSX.utils.book_append_sheet(wb, ws, '志愿方案')
-        XLSX.writeFile(wb, `${activeDraft?.name || activePlan.name}.xlsx`)
+        XLSX.writeFile(wb, `${activeDraft?.name || activePlan.title}.xlsx`)
         message.success('导出 Excel 成功')
         break
       }
@@ -693,10 +705,10 @@ export default function VolunteerPlansPage() {
         <Title level={3}>志愿填报方案</Title>
         <Text type="secondary">查看已生成的志愿方案详情。</Text>
       </div>
-      <Row gutter={[24, 24]}>
-        {/* Left Column: Plan Selection */}
-        <Col xs={24} lg={6}>
-          <Card 
+      <Row gutter={[16, 16]}>
+        {/* Left Column: Plan Selection — 缩到 lg={5}（21%），把更多横向空间留给右侧的方案明细表 */}
+        <Col xs={24} lg={5}>
+          <Card
             title={
               <Space>
                 <FileTextOutlined />
@@ -722,23 +734,23 @@ export default function VolunteerPlansPage() {
                     alignItems: 'flex-start'
                   }}
                 >
-                  <Text 
-                    strong 
-                    style={{ 
+                  <Text
+                    strong
+                    style={{
                       color: activePlanId === plan.id ? '#fff' : 'inherit',
                       fontSize: '16px'
                     }}
                   >
-                    {drafts[plan.id]?.name || plan.name}
+                    {drafts[plan.id]?.name || plan.title}
                   </Text>
-                  <Text 
-                    type="secondary" 
-                    style={{ 
+                  <Text
+                    type="secondary"
+                    style={{
                       fontSize: '12px',
                       color: activePlanId === plan.id ? 'rgba(255,255,255,0.8)' : 'inherit'
                     }}
                   >
-                    {plan.description}
+                    {drafts[plan.id]?.note || ''}
                   </Text>
                 </Button>
               ))}
@@ -749,14 +761,14 @@ export default function VolunteerPlansPage() {
           </Card>
         </Col>
 
-        {/* Right Column: Data Table */}
-        <Col xs={24} lg={18}>
+        {/* Right Column: Data Table — 配合左 lg={5} 占满剩余 19/24，给表格最大横向空间 */}
+        <Col xs={24} lg={19}>
           <Card
             title={
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <Space>
                   <SendOutlined />
-                  <span>{activeDraft?.name || activePlan?.name || '志愿详情'}</span>
+                  <span>{activeDraft?.name || activePlan?.title || '志愿详情'}</span>
                 </Space>
                 <Space>
                   <Tag color={saveStatusColor} icon={<SaveOutlined />}>
@@ -764,8 +776,8 @@ export default function VolunteerPlansPage() {
                   </Tag>
                   {activePlan && (
                     <>
-                      <Tag color="blue">院校: {activePlan.stats.schoolCount}</Tag>
-                      <Tag color="cyan">专业组: {activePlan.stats.groupCount}</Tag>
+                      <Tag color="blue">院校: {activePlan.plan_json?.stats?.schoolCount ?? 0}</Tag>
+                      <Tag color="cyan">专业组: {activePlan.plan_json?.stats?.groupCount ?? 0}</Tag>
                     </>
                   )}
                 </Space>
