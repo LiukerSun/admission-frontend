@@ -5,10 +5,25 @@ import type { AxiosError } from 'axios'
 
 export type User = CurrentUser & {
   id: number
-  email: string
   role: string
   is_admin: boolean
   created_at: string
+}
+
+interface PasswordLoginInput {
+  phone: string
+  password: string
+}
+
+interface CodeLoginInput {
+  phone: string
+  code: string
+}
+
+interface RegisterInput {
+  phone: string
+  code: string
+  password: string
 }
 
 interface AuthState {
@@ -20,8 +35,9 @@ interface AuthState {
   membership: CurrentMembership | null
   hasActiveMembership: boolean
 
-  login: (email: string, password: string) => Promise<void>
-  register: (email: string, password: string) => Promise<void>
+  loginByPassword: (input: PasswordLoginInput) => Promise<void>
+  loginByCode: (input: CodeLoginInput) => Promise<void>
+  register: (input: RegisterInput) => Promise<void>
   logout: () => void
   restore: () => Promise<void>
   refreshUser: () => Promise<User>
@@ -33,7 +49,7 @@ interface AuthState {
 const REFRESH_TOKEN_KEY = 'refresh_token'
 
 function applyUser(set: (state: Partial<AuthState>) => void, user: User) {
-  set({ user, isAdmin: user.is_admin })
+  set({ user, isAdmin: user.is_admin ?? false })
 }
 
 function applyMembership(
@@ -55,7 +71,40 @@ async function fetchMembership(): Promise<CurrentMembership | null> {
   }
 }
 
-export const useAuthStore = create<AuthState>((set, get) => ({
+function handleBannedThrow(set: (state: Partial<AuthState>) => void, err: unknown): never {
+  const axiosErr = err as AxiosError<{ message?: string }>
+  if (axiosErr.response?.status === 401 || axiosErr.response?.status === 403) {
+    const msg = axiosErr.response.data?.message || ''
+    if (msg.toLowerCase().includes('banned')) {
+      localStorage.removeItem(REFRESH_TOKEN_KEY)
+      set({ accessToken: null, user: null, isAuthenticated: false, isAdmin: false })
+      throw new Error('账号已被封禁，请联系管理员')
+    }
+  }
+  throw err
+}
+
+async function applyTokenAndHydrate(
+  set: (state: Partial<AuthState>) => void,
+  accessToken: string,
+  refreshToken: string,
+  presetUser?: User,
+) {
+  set({ accessToken, isAuthenticated: true })
+  localStorage.setItem(REFRESH_TOKEN_KEY, refreshToken)
+
+  let user = presetUser
+  if (!user) {
+    const meRes = await authApi.getMe()
+    user = meRes.data.data as User
+  }
+  applyUser(set, user)
+
+  const membership = await fetchMembership()
+  applyMembership(set, membership)
+}
+
+export const useAuthStore = create<AuthState>((set) => ({
   accessToken: null,
   user: null,
   isAuthenticated: false,
@@ -64,41 +113,38 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   membership: null,
   hasActiveMembership: false,
 
-  login: async (email: string, password: string) => {
+  loginByPassword: async ({ phone, password }) => {
     try {
-      const res = await authApi.login({ email, password })
+      const res = await authApi.loginByPassword({ phone, password })
       const data = res.data.data
       if (!data) throw new Error('登录失败')
-
-      set({
-        accessToken: data.access_token,
-        isAuthenticated: true,
-      })
-      localStorage.setItem(REFRESH_TOKEN_KEY, data.refresh_token)
-
-      const meRes = await authApi.getMe()
-      const user = meRes.data.data as User
-      applyUser(set, user)
-
-      const membership = await fetchMembership()
-      applyMembership(set, membership)
+      await applyTokenAndHydrate(set, data.access_token, data.refresh_token)
     } catch (err) {
-      const axiosErr = err as AxiosError<{ message?: string }>
-      if (axiosErr.response?.status === 401) {
-        const msg = axiosErr.response.data?.message || ''
-        if (msg.toLowerCase().includes('banned')) {
-          localStorage.removeItem(REFRESH_TOKEN_KEY)
-          set({ accessToken: null, user: null, isAuthenticated: false, isAdmin: false })
-          throw new Error('账号已被封禁，请联系管理员')
-        }
-      }
-      throw err
+      handleBannedThrow(set, err)
     }
   },
 
-  register: async (email: string, password: string) => {
-    await authApi.register({ email, password })
-    await get().login(email, password)
+  loginByCode: async ({ phone, code }) => {
+    try {
+      const res = await authApi.loginByCode({ phone, code })
+      const data = res.data.data
+      if (!data) throw new Error('登录失败')
+      await applyTokenAndHydrate(set, data.access_token, data.refresh_token)
+    } catch (err) {
+      handleBannedThrow(set, err)
+    }
+  },
+
+  register: async ({ phone, code, password }) => {
+    const res = await authApi.register({ phone, code, password })
+    const payload = res.data.data
+    if (!payload) throw new Error('注册失败')
+    await applyTokenAndHydrate(
+      set,
+      payload.token.access_token,
+      payload.token.refresh_token,
+      payload.user as User,
+    )
   },
 
   logout: () => {
