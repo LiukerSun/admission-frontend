@@ -69,7 +69,7 @@ export default function MajorPanel({
                         <Typography.Text strong style={{ fontSize: 13, color: isSelected ? '#1E40AF' : undefined }}>
                           {line.local_major_name || '-'}
                         </Typography.Text>
-                        {line.admitted_count !== undefined && (
+                        {line.admitted_count != null && (
                           <Tag>{line.admitted_count}人</Tag>
                         )}
                       </div>
@@ -78,10 +78,10 @@ export default function MajorPanel({
                           {line.local_major_code || '-'}
                         </Typography.Text>
                         <div style={{ display: 'flex', gap: 4 }}>
-                          {line.min_score !== undefined && (
+                          {line.min_score != null && (
                             <Tag color="blue">{line.min_score}分</Tag>
                           )}
-                          {line.min_rank !== undefined && (
+                          {line.min_rank != null && (
                             <Tag color="geekblue">{line.min_rank}位</Tag>
                           )}
                         </div>

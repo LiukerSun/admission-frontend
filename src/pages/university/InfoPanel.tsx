@@ -30,9 +30,12 @@ function UniversityInfoPanel({
     return <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="暂无学校信息" />
   }
 
-  const softRank = profile?.soft_rank ? `软科排名 ${profile.soft_rank}` : undefined
-  const alumniRank = profile?.alumni_rank ? `校友会排名 ${profile.alumni_rank}` : undefined
-  const difficultyRank = profile?.difficulty_rank ? `录取难度 ${profile.difficulty_rank}` : undefined
+  const softRankValue = profile?.soft_rank?.trim()
+  const alumniRankValue = profile?.alumni_rank?.trim()
+  const difficultyRankValue = profile?.difficulty_rank?.trim()
+  const softRank = softRankValue ? `软科排名 ${softRankValue}` : undefined
+  const alumniRank = alumniRankValue ? `校友会排名 ${alumniRankValue}` : undefined
+  const difficultyRank = difficultyRankValue ? `录取难度 ${difficultyRankValue}` : undefined
 
   return (
     <Card className="info-panel" size="small" title={<Typography.Text strong>学校信息</Typography.Text>}>
