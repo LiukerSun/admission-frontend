@@ -61,12 +61,14 @@ export default function UniversityPage() {
   }, [])
 
   const handleSelectMajor = useCallback((major: AdmissionLine) => {
-    setSelectedMajor((prev) =>
-      prev?.university_major_line_id === major.university_major_line_id
-        ? null
-        : major
-    )
-  }, [])
+    const isDeselecting = selectedMajor?.university_major_line_id === major.university_major_line_id
+    if (isDeselecting) {
+      setSelectedMajor(null)
+    } else {
+      setSelectedMajor(major)
+      if (major.group_code) setSelectedGroupCode(major.group_code)
+    }
+  }, [selectedMajor])
 
   const handleSwitchUniversity = useCallback((u: University) => {
     navigate(`/university/${u.id}`)

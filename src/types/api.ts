@@ -4408,9 +4408,12 @@ export interface components {
             admitted_count?: number;
             equivalent_min_score?: number;
             group_code?: string;
+            is_211?: boolean;
+            is_985?: boolean;
             local_major_code?: string;
             min_rank?: number;
             min_score?: number;
+            tuition?: number;
             university_id?: number;
             university_name?: string;
         };
