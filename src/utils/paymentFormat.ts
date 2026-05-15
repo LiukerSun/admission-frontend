@@ -48,11 +48,13 @@ export const ENTITLEMENT_STATUS_COLORS: Record<string, string> = {
   failed: '#DC2626',
 }
 
-export function formatMoney(amount: number, currency = 'CNY') {
+// 后端所有金额字段（plan.price_amount, order.amount, refund_amount 等）以"分"为单位存储，
+// 例如 990 表示 ¥9.90。此函数统一在显示层 ÷100，避免每个 caller 各自转换。
+export function formatMoney(amountInCents: number, currency = 'CNY') {
   return new Intl.NumberFormat('zh-CN', {
     style: 'currency',
     currency,
-  }).format(amount || 0)
+  }).format((amountInCents || 0) / 100)
 }
 
 export function formatDateTime(value?: string | null) {
