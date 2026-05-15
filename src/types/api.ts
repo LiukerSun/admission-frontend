@@ -4,6 +4,174 @@
  */
 
 export interface paths {
+    "/api/v1/admin/db/backup": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 管理员导出数据库备份
+         * @description 通过 docker exec 调用容器内的 pg_dump（custom 压缩格式 -Fc），
+         *     把整个数据库的 schema + data 流式返回。文件名形如
+         *     admission-YYYYMMDD-HHMMSS.dump。
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/octet-stream": string;
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/octet-stream": components["schemas"]["web.Response"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/octet-stream": components["schemas"]["web.Response"];
+                    };
+                };
+                /** @description Internal Server Error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/octet-stream": components["schemas"]["web.Response"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/db/restore": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 管理员从备份恢复数据库
+         * @description 接收 multipart/form-data 的 backup 字段（pg_dump custom 格式 .dump
+         *     文件），通过 docker exec 流式喂给容器内的 pg_restore --clean
+         *     --if-exists。恢复完成后返回 stderr 摘要供操作员核对。
+         *
+         *     注意：恢复会先 DROP 现有对象再写入。建议在窗口期执行。
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "multipart/form-data": {
+                        /**
+                         * Format: binary
+                         * @description pg_dump custom-format .dump 文件
+                         */
+                        backup: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"] & {
+                            data?: components["schemas"]["admin.BackupRestoreResult"];
+                        };
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+                /** @description Request Entity Too Large */
+                413: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+                /** @description Internal Server Error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/recommendation/scores/refresh": {
         parameters: {
             query?: never;
@@ -3345,6 +3513,11 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        "admin.BackupRestoreResult": {
+            filename?: string;
+            size_bytes?: number;
+            stderr_tail?: string;
+        };
         "admin.ResetPasswordRequest": {
             /** @example newpass123 */
             new_password: string;
@@ -3476,7 +3649,6 @@ export interface components {
             max_score?: number;
             min_rank?: number;
             min_score?: number;
-            plan_count?: number;
             postgraduate_direction?: string;
             region_code?: string;
             soft_major_grade?: string;
@@ -3564,6 +3736,7 @@ export interface components {
         };
         "admission.RecommendationItem": {
             admission_group_id?: number;
+            admitted_count?: number;
             batch_code?: string;
             city?: string;
             composite_score?: number;
@@ -3582,7 +3755,6 @@ export interface components {
             major_rank?: string;
             /** @description 在志愿表里的顺序（1 起，跨冲/稳/保连续编号） */
             order?: number;
-            plan_count?: number;
             /** @description 估算的录取概率 [0,1] */
             probability?: number;
             province_code?: string;
@@ -3852,7 +4024,6 @@ export interface components {
             group_min_rank?: number;
             group_min_score?: number;
             major_count?: number;
-            plan_count?: number;
             subject_requirement_name?: string;
         };
         "analysis.GroupComparisonResponse": {
@@ -3868,7 +4039,6 @@ export interface components {
             local_major_code?: string;
             min_rank?: number;
             min_score?: number;
-            plan_count?: number;
             university_id?: number;
             university_name?: string;
         };
@@ -3883,7 +4053,6 @@ export interface components {
             local_major_name?: string;
             min_rank?: number;
             min_score?: number;
-            plan_count?: number;
             tuition?: number;
         };
         "analysis.MajorDistributionResponse": {
@@ -3907,7 +4076,6 @@ export interface components {
             group_min_score?: number;
             min_rank?: number;
             min_score?: number;
-            plan_count?: number;
             year?: number;
         };
         "conversation.AddMessageRequest": {

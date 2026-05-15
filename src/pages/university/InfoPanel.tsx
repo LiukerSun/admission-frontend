@@ -98,7 +98,7 @@ function MajorInfoPanel({ major }: { major: AdmissionLine }) {
         {detailItem('学费', major.tuition ? `${major.tuition}元/年` : undefined)}
         {detailItem('选科要求', major.subject_requirement_name)}
         {detailItem('年份', major.admission_year)}
-        {detailItem('计划人数', major.plan_count)}
+        {detailItem('招生人数', major.admitted_count)}
         {detailItem('最低分', major.min_score)}
         {detailItem('最低位次', major.min_rank)}
       </div>
