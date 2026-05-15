@@ -324,7 +324,7 @@ export default function DataCharts({ universityId, selectedGroupCode, selectedMa
     )
   }, [distributionData, selectedMajor, getOrCreateChart, loading, activeTab])
 
-  // Render comparison chart
+  // Render comparison (性价比) chart
   useEffect(() => {
     const chart = getOrCreateChart('comparison', comparisonChartRef.current)
     if (!chart || !comparisonData?.items?.length) {
@@ -333,31 +333,111 @@ export default function DataCharts({ universityId, selectedGroupCode, selectedMa
     }
 
     const items = comparisonData.items
-    const names = items.map((i) => i.university_name)
-    const scoreData = items.map((i) => i.min_score ?? null)
-    const rankData = items.map((i) => i.min_rank ?? null)
-    const planData = items.map((i) => i.admitted_count ?? null)
+
+    // Normalise rank and tuition ranges for scoring
+    const validRanks = items.map((i) => i.min_rank ?? 0).filter((r) => r > 0)
+    const validTuitions = items.map((i) => i.tuition ?? 0).filter((t) => t > 0)
+    const minRank = validRanks.length ? Math.min(...validRanks) : 0
+    const maxRank = validRanks.length ? Math.max(...validRanks) : 1
+    const minTuition = validTuitions.length ? Math.min(...validTuitions) : 0
+    const maxTuition = validTuitions.length ? Math.max(...validTuitions) : 1
+    const rankRange = maxRank - minRank || 1
+    const tuitionRange = maxTuition - minTuition || 1
+
+    // Composite 性价比 score (0–100):
+    //   difficulty  50% — higher min_rank = easier to enter = better
+    //   cost        30% — lower tuition = better (neutral 15 when unknown)
+    //   tier        20% — 985 > 211 > other
+    const scored = items.map((item) => {
+      const rank = item.min_rank ?? 0
+      const tuition = item.tuition ?? 0
+      const difficultyScore = rank > 0 ? ((rank - minRank) / rankRange) * 50 : 0
+      const costScore = tuition > 0 ? (1 - (tuition - minTuition) / tuitionRange) * 30 : 15
+      const tierScore = (item.is_985 ? 2 : item.is_211 ? 1 : 0) / 2 * 20
+      return { ...item, xjScore: Math.round(difficultyScore + costScore + tierScore) }
+    })
+
+    // Items with no rank data sorted to bottom
+    scored.sort((a, b) => {
+      const aHasRank = (a.min_rank ?? 0) > 0
+      const bHasRank = (b.min_rank ?? 0) > 0
+      if (aHasRank && !bHasRank) return -1
+      if (!aHasRank && bHasRank) return 1
+      return b.xjScore - a.xjScore
+    })
+
+    const tierLabel = (item: typeof scored[0]) =>
+      item.is_985 ? '985院校' : item.is_211 ? '211院校' : '普通院校'
+
+    const barColor = (item: typeof scored[0]) => {
+      if (item.university_id === universityId) return '#16A34A'
+      return item.is_985 ? '#F59E0B' : item.is_211 ? '#3B82F6' : '#9CA3AF'
+    }
 
     chart.setOption(
       {
-        title: { text: `${comparisonData.local_major_name} 跨校对比`, left: 'center', textStyle: { fontSize: 14, fontWeight: 600 } },
-        tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
-        legend: { bottom: 0 },
-        grid: { left: '8%', right: '8%', bottom: '14%', top: '14%', containLabel: true },
-        xAxis: { type: 'category', data: names, axisLabel: { rotate: 30, fontSize: 10 } },
-        yAxis: [
-          { type: 'value', name: '分数/人数', position: 'left', splitLine: { lineStyle: { type: 'dashed' } } },
-          { type: 'value', name: '位次', position: 'right', inverse: true, splitLine: { show: false } },
-        ],
+        title: {
+          text: `${comparisonData.local_major_name} 性价比`,
+          subtext: '录取难度（50%）· 学费成本（30%）· 院校层次（20%）',
+          left: 'center',
+          textStyle: { fontSize: 14, fontWeight: 600 },
+          subtextStyle: { fontSize: 11, color: '#6B7280' },
+        },
+        tooltip: {
+          trigger: 'axis',
+          axisPointer: { type: 'shadow' },
+          formatter: (params: unknown) => {
+            const p = params as Array<{ dataIndex: number }>
+            const idx = p[0]?.dataIndex ?? 0
+            const item = scored[idx]
+            const rankStr = item.min_rank ? `最低位次: ${item.min_rank.toLocaleString()}` : '位次: 暂无'
+            const tuitionStr = item.tuition && item.tuition > 0 ? `学费: ¥${item.tuition.toLocaleString()}/年` : '学费: 暂无'
+            return `<b>${item.university_name}</b><br/>院校层次: ${tierLabel(item)}<br/>${rankStr}<br/>${tuitionStr}<br/>性价比得分: <b>${item.xjScore}</b>`
+          },
+        },
+        legend: {
+          bottom: 0,
+          data: [
+            { name: '当前院校', icon: 'rect', itemStyle: { color: '#16A34A' } },
+            { name: '985院校', icon: 'rect', itemStyle: { color: '#F59E0B' } },
+            { name: '211院校', icon: 'rect', itemStyle: { color: '#3B82F6' } },
+            { name: '普通院校', icon: 'rect', itemStyle: { color: '#9CA3AF' } },
+          ],
+        },
+        grid: { left: '4%', right: '4%', bottom: '18%', top: '22%', containLabel: true },
+        xAxis: {
+          type: 'category',
+          data: scored.map((i) => i.university_name),
+          axisLabel: { rotate: 30, fontSize: 10 },
+        },
+        yAxis: {
+          type: 'value',
+          name: '性价比得分',
+          min: 0,
+          max: 100,
+          splitLine: { lineStyle: { type: 'dashed' } },
+        },
         series: [
-          { name: '招生人数', type: 'bar', data: planData, itemStyle: { color: '#3B82F6', borderRadius: [4, 4, 0, 0] }, barMaxWidth: 20 },
-          { name: '最低分', type: 'line', yAxisIndex: 0, data: scoreData, smooth: true, symbol: 'circle', itemStyle: { color: '#16A34A' }, lineStyle: { width: 2 } },
-          { name: '最低位次', type: 'line', yAxisIndex: 1, data: rankData, smooth: true, symbol: 'diamond', itemStyle: { color: '#DC2626' }, lineStyle: { width: 2 } },
+          {
+            name: '性价比',
+            type: 'bar',
+            data: scored.map((item) => ({
+              value: item.xjScore,
+              itemStyle: { color: barColor(item), borderRadius: [4, 4, 0, 0] },
+            })),
+            barMaxWidth: 24,
+            label: {
+              show: scored.length <= 20,
+              position: 'top',
+              fontSize: 10,
+              formatter: '{c}',
+            },
+          },
         ],
       },
       true
     )
-  }, [comparisonData, getOrCreateChart, loading, activeTab])
+  }, [comparisonData, universityId, getOrCreateChart, loading, activeTab])
 
   // Resize all charts
   useEffect(() => {
