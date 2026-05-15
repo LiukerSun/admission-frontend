@@ -170,7 +170,7 @@ export default function DataCharts({ universityId, selectedGroupCode, selectedMa
     }
 
     const years = trendData.years.map((y) => String(y.year))
-    const planData = trendData.years.map((y) => y.plan_count ?? null)
+    const planData = trendData.years.map((y) => y.admitted_count ?? null)
     const scoreData = trendData.years.map((y) => y.min_score ?? y.group_min_score ?? null)
     const rankData = trendData.years.map((y) => y.min_rank ?? y.group_min_rank ?? null)
 
@@ -240,7 +240,7 @@ export default function DataCharts({ universityId, selectedGroupCode, selectedMa
       },
       true
     )
-  }, [trendData, selectedMajor, selectedGroupCode, getOrCreateChart, loading])
+  }, [trendData, selectedMajor, selectedGroupCode, getOrCreateChart, loading, activeTab])
 
   // Render groups chart
   useEffect(() => {
@@ -252,7 +252,7 @@ export default function DataCharts({ universityId, selectedGroupCode, selectedMa
 
     const groups = groupsData.groups
     const names = groups.map((g) => g.group_code)
-    const planData = groups.map((g) => g.plan_count)
+    const planData = groups.map((g) => g.admitted_count)
     const scoreData = groups.map((g) => g.group_min_score ?? null)
     const rankData = groups.map((g) => g.group_min_rank ?? null)
 
@@ -275,7 +275,7 @@ export default function DataCharts({ universityId, selectedGroupCode, selectedMa
       },
       true
     )
-  }, [groupsData, getOrCreateChart, loading])
+  }, [groupsData, getOrCreateChart, loading, activeTab])
 
   // Render distribution chart
   useEffect(() => {
@@ -289,7 +289,7 @@ export default function DataCharts({ universityId, selectedGroupCode, selectedMa
     const names = majors.map((m) => m.local_major_name)
     const scoreData = majors.map((m) => m.min_score ?? null)
     const rankData = majors.map((m) => m.min_rank ?? null)
-    const planData = majors.map((m) => m.plan_count ?? null)
+    const planData = majors.map((m) => m.admitted_count ?? null)
 
     const highlightIndex = selectedMajor
       ? majors.findIndex((m) => m.local_major_code === selectedMajor.local_major_code)
@@ -308,7 +308,7 @@ export default function DataCharts({ universityId, selectedGroupCode, selectedMa
         ],
         series: [
           {
-            name: '计划招生',
+            name: '招生人数',
             type: 'bar',
             data: planData.map((v, i) => ({
               value: v,
@@ -322,7 +322,7 @@ export default function DataCharts({ universityId, selectedGroupCode, selectedMa
       },
       true
     )
-  }, [distributionData, selectedMajor, getOrCreateChart, loading])
+  }, [distributionData, selectedMajor, getOrCreateChart, loading, activeTab])
 
   // Render comparison chart
   useEffect(() => {
@@ -336,7 +336,7 @@ export default function DataCharts({ universityId, selectedGroupCode, selectedMa
     const names = items.map((i) => i.university_name)
     const scoreData = items.map((i) => i.min_score ?? null)
     const rankData = items.map((i) => i.min_rank ?? null)
-    const planData = items.map((i) => i.plan_count ?? null)
+    const planData = items.map((i) => i.admitted_count ?? null)
 
     chart.setOption(
       {
@@ -350,14 +350,14 @@ export default function DataCharts({ universityId, selectedGroupCode, selectedMa
           { type: 'value', name: '位次', position: 'right', inverse: true, splitLine: { show: false } },
         ],
         series: [
-          { name: '计划招生', type: 'bar', data: planData, itemStyle: { color: '#3B82F6', borderRadius: [4, 4, 0, 0] }, barMaxWidth: 20 },
+          { name: '招生人数', type: 'bar', data: planData, itemStyle: { color: '#3B82F6', borderRadius: [4, 4, 0, 0] }, barMaxWidth: 20 },
           { name: '最低分', type: 'line', yAxisIndex: 0, data: scoreData, smooth: true, symbol: 'circle', itemStyle: { color: '#16A34A' }, lineStyle: { width: 2 } },
           { name: '最低位次', type: 'line', yAxisIndex: 1, data: rankData, smooth: true, symbol: 'diamond', itemStyle: { color: '#DC2626' }, lineStyle: { width: 2 } },
         ],
       },
       true
     )
-  }, [comparisonData, getOrCreateChart, loading])
+  }, [comparisonData, getOrCreateChart, loading, activeTab])
 
   // Resize all charts
   useEffect(() => {
@@ -420,7 +420,7 @@ export default function DataCharts({ universityId, selectedGroupCode, selectedMa
       if (key === 'trend') {
         return (data as TrendYear[]).some(
           (y) =>
-            y.plan_count != null ||
+            y.admitted_count != null ||
             y.min_score != null ||
             y.min_rank != null ||
             y.group_min_score != null ||

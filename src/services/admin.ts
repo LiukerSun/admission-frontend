@@ -64,4 +64,26 @@ export const adminApi = {
 
   updateUserRole: (id: number, data: UpdateRoleRequest) =>
     api.put(`/api/v1/admin/users/${id}/role`, data),
+
+  exportBackup: () =>
+    api.get<Blob>('/api/v1/admin/db/backup', { responseType: 'blob' }),
+
+  restoreBackup: (file: File, onProgress?: (percent: number) => void) => {
+    const form = new FormData()
+    form.append('backup', file)
+    return api.post<{ data: BackupRestoreResult }>('/api/v1/admin/db/restore', form, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+      onUploadProgress: (e) => {
+        if (onProgress && e.total) onProgress(Math.round((e.loaded / e.total) * 100))
+      },
+      // 恢复可能比较慢，给 30 分钟上限，与后端 ctx timeout 对齐
+      timeout: 30 * 60 * 1000,
+    })
+  },
+}
+
+export interface BackupRestoreResult {
+  filename: string
+  size_bytes: number
+  stderr_tail?: string
 }

@@ -69,8 +69,8 @@ export default function MajorPanel({
                         <Typography.Text strong style={{ fontSize: 13, color: isSelected ? '#1E40AF' : undefined }}>
                           {line.local_major_name || '-'}
                         </Typography.Text>
-                        {line.plan_count !== undefined && (
-                          <Tag>{line.plan_count}人</Tag>
+                        {line.admitted_count !== undefined && (
+                          <Tag>{line.admitted_count}人</Tag>
                         )}
                       </div>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>

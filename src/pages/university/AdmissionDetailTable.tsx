@@ -372,8 +372,8 @@ export default function AdmissionDetailTable({ lines, loading }: AdmissionDetail
         render: (value: string) => value || '-',
       },
       {
-        title: '计划',
-        dataIndex: 'plan_count',
+        title: '招生',
+        dataIndex: 'admitted_count',
         width: 82,
         align: 'right',
         render: (value: number, row) => row.nodeType === 'major' ? value ?? '-' : '-',
