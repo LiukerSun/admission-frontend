@@ -9,6 +9,8 @@ export interface MembershipPlan {
   price_amount: number
   currency: string
   status: 'active' | 'inactive' | string
+  sort_order?: number
+  description?: string
 }
 
 export interface CurrentMembership {

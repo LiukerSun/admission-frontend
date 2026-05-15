@@ -172,6 +172,378 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/membership/plans": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 管理员列出所有套餐
+         * @description 返回全部 membership 套餐（含 inactive 与已禁用），按 sort_order 升序、duration_days 升序排序。
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"] & {
+                            data?: components["schemas"]["membership.PlanResponse"][];
+                        };
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+                /** @description Internal Server Error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        /**
+         * 管理员创建套餐
+         * @description plan_code 是稳定业务键，创建后无法修改；建议使用如 monthly/quarterly/yearly/lifetime 这类语义化字符串。
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            /** @description 套餐 */
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["membership.PlanCreateRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"] & {
+                            data?: components["schemas"]["membership.PlanResponse"];
+                        };
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+                /** @description plan_code 已存在 */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+                /** @description Internal Server Error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/membership/plans/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 管理员获取套餐详情 */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Plan ID */
+                    id: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"] & {
+                            data?: components["schemas"]["membership.PlanResponse"];
+                        };
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+            };
+        };
+        /**
+         * 管理员更新套餐
+         * @description 仅传入需要修改的字段（partial update）。plan_code 不可改。
+         */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Plan ID */
+                    id: number;
+                };
+                cookie?: never;
+            };
+            /** @description 套餐字段，可部分提交 */
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["membership.PlanUpdateRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"] & {
+                            data?: components["schemas"]["membership.PlanResponse"];
+                        };
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+                /** @description Internal Server Error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+            };
+        };
+        post?: never;
+        /**
+         * 管理员删除套餐
+         * @description 如果有 payment_orders 引用此套餐，则不会物理删除，而是把 status 置为 inactive
+         *     并在响应里返回 soft_deleted=true、reference_rows=被引用次数。
+         */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Plan ID */
+                    id: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"] & {
+                            data?: components["schemas"]["membership.PlanDeleteResult"];
+                        };
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+                /** @description Internal Server Error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/recommendation/scores/refresh": {
         parameters: {
             query?: never;
@@ -4088,6 +4460,71 @@ export interface components {
         "conversation.RollbackRequest": {
             inclusive?: boolean;
             message_id?: number;
+        };
+        "membership.PlanCreateRequest": {
+            /** @example CNY */
+            currency?: string;
+            /** @example 覆盖整个学期，含全部 AI 工具 */
+            description?: string;
+            /** @example 180 */
+            duration_days: number;
+            /** @example semester */
+            plan_code: string;
+            /** @example 学期会员 */
+            plan_name: string;
+            /** @example 4990 */
+            price_amount?: number;
+            /** @example 15 */
+            sort_order?: number;
+            /**
+             * @example active
+             * @enum {string}
+             */
+            status?: "active" | "inactive";
+        };
+        "membership.PlanDeleteResult": {
+            /** @example true */
+            deleted?: boolean;
+            /** @example 0 */
+            reference_rows?: number;
+            /**
+             * @description SoftDeleted is true when the plan was retained but status forced to
+             *     'inactive' because of existing payment_orders references.
+             * @example false
+             */
+            soft_deleted?: boolean;
+        };
+        "membership.PlanResponse": {
+            /** @example CNY */
+            currency?: string;
+            /** @example 解锁全部志愿推荐与 AI 对话 */
+            description?: string;
+            /** @example 30 */
+            duration_days?: number;
+            /** @example 1 */
+            id?: number;
+            /** @example premium */
+            membership_level?: string;
+            /** @example monthly */
+            plan_code?: string;
+            /** @example 月度会员 */
+            plan_name?: string;
+            /** @example 990 */
+            price_amount?: number;
+            /** @example 10 */
+            sort_order?: number;
+            /** @example active */
+            status?: string;
+        };
+        "membership.PlanUpdateRequest": {
+            currency?: string;
+            description?: string;
+            duration_days?: number;
+            plan_name?: string;
+            price_amount?: number;
+            sort_order?: number;
+            /** @enum {string} */
+            status?: "active" | "inactive";
         };
         "payment.AlipayPayResponse": {
             expires_at?: string;

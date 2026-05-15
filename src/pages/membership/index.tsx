@@ -17,9 +17,16 @@ export default function MembershipPage() {
   const [membership, setMembership] = useState<CurrentMembership | null>(null)
   const [loading, setLoading] = useState(true)
   const [creatingPlanCode, setCreatingPlanCode] = useState('')
+  const sortedPlans = useMemo(
+    () =>
+      [...plans].sort(
+        (a, b) => (a.sort_order ?? Number.MAX_SAFE_INTEGER) - (b.sort_order ?? Number.MAX_SAFE_INTEGER),
+      ),
+    [plans],
+  )
   const highlightedPlanCode = useMemo(
-    () => selectHighlightedPlan(plans, searchParams.get('plan')),
-    [plans, searchParams],
+    () => selectHighlightedPlan(sortedPlans, searchParams.get('plan')),
+    [sortedPlans, searchParams],
   )
   const highlightedRef = useRef<HTMLDivElement | null>(null)
   const scrolledForKeyRef = useRef<string | null>(null)
@@ -116,13 +123,13 @@ export default function MembershipPage() {
       </Card>
 
       <Title level={4} style={{ marginTop: 8 }}>可购买套餐</Title>
-      {plans.length === 0 ? (
+      {sortedPlans.length === 0 ? (
         <Card>
           <Empty description="暂无可购买会员套餐" />
         </Card>
       ) : (
         <Row gutter={[24, 24]}>
-          {plans.map((plan) => {
+          {sortedPlans.map((plan) => {
             const isHighlighted = plan.plan_code === highlightedPlanCode
             return (
             <Col xs={24} md={8} key={plan.plan_code}>
@@ -158,6 +165,11 @@ export default function MembershipPage() {
               >
                 <Space direction="vertical" size={12} style={{ width: '100%' }}>
                   <Statistic value={formatMoney(plan.price_amount, plan.currency)} title="套餐价格" />
+                  {plan.description && (
+                    <Paragraph type="secondary" style={{ marginBottom: 0 }}>
+                      {plan.description}
+                    </Paragraph>
+                  )}
                   <div>
                     <CheckCircleOutlined style={{ color: '#16A34A', marginRight: 8 }} />
                     有效期 {plan.duration_days} 天
