@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback, useEffect } from 'react'
 import { Card, Input, List, Tag, Spin, Typography, Empty } from 'antd'
 import { SearchOutlined, BankOutlined } from '@ant-design/icons'
 import { admissionApi, type University, type UniversityProfile } from '@/services/admission'
@@ -35,6 +35,25 @@ export default function GroupSidebar({
   const [searching, setSearching] = useState(false)
   const [showResults, setShowResults] = useState(false)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+  const searchContainerRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!showResults) return
+    const onMouseDown = (e: MouseEvent) => {
+      if (searchContainerRef.current && !searchContainerRef.current.contains(e.target as Node)) {
+        setShowResults(false)
+      }
+    }
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setShowResults(false)
+    }
+    document.addEventListener('mousedown', onMouseDown)
+    document.addEventListener('keydown', onKeyDown)
+    return () => {
+      document.removeEventListener('mousedown', onMouseDown)
+      document.removeEventListener('keydown', onKeyDown)
+    }
+  }, [showResults])
 
   const searchUniversities = useCallback((q: string) => {
     if (debounceRef.current) clearTimeout(debounceRef.current)
@@ -102,7 +121,7 @@ export default function GroupSidebar({
       </Card>
 
       {/* 搜索学校 */}
-      <div style={{ position: 'relative', marginBottom: 12, flexShrink: 0 }}>
+      <div ref={searchContainerRef} style={{ position: 'relative', marginBottom: 12, flexShrink: 0 }}>
         <Input
           size="small"
           allowClear

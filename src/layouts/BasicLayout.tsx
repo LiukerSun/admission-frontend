@@ -34,15 +34,32 @@ const ROUTE_TITLE_MAP: Record<string, string> = {
   '/admin/payment/orders': '支付订单',
 }
 
-function buildBreadcrumbItems(pathname: string) {
-  const items: { title: string }[] = []
+// 顶级菜单 key 集合，pathname 命中其中之一时 Menu 已经表明位置，
+// 此时若 breadcrumb 只有一项则视觉冗余，不再渲染面包屑容器。
+const TOP_MENU_KEYS = new Set([
+  '/dashboard',
+  '/university',
+  '/admission/ai',
+  '/admission/plans',
+  '/admin/dashboard',
+  '/admin/users',
+  '/admin/payment/orders',
+])
+
+interface BreadcrumbItem {
+  title: string
+  to?: string
+}
+
+function buildBreadcrumbItems(pathname: string): BreadcrumbItem[] {
+  const items: BreadcrumbItem[] = []
 
   if (pathname.startsWith('/admin')) {
     items.push({ title: '管理后台' })
     const sub = ROUTE_TITLE_MAP[pathname]
     if (sub) items.push({ title: sub })
   } else if (pathname.startsWith('/university/')) {
-    items.push({ title: ROUTE_TITLE_MAP['/university'] || '学校详情' })
+    items.push({ title: ROUTE_TITLE_MAP['/university'] || '学校详情', to: '/university' })
     items.push({ title: '学校信息' })
   } else {
     const title = ROUTE_TITLE_MAP[pathname]
@@ -135,6 +152,10 @@ export default function BasicLayout() {
   const currentMenuItems = isAdminRoute ? adminMenuItems : primaryMenuItems
   const selectedMenuKeys = [location.pathname]
   const userName = user?.email?.split('@')[0]
+  // 单项面包屑且 Menu 已选中同一路径时，面包屑内容与 Menu 完全重复，隐藏避免视觉冲突
+  const showBreadcrumb =
+    breadcrumbItems.length > 0 &&
+    !(breadcrumbItems.length === 1 && TOP_MENU_KEYS.has(location.pathname))
 
   if (isRestoring) {
     return (
@@ -156,7 +177,9 @@ export default function BasicLayout() {
           borderBottom: '1px solid #E9EEF6',
           position: 'sticky',
           top: 0,
-          zIndex: 9,
+          // Antd Table fixed-left header cell 的 z-index 是 columns_count*2+3，
+          // 表格列多时会超过 9，必须提到更高才能压住固定列。
+          zIndex: 101,
           height: 'auto',
           minHeight: 64,
           lineHeight: 'normal',
@@ -210,33 +233,46 @@ export default function BasicLayout() {
         </div>
       </Header>
 
-      <div
-        style={{
-          background: '#fff',
-          borderBottom: '1px solid #E9EEF6',
-          padding: isDesktop ? '10px 24px' : '10px 16px',
-        }}
-      >
-        {breadcrumbItems.length > 0 && (
+      {showBreadcrumb && (
+        <div
+          style={{
+            background: '#fff',
+            borderBottom: '1px solid #E9EEF6',
+            padding: isDesktop ? '10px 24px' : '10px 16px',
+            position: 'sticky',
+            top: 64,
+            zIndex: 100,
+          }}
+        >
           <Breadcrumb
             items={[
               { title: <Link to="/dashboard" style={{ color: '#64748B' }}><HomeOutlined /></Link> },
-              ...breadcrumbItems.map((item, idx) => ({
-                title: (
+              ...breadcrumbItems.map((item, idx) => {
+                const isLast = idx === breadcrumbItems.length - 1
+                const content = (
                   <span
                     style={{
-                      color: idx === breadcrumbItems.length - 1 ? '#1E3A8A' : '#64748B',
-                      fontWeight: idx === breadcrumbItems.length - 1 ? 600 : 400,
+                      color: isLast ? '#1E3A8A' : '#64748B',
+                      fontWeight: isLast ? 600 : 400,
                     }}
                   >
                     {item.title}
                   </span>
-                ),
-              })),
+                )
+                return {
+                  title: !isLast && item.to ? (
+                    <Link to={item.to} style={{ color: '#64748B' }}>
+                      {content}
+                    </Link>
+                  ) : (
+                    content
+                  ),
+                }
+              }),
             ]}
           />
-        )}
-      </div>
+        </div>
+      )}
 
       <Content
         style={{
