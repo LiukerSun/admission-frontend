@@ -12,6 +12,7 @@ import AdmissionAIPage from '@/pages/admission-ai'
 import VolunteerPlansPage from '@/pages/admission/VolunteerPlansPage'
 import DashboardPage from '@/pages/dashboard'
 import ProfilePage from '@/pages/profile'
+import ProfileSurveyPage from '@/pages/profile-survey'
 import UniversitySearchPage from '@/pages/university/UniversitySearchPage'
 import UniversityPage from '@/pages/university/UniversityPage'
 import AdminDashboardPage from '@/pages/admin/AdminDashboardPage'
@@ -102,6 +103,14 @@ const router = createBrowserRouter([
         element: (
           <RequireAuth>
             <ProfilePage />
+          </RequireAuth>
+        ),
+      },
+      {
+        path: 'profile-survey',
+        element: (
+          <RequireAuth>
+            <ProfileSurveyPage />
           </RequireAuth>
         ),
       },
