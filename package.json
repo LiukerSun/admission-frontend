@@ -46,6 +46,7 @@
     "eslint-plugin-react-refresh": "^0.5.2",
     "globals": "^17.4.0",
     "husky": "^9.1.7",
+    "playwright": "^1.60.0",
     "swagger2openapi": "^7.0.8",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.58.0",
