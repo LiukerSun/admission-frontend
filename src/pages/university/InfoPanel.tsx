@@ -1,6 +1,13 @@
 import { Card, Tag, Typography, Empty } from 'antd'
 import type { AdmissionLine, UniversityProfile, University } from '@/services/admission'
 
+function buildRankLabel(raw: string | undefined, label: string): string | undefined {
+  const value = raw?.trim()
+  if (!value) return undefined
+  const stripped = value.replace(new RegExp(`^${label}\\s*[:：]?\\s*`), '').trim()
+  return stripped ? `${label} ${stripped}` : undefined
+}
+
 interface InfoPanelProps {
   profile: UniversityProfile | null
   selectedMajor: AdmissionLine | null
@@ -30,12 +37,9 @@ function UniversityInfoPanel({
     return <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="暂无学校信息" />
   }
 
-  const softRankValue = profile?.soft_rank?.trim()
-  const alumniRankValue = profile?.alumni_rank?.trim()
-  const difficultyRankValue = profile?.difficulty_rank?.trim()
-  const softRank = softRankValue ? `软科排名 ${softRankValue}` : undefined
-  const alumniRank = alumniRankValue ? `校友会排名 ${alumniRankValue}` : undefined
-  const difficultyRank = difficultyRankValue ? `录取难度 ${difficultyRankValue}` : undefined
+  const softRank = buildRankLabel(profile?.soft_rank, '软科排名')
+  const alumniRank = buildRankLabel(profile?.alumni_rank, '校友会排名')
+  const difficultyRank = buildRankLabel(profile?.difficulty_rank, '录取难度')
 
   return (
     <Card className="info-panel" size="small" title={<Typography.Text strong>学校信息</Typography.Text>}>

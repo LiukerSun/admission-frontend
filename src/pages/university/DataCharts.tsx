@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback } from 'react'
+import { useEffect, useMemo, useRef, useState, useCallback } from 'react'
 import { Card, Empty, Spin, Tabs } from 'antd'
 import {
   LineChartOutlined,
@@ -26,16 +26,30 @@ type TabKey = 'trend' | 'groups' | 'distribution' | 'comparison'
 
 const TAB_KEYS: TabKey[] = ['trend', 'groups', 'distribution', 'comparison']
 
-const tabItems: Array<{ key: TabKey; label: string; icon: React.ReactNode }> = [
-  { key: 'trend', label: '录取趋势', icon: <LineChartOutlined /> },
-  { key: 'groups', label: '招生计划', icon: <TeamOutlined /> },
-  { key: 'distribution', label: '分数分布', icon: <BarChartOutlined /> },
-  // 性价比 暂时隐藏 - 实现待重新设计
-  // { key: 'comparison', label: '性价比', icon: <TrophyOutlined /> },
-]
+type TabItem = { key: TabKey; label: string; icon: React.ReactNode }
 
 export default function DataCharts({ universityId, selectedGroupCode, selectedMajor, loading }: DataChartsProps) {
   const [activeTab, setActiveTab] = useState<TabKey>('trend')
+
+  const tabItems = useMemo<TabItem[]>(() => {
+    const items: TabItem[] = [
+      { key: 'trend', label: '录取趋势', icon: <LineChartOutlined /> },
+      { key: 'groups', label: '招生计划', icon: <TeamOutlined /> },
+    ]
+    if (selectedGroupCode) {
+      items.push({ key: 'distribution', label: '分数分布', icon: <BarChartOutlined /> })
+    }
+    // 性价比 暂时隐藏 - 实现待重新设计
+    // items.push({ key: 'comparison', label: '性价比', icon: <TrophyOutlined /> })
+    return items
+  }, [selectedGroupCode])
+
+  // 当用户清空专业组时，distribution tab 已被 tabItems 过滤掉；
+  // 在渲染期同步内部 activeTab，避免选中态指向不存在的 tab。
+  if (!selectedGroupCode && activeTab === 'distribution') {
+    setActiveTab('trend')
+  }
+
   const [trendData, setTrendData] = useState<TrendResponse | null>(null)
   const [groupsData, setGroupsData] = useState<GroupComparisonResponse | null>(null)
   const [distributionData, setDistributionData] = useState<MajorDistributionResponse | null>(null)
@@ -619,8 +633,6 @@ export default function DataCharts({ universityId, selectedGroupCode, selectedMa
     let overlay: React.ReactNode = null
     if (isTabLoading) {
       overlay = <Spin />
-    } else if (key === 'distribution' && !selectedGroupCode) {
-      overlay = <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="请先选择专业组" />
     } else if (key === 'comparison' && !selectedMajor) {
       overlay = <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="请先选择专业" />
     } else if (!hasValidData(key)) {
