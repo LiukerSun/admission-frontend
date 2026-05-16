@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { authApi, type CurrentUser } from '@/services/auth'
 import { membershipApi, type CurrentMembership } from '@/services/membership'
+import { useUserProfileStore } from '@/stores/userProfileStore'
 import type { AxiosError } from 'axios'
 
 export type User = CurrentUser & {
@@ -157,6 +158,9 @@ export const useAuthStore = create<AuthState>((set) => ({
       membership: null,
       hasActiveMembership: false,
     })
+    // Cached profile belongs to the logged-out user — clear it so the next
+    // account's questionnaire status is fetched fresh on login.
+    useUserProfileStore.getState().clear()
   },
 
   restore: async () => {

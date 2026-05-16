@@ -17,7 +17,9 @@ import type { BubbleItemType } from '@ant-design/x/es/bubble'
 import { conversationApi, type Conversation, type Message, type ToolCallRecord, type ToolResultRecord } from '@/services/conversation'
 import { streamChatWithConversation, streamRegenerateWithConversation, type SSEEvent } from '@/services/ai'
 import { useAuthStore } from '@/stores/authStore'
+import { useUserProfileStore } from '@/stores/userProfileStore'
 import { usePaywallStore } from '@/stores/paywallStore'
+import { formatRecommendationRequestBlock, prependRecommendationRequest } from '@/utils/recommendationRequest'
 import { planDraftsApi, type PlanDraft } from '@/services/planDrafts'
 import { volunteerPlansApi } from '@/services/volunteerPlans'
 import MessageEditor from '@/components/ai-chat/MessageEditor'
@@ -302,6 +304,15 @@ export default function AdmissionAIPage() {
     void Promise.resolve().then(loadConversations)
   }, [loadConversations])
 
+  // Prefetch the user profile so handleSubmit can synchronously read it from
+  // the store when injecting the recommendation_request block. Re-fetch only
+  // when not already loaded — loadProfile dedupes in-flight calls itself.
+  const loadUserProfile = useUserProfileStore((s) => s.loadProfile)
+  const hasCompletedProfile = useUserProfileStore((s) => s.hasCompletedProfile)
+  useEffect(() => {
+    void loadUserProfile()
+  }, [loadUserProfile])
+
   useEffect(() => {
     // Cancel any in-flight stream from the previously selected
     // conversation. Without this, switching conversations leaves the
@@ -518,10 +529,7 @@ export default function AdmissionAIPage() {
       enable_llm_tuning: !!recommendationSnapshot.enable_llm_tuning,
       plan_size: recommendationSnapshot.plan_size || 40,
     }
-    const msg =
-      '请根据已收集信息生成志愿方案。\n\n```recommendation_request\n' +
-      JSON.stringify(payload, null, 2) +
-      '\n```\n'
+    const msg = '请根据已收集信息生成志愿方案。\n\n' + formatRecommendationRequestBlock(payload) + '\n'
     void handleSubmit(msg)
   }
 
@@ -912,6 +920,7 @@ export default function AdmissionAIPage() {
     }
 
     let convId = conversationId
+    const isNewConversation = !convId
     if (!convId) {
       try {
         const res = await conversationApi.create(value.slice(0, 20))
@@ -928,6 +937,17 @@ export default function AdmissionAIPage() {
     }
 
     if (!convId) return
+
+    // For new conversations only, prepend the user's saved profile as a
+    // `recommendation_request` Markdown block so the AI agent can extract
+    // basic info (region/subject/score/rank/preferences) without re-asking.
+    // The UI shows the user's original text (block stripped by SegmentRenderer);
+    // only the backend SSE payload carries the block.
+    let outboundValue = value
+    if (isNewConversation) {
+      const profile = useUserProfileStore.getState().profile
+      outboundValue = prependRecommendationRequest(value, profile)
+    }
 
     setSuggestionsByConversation((prev) => ({ ...prev, [convId]: [] }))
     setEditingKey(null)
@@ -960,7 +980,7 @@ export default function AdmissionAIPage() {
 
     setTimeout(scrollToBottom, 50)
 
-    startChatStream(convId, value, aiMessageKey)
+    startChatStream(convId, outboundValue, aiMessageKey)
   }
 
   // Keep the ref in sync so the conversation-switch effect can fire
@@ -1223,6 +1243,29 @@ export default function AdmissionAIPage() {
                 title="智能填报助手"
                 description="我可以帮你筛选院校、分析录取数据、制定志愿填报策略。"
               />
+              {!hasCompletedProfile && (
+                <button
+                  type="button"
+                  onClick={() => navigate('/profile-survey')}
+                  style={{
+                    marginTop: 16,
+                    padding: '8px 16px',
+                    borderRadius: 999,
+                    background: '#EFF6FF',
+                    color: '#1E40AF',
+                    border: 'none',
+                    font: 'inherit',
+                    fontSize: 13,
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 6,
+                  }}
+                >
+                  <BulbOutlined />
+                  2 分钟填一份调查问卷，AI 不用再追问基础信息 →
+                </button>
+              )}
               <div style={{ marginTop: 24, display: 'flex', gap: 12, flexWrap: 'wrap', justifyContent: 'center' }}>
                 <Tag
                   icon={<BulbOutlined />}

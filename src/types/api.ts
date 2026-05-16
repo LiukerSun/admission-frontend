@@ -2218,8 +2218,8 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * 用户登录
-         * @description 使用邮箱和密码登录，获取 Access Token 和 Refresh Token
+         * 手机号 + 密码登录
+         * @description 使用已绑定手机号和密码登录，获取 Access Token 和 Refresh Token。
          */
         post: {
             parameters: {
@@ -2257,6 +2257,88 @@ export interface paths {
                 };
                 /** @description Unauthorized */
                 401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/login/code": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 手机号 + 验证码登录
+         * @description 使用手机号和短信验证码登录，无需密码。验证码需先通过 /auth/sms/send (scene=login) 获取。
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            /** @description 登录信息 */
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["user.LoginByCodeRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"] & {
+                            data?: components["schemas"]["user.TokenResponse"];
+                        };
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -2337,8 +2419,8 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * 用户注册
-         * @description 使用邮箱和密码注册新账户
+         * 手机号注册
+         * @description 使用手机号 + 验证码 + 密码完成注册，成功后直接返回登录 Token。
          */
         post: {
             parameters: {
@@ -2361,12 +2443,83 @@ export interface paths {
                     };
                     content: {
                         "application/json": components["schemas"]["web.Response"] & {
-                            data?: components["schemas"]["user.Response"];
+                            data?: components["schemas"]["user.RegisterResponse"];
                         };
                     };
                 };
                 /** @description Bad Request */
                 400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/sms/send": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 发送注册/登录验证码
+         * @description 匿名接口，向指定手机号发送短信验证码。scene=register 时手机号必须未注册；scene=login 时手机号必须已注册。
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            /** @description 手机号与场景 */
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["user.SendAuthCodeRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -3125,8 +3278,8 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * 发送手机号验证码
-         * @description 当前登录用户向指定手机号发送验证码，用于绑定手机号
+         * 发送手机号验证码（绑定流程）
+         * @description 当前登录用户向指定手机号发送验证码，用于绑定或更换手机号
          */
         post: {
             parameters: {
@@ -3196,7 +3349,7 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * 校验手机号验证码
+         * 校验手机号验证码（绑定流程）
          * @description 当前登录用户校验验证码并完成手机号绑定
          */
         post: {
@@ -3251,6 +3404,118 @@ export interface paths {
                 };
             };
         };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/me/profile": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 获取当前用户的志愿调查问卷档案
+         * @description 返回当前用户保存的 region/subject/score/rank 等基础信息与偏好；从未填写时返回空档案 + completed=false（不会 404）。
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+                /** @description Internal Server Error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+            };
+        };
+        /**
+         * 创建或更新当前用户的志愿调查问卷档案
+         * @description PUT 语义：传入的字段会整体覆盖既有档案；未传字段视为 NULL/缺省。4 项必填齐时自动写入 completed_at。
+         */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            /** @description Profile payload */
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["userprofile.UpsertRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+                /** @description Internal Server Error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["web.Response"];
+                    };
+                };
+            };
+        };
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -4155,7 +4420,7 @@ export interface components {
             excluded_cities?: string[];
             /** @description 张雪峰式避雷词 */
             excluded_keywords?: string[];
-            /** @description 主观排除的专业关键词 */
+            /** @description 主观排除的专业关键词（硬过滤） */
             excluded_majors?: string[];
             excluded_provinces?: string[];
             /** @description "充裕" / "普通" / "紧张" */
@@ -4179,7 +4444,7 @@ export interface components {
             plan_size?: number;
             /** @description 地域偏好 */
             preferred_cities?: string[];
-            /** @description CHSI 标准专业 / 大类 / 关键词 */
+            /** @description 软偏好：仅影响排序加权，候选不会被剔除（"喜欢/感兴趣"） */
             preferred_majors?: string[];
             /** @description region_code 列表 */
             preferred_provinces?: string[];
@@ -4189,6 +4454,8 @@ export interface components {
             provincial_rank: number;
             /** @description 基础（必填） */
             region_code: string;
+            /** @description 硬白名单：候选必须命中其中任一关键词，否则被剔除（"想学/只想学/必须是"） */
+            required_majors?: string[];
             /** @description 选科列表，例如 ["物理","化学","生物"] */
             selected_subjects?: string[];
             /** @description 物理类 / 历史类 */
@@ -4408,12 +4675,9 @@ export interface components {
             admitted_count?: number;
             equivalent_min_score?: number;
             group_code?: string;
-            is_211?: boolean;
-            is_985?: boolean;
             local_major_code?: string;
             min_rank?: number;
             min_score?: number;
-            tuition?: number;
             university_id?: number;
             university_name?: string;
         };
@@ -4566,21 +4830,33 @@ export interface components {
             /** @example newpass123 */
             new_password: string;
         };
+        "user.LoginByCodeRequest": {
+            /** @example 123456 */
+            code: string;
+            /** @example 13800138000 */
+            phone: string;
+        };
         "user.LoginRequest": {
-            /** @example user@example.com */
-            email: string;
             /** @example pass1234 */
             password: string;
+            /** @example 13800138000 */
+            phone: string;
         };
         "user.RefreshRequest": {
             /** @example eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9... */
             refresh_token: string;
         };
         "user.RegisterRequest": {
-            /** @example user@example.com */
-            email: string;
+            /** @example 123456 */
+            code: string;
             /** @example pass1234 */
             password: string;
+            /** @example 13800138000 */
+            phone: string;
+        };
+        "user.RegisterResponse": {
+            token?: components["schemas"]["user.TokenResponse"];
+            user?: components["schemas"]["user.Response"];
         };
         "user.Response": {
             /** @example 2024-01-01T00:00:00Z */
@@ -4602,6 +4878,15 @@ export interface components {
             /** @example johndoe */
             username?: string;
         };
+        "user.SendAuthCodeRequest": {
+            /** @example 13800138000 */
+            phone: string;
+            /**
+             * @example register
+             * @enum {string}
+             */
+            scene: "register" | "login";
+        };
         "user.SendPhoneCodeRequest": {
             /** @example 13800138000 */
             phone: string;
@@ -4619,6 +4904,44 @@ export interface components {
             code: string;
             /** @example 13800138000 */
             phone: string;
+        };
+        "userprofile.Preferences": {
+            budget_tuition_max?: number;
+            career_plans?: string;
+            excluded_cities?: string[];
+            excluded_keywords?: string[];
+            excluded_majors?: string[];
+            excluded_provinces?: string[];
+            family_economy?: string;
+            family_resources?: string;
+            holland_code?: string;
+            preferred_cities?: string[];
+            preferred_majors?: string[];
+            preferred_provinces?: string[];
+            required_majors?: string[];
+        };
+        "userprofile.UpsertRequest": {
+            /** @example 120 */
+            chinese_score?: number;
+            /** @example 130 */
+            english_score?: number;
+            /** @example 135 */
+            math_score?: number;
+            /** @example 92 */
+            physics_score?: number;
+            /** @example 40 */
+            plan_size?: number;
+            preferences?: components["schemas"]["userprofile.Preferences"];
+            /** @example auto */
+            priority_strategy?: string;
+            /** @example 4500 */
+            provincial_rank?: number;
+            /** @example 230000 */
+            region_code?: string;
+            /** @example physics */
+            subject_category_code?: string;
+            /** @example 620 */
+            total_score?: number;
         };
         "web.Response": {
             code?: number;

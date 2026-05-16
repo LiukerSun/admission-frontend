@@ -56,14 +56,27 @@ export interface VolunteerPlanGroup {
   majors: VolunteerPlanMajor[]
 }
 
+// Optional analytics-extension fields that the frontend uses for chart
+// rendering (tuition, 985/211 tier). The backend response can include them,
+// but they are not part of the auto-generated swagger schema for these
+// types — declare them here so DataCharts.tsx can read them with safe
+// optional access without us having to ship a divergent api.ts patch.
+type AnalysisItemExtras = {
+  tuition?: number
+  is_985?: boolean
+  is_211?: boolean
+}
+
 export type TrendResponse = components['schemas']['analysis.TrendResponse']
 export type TrendYear = components['schemas']['analysis.TrendYear']
 export type GroupComparisonResponse = components['schemas']['analysis.GroupComparisonResponse']
-export type GroupComparisonItem = components['schemas']['analysis.GroupComparisonItem']
+export type GroupComparisonItem = components['schemas']['analysis.GroupComparisonItem'] & AnalysisItemExtras
 export type MajorDistributionResponse = components['schemas']['analysis.MajorDistributionResponse']
-export type MajorDistributionItem = components['schemas']['analysis.MajorDistributionItem']
-export type MajorComparisonResponse = components['schemas']['analysis.MajorComparisonResponse']
-export type MajorComparisonItem = components['schemas']['analysis.MajorComparisonItem']
+export type MajorDistributionItem = components['schemas']['analysis.MajorDistributionItem'] & AnalysisItemExtras
+export type MajorComparisonResponse = Omit<components['schemas']['analysis.MajorComparisonResponse'], 'items'> & {
+  items?: MajorComparisonItem[]
+}
+export type MajorComparisonItem = components['schemas']['analysis.MajorComparisonItem'] & AnalysisItemExtras
 
 export interface VolunteerPlan {
   id: string
