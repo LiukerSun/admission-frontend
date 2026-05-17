@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { Avatar, Button, Drawer, Empty, Layout, Spin, Table, Tag, Typography, message, theme } from 'antd'
+import { Alert, Avatar, Button, Descriptions, Drawer, Empty, Layout, Spin, Table, Tag, Typography, message, theme } from 'antd'
 import type { AxiosError } from 'axios'
 import {
   BulbOutlined,
@@ -137,6 +137,116 @@ function parseVolunteerPlanDraft(content: string): { draftId: number } | null {
     }
   }
   return last
+}
+
+// parseLatestRecommendationSnapshot 从消息流里倒序找最近一个
+// `recommendation_snapshot` 代码块。assistant 在每轮回复里都会
+// 贴一份当前累计偏好的 snapshot；我们用最近一份当作"用户当下意图"
+// 的代理，跟草稿 input_json 比对来检测偏好漂移。
+function parseLatestRecommendationSnapshot(messages: ChatItem[]): Record<string, unknown> | null {
+  const codeBlockRe = /```\s*(\w+)\s*\n([\s\S]*?)\n?```/g
+  for (let i = messages.length - 1; i >= 0; i--) {
+    const m = messages[i]
+    if (m.role !== 'ai' || m.chatStatus === 'streaming') continue
+    const content = m.content || ''
+    let last: Record<string, unknown> | null = null
+    for (const match of content.matchAll(codeBlockRe)) {
+      const lang = (match[1] || '').trim().toLowerCase()
+      if (lang !== 'recommendation_snapshot') continue
+      const body = (match[2] || '').trim()
+      try {
+        const parsed = JSON.parse(body)
+        if (parsed && typeof parsed === 'object') last = parsed as Record<string, unknown>
+      } catch {
+        continue
+      }
+    }
+    if (last) return last
+  }
+  return null
+}
+
+// DRIFT_KEYS 列出我们用来判定 draft input 与最新 snapshot 是否漂移的字段。
+// 故意只看影响候选池的硬过滤字段；soft scoring（family_resources 等）
+// 改一下不会改变草稿构成，警告只会徒增噪音。
+const DRIFT_KEYS = [
+  'plan_size',
+  'only_provinces',
+  'only_cities',
+  'excluded_provinces',
+  'excluded_cities',
+  'required_majors',
+  'excluded_majors',
+  'excluded_keywords',
+  'budget_tuition_max',
+  'subject_category_code',
+  'total_score',
+  'provincial_rank',
+] as const
+
+function canonicalize(value: unknown): unknown {
+  if (Array.isArray(value)) {
+    // 切片成员排序后比对——LLM 在不同轮里可能把同一个数组的成员顺序写不一样，
+    // 那不算用户改了偏好，不应该误判为漂移。
+    const arr = value.map(canonicalize)
+    return arr.slice().sort((a, b) => String(a).localeCompare(String(b)))
+  }
+  return value
+}
+
+function valuesEqual(a: unknown, b: unknown): boolean {
+  if (a === undefined && b === undefined) return true
+  if (a === null && b === null) return true
+  if (a === undefined || a === null) return b === undefined || b === null || (Array.isArray(b) && b.length === 0)
+  if (b === undefined || b === null) return Array.isArray(a) && a.length === 0
+  return JSON.stringify(canonicalize(a)) === JSON.stringify(canonicalize(b))
+}
+
+interface InputDrift {
+  drifted: boolean
+  changes: Array<{ key: string; draft: unknown; latest: unknown }>
+}
+
+function diffDraftAgainstSnapshot(
+  draftInput: unknown,
+  snapshot: Record<string, unknown> | null,
+): InputDrift {
+  if (!snapshot || !draftInput || typeof draftInput !== 'object') {
+    return { drifted: false, changes: [] }
+  }
+  const draft = draftInput as Record<string, unknown>
+  const changes: InputDrift['changes'] = []
+  for (const key of DRIFT_KEYS) {
+    if (!valuesEqual(draft[key], snapshot[key])) {
+      changes.push({ key, draft: draft[key], latest: snapshot[key] })
+    }
+  }
+  return { drifted: changes.length > 0, changes }
+}
+
+// formatDriftValue 把任意 JSON 值压成一行短文本，给警告卡里的 diff 列用。
+function formatDriftValue(v: unknown): string {
+  if (v === undefined || v === null) return '—'
+  if (Array.isArray(v)) {
+    if (v.length === 0) return '—'
+    return v.map((x) => String(x)).join('、')
+  }
+  return String(v)
+}
+
+const DRIFT_KEY_LABELS: Record<string, string> = {
+  plan_size: '志愿数',
+  only_provinces: '只看省份',
+  only_cities: '只看城市',
+  excluded_provinces: '排除省份',
+  excluded_cities: '排除城市',
+  required_majors: '必含专业',
+  excluded_majors: '排除专业',
+  excluded_keywords: '排除关键词',
+  budget_tuition_max: '学费上限',
+  subject_category_code: '科类',
+  total_score: '总分',
+  provincial_rank: '位次',
 }
 
 export default function AdmissionAIPage() {
@@ -439,6 +549,25 @@ export default function AdmissionAIPage() {
       ignore = true
     }
   }, [draftToAdopt, isArchived])
+
+  // 草稿基于哪些偏好生成 vs 对话当下最新意图——drift 检查给用户一个
+  // "草稿过时了"的信号。后端在偏好漂移时会自动重建草稿，正常不会触发；
+  // 但历史草稿（修复前生成）或者将来回归仍会显式提示。
+  const inputDrift = useMemo<InputDrift>(() => {
+    if (!draftPreview?.input_json) return { drifted: false, changes: [] }
+    const snapshot = parseLatestRecommendationSnapshot(messages)
+    return diffDraftAgainstSnapshot(draftPreview.input_json, snapshot)
+  }, [draftPreview, messages])
+
+  const draftInputSummary = useMemo(() => {
+    if (!draftPreview?.input_json || typeof draftPreview.input_json !== 'object') return null
+    const input = draftPreview.input_json as Record<string, unknown>
+    return DRIFT_KEYS.map((key) => ({
+      key,
+      label: DRIFT_KEY_LABELS[key] || key,
+      value: input[key],
+    })).filter((row) => row.value !== undefined && row.value !== null && !(Array.isArray(row.value) && row.value.length === 0))
+  }, [draftPreview])
 
   const scrollToBottom = () => {
     if (listRef.current) {
@@ -1542,8 +1671,56 @@ export default function AdmissionAIPage() {
         destroyOnHidden
       >
         {draftPreview?.status === 'failed' ? <Text type="danger">生成失败：{draftPreview.error || '未知错误'}</Text> : null}
+        {draftPreview?.status === 'superseded' ? (
+          <Alert
+            type="warning"
+            showIcon
+            style={{ marginBottom: 12 }}
+            message="此草稿已被新草稿顶替"
+            description="你在生成这份草稿之后又调整了偏好，系统已生成新版本。请回到对话查看最新草稿。"
+          />
+        ) : null}
         {draftPreview?.plan_json ? (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {inputDrift.drifted ? (
+              <Alert
+                type="warning"
+                showIcon
+                message="草稿与当前会话最新偏好存在差异"
+                description={
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                    <Text type="secondary" style={{ fontSize: 12 }}>
+                      下表展示草稿生成时使用的偏好与当前最新意图的差异。如需按最新偏好重新生成，请在对话里直接说"按最新偏好重新生成志愿方案"。
+                    </Text>
+                    <Table
+                      size="small"
+                      pagination={false}
+                      rowKey="key"
+                      columns={[
+                        { title: '维度', dataIndex: 'label', key: 'label', width: 110 },
+                        { title: '草稿基于', dataIndex: 'draft', key: 'draft', render: (v) => formatDriftValue(v) },
+                        { title: '当前最新', dataIndex: 'latest', key: 'latest', render: (v) => formatDriftValue(v) },
+                      ]}
+                      dataSource={inputDrift.changes.map((c) => ({
+                        key: c.key,
+                        label: DRIFT_KEY_LABELS[c.key] || c.key,
+                        draft: c.draft,
+                        latest: c.latest,
+                      }))}
+                    />
+                  </div>
+                }
+              />
+            ) : null}
+            {draftInputSummary && draftInputSummary.length > 0 ? (
+              <Descriptions size="small" bordered column={2} title="草稿生成依据">
+                {draftInputSummary.map((row) => (
+                  <Descriptions.Item key={row.key} label={row.label}>
+                    {formatDriftValue(row.value)}
+                  </Descriptions.Item>
+                ))}
+              </Descriptions>
+            ) : null}
             <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
               <Tag>学校数：{draftPreview.plan_json.stats?.schoolCount ?? 0}</Tag>
               <Tag>组数：{draftPreview.plan_json.stats?.groupCount ?? 0}</Tag>

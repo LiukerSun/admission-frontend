@@ -3,7 +3,7 @@ import type { VolunteerPlan } from './admission'
 
 type Envelope<T> = { code: number; message?: string; data?: T }
 
-export type PlanDraftStatus = 'generating' | 'ready' | 'failed' | 'adopted'
+export type PlanDraftStatus = 'generating' | 'ready' | 'failed' | 'adopted' | 'superseded'
 
 export type PlanDraft = {
   id: number
