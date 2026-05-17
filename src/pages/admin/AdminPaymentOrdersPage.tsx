@@ -413,7 +413,7 @@ export default function AdminPaymentOrdersPage() {
         title={detail ? `订单详情 ${detail.order.order_no}` : '订单详情'}
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
-        width={drawerWidth}
+        size={drawerWidth}
         styles={{ body: { padding: 0 } }}
         loading={detailLoading}
         extra={
@@ -427,9 +427,9 @@ export default function AdminPaymentOrdersPage() {
         }
       >
         {detail && (
-          <Space direction="vertical" size={0} style={{ width: '100%' }}>
+          <Space orientation="vertical" size={0} style={{ width: '100%' }}>
             <div style={{ padding: '16px 24px', background: '#F8FAFC', borderBottom: '1px solid #E2E8F0' }}>
-              <Space direction="vertical" size={8} style={{ width: '100%' }}>
+              <Space orientation="vertical" size={8} style={{ width: '100%' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
                   <Typography.Text strong style={{ fontSize: 16 }}>{detail.order.subject}</Typography.Text>
                   <Tag color="blue">{formatMoney(detail.order.amount, detail.order.currency)}</Tag>
@@ -477,7 +477,7 @@ export default function AdminPaymentOrdersPage() {
         title={selectedUserId ? `用户 ${selectedUserId} 的订单` : '用户订单'}
         open={userOrdersDrawerOpen}
         onClose={() => setUserOrdersDrawerOpen(false)}
-        width={drawerWidth}
+        size={drawerWidth}
       >
         <Table
           rowKey="order_no"

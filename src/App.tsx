@@ -194,8 +194,13 @@ function App() {
       theme={{
         token: {
           colorPrimary: '#1E40AF',
-          borderRadius: 6,
-          fontFamily: "'Fira Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+          colorSuccess: '#16A34A',
+          colorWarning: '#D97706',
+          colorError: '#DC2626',
+          colorTextBase: '#0F172A',
+          borderRadius: 8,
+          fontFamily:
+            "'Inter', 'Noto Sans SC', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif",
         },
       }}
     >

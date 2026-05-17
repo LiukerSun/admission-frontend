@@ -9,7 +9,7 @@ export interface AIMessage {
 
 export type SSEEvent =
   | { type: 'text_delta'; content: string }
-  | { type: 'widget'; id: string; kind: 'chart' | 'card'; payload: Record<string, unknown> }
+  | { type: 'widget'; id: string; kind: 'chart' | 'card' | 'form'; payload: Record<string, unknown> }
   | { type: 'tool_call_start'; call_id: string; tool_name: string }
   | { type: 'tool_call_end'; call_id: string; success: boolean; error?: string; result_content?: string }
   | { type: 'done'; data?: unknown }
@@ -33,21 +33,35 @@ function authHeaders(): HeadersInit {
   }
 }
 
+type StreamSSEOptions = {
+  method?: 'GET' | 'POST'
+  body?: unknown
+  // onStatus 在收到响应头时调用，用于让调用方在 204 / 409 等"没有 SSE
+  // 流"的状态码上短路（StreamActiveTurn 用 204 表示"没有 active turn"，
+  // ChatWithConversation 用 409 表示"已有 turn 在跑，请改走 stream"）。
+  // 返回 true 表示调用方已处理，streamSSE 直接退出且不当作错误。
+  onStatus?: (status: number, response: Response) => boolean | void
+}
+
 function streamSSE(
   url: string,
-  body: unknown,
+  options: StreamSSEOptions,
   onEvent: (event: SSEEvent) => void,
   onError?: (err: Error) => void
 ): () => void {
   const abortController = new AbortController()
+  const method = options.method || 'POST'
 
   fetch(url, {
-    method: 'POST',
+    method,
     headers: authHeaders(),
-    body: JSON.stringify(body),
+    body: options.body !== undefined ? JSON.stringify(options.body) : undefined,
     signal: abortController.signal,
   })
     .then(async (response) => {
+      if (options.onStatus && options.onStatus(response.status, response)) {
+        return
+      }
       if (!response.ok) {
         const text = await response.text()
         // SSE doesn't go through axios, so paywall detection happens inline.
@@ -103,7 +117,7 @@ export function streamChat(
   onEvent: (event: SSEEvent) => void,
   onError?: (err: Error) => void
 ): () => void {
-  return streamSSE(`${API_BASE_URL}/api/v1/ai/chat`, { messages }, onEvent, onError)
+  return streamSSE(`${API_BASE_URL}/api/v1/ai/chat`, { body: { messages } }, onEvent, onError)
 }
 
 export function streamChatWithConversation(
@@ -114,7 +128,7 @@ export function streamChatWithConversation(
 ): () => void {
   return streamSSE(
     `${API_BASE_URL}/api/v1/conversations/${conversationId}/ai-chat`,
-    { message },
+    { body: { message } },
     onEvent,
     onError
   )
@@ -125,5 +139,31 @@ export function streamRegenerateWithConversation(
   onEvent: (event: SSEEvent) => void,
   onError?: (err: Error) => void
 ): () => void {
-  return streamSSE(`${API_BASE_URL}/api/v1/conversations/${conversationId}/regenerate`, {}, onEvent, onError)
+  return streamSSE(`${API_BASE_URL}/api/v1/conversations/${conversationId}/regenerate`, { body: {} }, onEvent, onError)
+}
+
+// streamActiveTurn 续看某 conversation 当前/最近的 active turn。
+// onMissing 在 backend 返回 204（无 active turn）时触发，调用方可据此
+// 决定不显示 placeholder。无 204 时按常规 SSE 路径处理。
+export function streamActiveTurn(
+  conversationId: number,
+  onEvent: (event: SSEEvent) => void,
+  onMissing: () => void,
+  onError?: (err: Error) => void,
+): () => void {
+  return streamSSE(
+    `${API_BASE_URL}/api/v1/conversations/${conversationId}/active-turn-stream`,
+    {
+      method: 'GET',
+      onStatus: (status) => {
+        if (status === 204) {
+          onMissing()
+          return true
+        }
+        return false
+      },
+    },
+    onEvent,
+    onError,
+  )
 }

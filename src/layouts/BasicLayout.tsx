@@ -299,7 +299,7 @@ export default function BasicLayout() {
         placement="left"
         open={mobileMenuOpen}
         onClose={() => setMobileMenuOpen(false)}
-        width={288}
+        size={288}
       >
         <Menu
           mode="inline"

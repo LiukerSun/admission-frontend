@@ -5,7 +5,7 @@ import {
   formatRecommendationRequestBlock,
   prependRecommendationRequest,
 } from './recommendationRequest'
-import type { UserProfile } from '@/services/userProfile'
+import type { RecommendationSnapshot, UserProfile } from '@/services/userProfile'
 
 function makeProfile(overrides: Partial<UserProfile> = {}): UserProfile {
   return {
@@ -13,76 +13,76 @@ function makeProfile(overrides: Partial<UserProfile> = {}): UserProfile {
     completed: false,
     region_code: '230000',
     subject_category_code: 'physics',
+    elective_subjects: ['biology', 'chemistry'],
     total_score: 620,
-    provincial_rank: 4500,
-    plan_size: 40,
-    preferences: {},
     ...overrides,
   } as UserProfile
 }
 
+function makeSnapshot(overrides: Partial<RecommendationSnapshot> = {}): RecommendationSnapshot {
+  return {
+    region_code: '230000',
+    subject_category_code: 'physics',
+    elective_subjects: ['biology', 'chemistry'],
+    total_score: 620,
+    provincial_rank: 3304,
+    plan_size: 40,
+    year_used: 2025,
+    rank_source: 'exact',
+    ...overrides,
+  } as RecommendationSnapshot
+}
+
 describe('buildRecommendationRequestPayload', () => {
-  it('returns null when profile is null/undefined', () => {
-    expect(buildRecommendationRequestPayload(null)).toBeNull()
-    expect(buildRecommendationRequestPayload(undefined)).toBeNull()
-  })
-
-  it('returns null when any required scalar is missing', () => {
-    expect(
-      buildRecommendationRequestPayload(makeProfile({ total_score: undefined })),
-    ).toBeNull()
-    expect(
-      buildRecommendationRequestPayload(makeProfile({ subject_category_code: '' })),
-    ).toBeNull()
-    expect(
-      buildRecommendationRequestPayload(makeProfile({ provincial_rank: undefined })),
-    ).toBeNull()
-    expect(
-      buildRecommendationRequestPayload(makeProfile({ region_code: '   ' })),
-    ).toBeNull()
-  })
-
-  it('emits the 4 required scalars when present', () => {
-    const payload = buildRecommendationRequestPayload(makeProfile())
-    expect(payload).toMatchObject({
+  it('snapshot 路径：返回 6 个核心字段', () => {
+    const payload = buildRecommendationRequestPayload(makeProfile(), makeSnapshot())
+    expect(payload).toEqual({
       region_code: '230000',
       subject_category_code: 'physics',
       total_score: 620,
-      provincial_rank: 4500,
+      provincial_rank: 3304,
       plan_size: 40,
+      elective_subjects: ['biology', 'chemistry'],
     })
   })
 
-  it('omits empty arrays and empty strings from preferences', () => {
-    const payload = buildRecommendationRequestPayload(
-      makeProfile({
-        preferences: {
-          required_majors: [],
-          preferred_majors: ['计算机'],
-          family_resources: '',
-          holland_code: 'RIA',
-        },
-      }),
-    )
-    expect(payload).toBeDefined()
-    expect(payload!.required_majors).toBeUndefined()
-    expect(payload!.family_resources).toBeUndefined()
-    expect(payload!.preferred_majors).toEqual(['计算机'])
-    expect(payload!.holland_code).toBe('RIA')
+  it('snapshot 路径：snapshot 字段优先于 profile', () => {
+    // profile 上 region 是 110000，snapshot 上是 230000 → 应取 snapshot 的
+    const profile = makeProfile({ region_code: '110000' })
+    const snapshot = makeSnapshot({ region_code: '230000' })
+    const payload = buildRecommendationRequestPayload(profile, snapshot)
+    expect(payload!.region_code).toBe('230000')
   })
 
-  it('includes single-subject scores and budget when provided', () => {
-    const payload = buildRecommendationRequestPayload(
-      makeProfile({
-        math_score: 135,
-        english_score: 130,
-        preferences: { budget_tuition_max: 30000 },
-      }),
-    )
-    expect(payload).toMatchObject({
-      math_score: 135,
-      english_score: 130,
-      budget_tuition_max: 30000,
+  it('snapshot 失败 + profile 4 项齐全 → 回退到 profile 路径', () => {
+    const payload = buildRecommendationRequestPayload(makeProfile(), null)
+    expect(payload).toEqual({
+      region_code: '230000',
+      subject_category_code: 'physics',
+      total_score: 620,
+      elective_subjects: ['biology', 'chemistry'],
+    })
+  })
+
+  it('snapshot 失败 + profile 缺关键字段 → null', () => {
+    expect(buildRecommendationRequestPayload(null, null)).toBeNull()
+    expect(
+      buildRecommendationRequestPayload(makeProfile({ total_score: undefined }), null),
+    ).toBeNull()
+    expect(
+      buildRecommendationRequestPayload(makeProfile({ elective_subjects: undefined }), null),
+    ).toBeNull()
+  })
+
+  it('snapshot rank=0 视为不可用 → 回退 profile', () => {
+    const snapshot = makeSnapshot({ provincial_rank: 0 })
+    const payload = buildRecommendationRequestPayload(makeProfile(), snapshot)
+    // 回退路径不带 provincial_rank/plan_size
+    expect(payload).toEqual({
+      region_code: '230000',
+      subject_category_code: 'physics',
+      total_score: 620,
+      elective_subjects: ['biology', 'chemistry'],
     })
   })
 })
@@ -101,23 +101,24 @@ describe('buildRecommendationRequestBlock', () => {
     expect(buildRecommendationRequestBlock(null)).toBeNull()
   })
 
-  it('returns a fenced block when payload exists', () => {
-    const block = buildRecommendationRequestBlock(makeProfile())
+  it('returns a fenced block when payload exists (snapshot path)', () => {
+    const block = buildRecommendationRequestBlock(makeProfile(), makeSnapshot())
     expect(block).toMatch(/^```recommendation_request\n[\s\S]+\n```$/)
-    // The block is valid JSON inside the fence.
     const inner = block!.replace(/^```recommendation_request\n/, '').replace(/\n```$/, '')
     expect(() => JSON.parse(inner)).not.toThrow()
   })
 })
 
 describe('prependRecommendationRequest', () => {
-  it('returns the original message when no profile / required missing', () => {
+  it('returns the original message when no required fields', () => {
     expect(prependRecommendationRequest('你好', null)).toBe('你好')
-    expect(prependRecommendationRequest('你好', makeProfile({ total_score: undefined }))).toBe('你好')
+    expect(prependRecommendationRequest('你好', makeProfile({ total_score: undefined }))).toBe(
+      '你好',
+    )
   })
 
   it('prepends the block to the message with a blank-line separator', () => {
-    const result = prependRecommendationRequest('你好', makeProfile())
+    const result = prependRecommendationRequest('你好', makeProfile(), makeSnapshot())
     expect(result.startsWith('```recommendation_request\n')).toBe(true)
     expect(result.endsWith('\n\n你好')).toBe(true)
   })

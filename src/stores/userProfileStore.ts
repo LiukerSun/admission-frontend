@@ -5,19 +5,12 @@ import {
   type UserProfile,
 } from '@/services/userProfile'
 
-// Counts every "concrete" answer the user supplied across the 21 logical
-// slots the questionnaire surfaces:
-//   10 scalars (region/subject/total/rank/plan_size/strategy/4 单科)
-// +  8 array preferences (required/preferred/excluded majors+keywords +
-//      preferred/excluded cities+provinces)
-// +  1 holland code
-// +  1 family/career bundle (any of family_resources, family_economy,
-//      career_plans non-empty counts once — they describe context the AI
-//      rarely needs all three of)
-// +  1 budget_tuition_max
-// = 21
-// Used by the dashboard progress bar and the hero card.
-const FILLABLE_FIELD_COUNT = 21
+// 极简版完整度：只看「必填基本信息」4 项 ——
+//   region / subject / electives(4选2) / total_score
+// 其余可选字段（preferences / 单科分 / strategy 等）虽仍存在 DB 上以兼容老数据，
+// 但用户在 profile-survey 里不再填，因此不计入完整度。dashboard 进度条和 hero
+// 卡片读取这个计数，保持口径一致：填完这 4 项 = 100%。
+const FILLABLE_FIELD_COUNT = 4
 
 function countFilled(profile: UserProfile | null): number {
   if (!profile) return 0
@@ -26,13 +19,6 @@ function countFilled(profile: UserProfile | null): number {
     'region_code',
     'subject_category_code',
     'total_score',
-    'provincial_rank',
-    'plan_size',
-    'priority_strategy',
-    'math_score',
-    'physics_score',
-    'chinese_score',
-    'english_score',
   ]
   for (const key of scalars) {
     const v = (profile as unknown as Record<string, unknown>)[key]
@@ -42,34 +28,9 @@ function countFilled(profile: UserProfile | null): number {
       n += 1
     }
   }
-  const prefs = profile.preferences
-  if (prefs) {
-    const arrayFields = [
-      prefs.required_majors,
-      prefs.preferred_majors,
-      prefs.excluded_majors,
-      prefs.excluded_keywords,
-      prefs.preferred_cities,
-      prefs.excluded_cities,
-      prefs.preferred_provinces,
-      prefs.excluded_provinces,
-    ]
-    for (const arr of arrayFields) {
-      if (arr && arr.length > 0) n += 1
-    }
-    if (prefs.holland_code && prefs.holland_code.trim() !== '') n += 1
-    // family_resources / family_economy / career_plans collectively count
-    // as one slot — they describe context the AI rarely needs all three of.
-    if (
-      (prefs.family_resources && prefs.family_resources.trim() !== '') ||
-      (prefs.family_economy && prefs.family_economy.trim() !== '') ||
-      (prefs.career_plans && prefs.career_plans.trim() !== '')
-    ) {
-      n += 1
-    }
-    if (typeof prefs.budget_tuition_max === 'number') {
-      n += 1
-    }
+  // 再选科目：长度=2 算 1 个 slot；少于 2 不算（与后端 markCompleted 一致）
+  if (Array.isArray(profile.elective_subjects) && profile.elective_subjects.length === 2) {
+    n += 1
   }
   return Math.min(n, FILLABLE_FIELD_COUNT)
 }

@@ -4921,27 +4921,25 @@ export interface components {
             required_majors?: string[];
         };
         "userprofile.UpsertRequest": {
-            /** @example 120 */
-            chinese_score?: number;
-            /** @example 130 */
-            english_score?: number;
-            /** @example 135 */
-            math_score?: number;
-            /** @example 92 */
-            physics_score?: number;
-            /** @example 40 */
-            plan_size?: number;
-            preferences?: components["schemas"]["userprofile.Preferences"];
-            /** @example auto */
-            priority_strategy?: string;
-            /** @example 4500 */
-            provincial_rank?: number;
+            /** Elective subjects (4 选 2): biology / chemistry / geography / politics */
+            elective_subjects?: string[];
             /** @example 230000 */
             region_code?: string;
             /** @example physics */
             subject_category_code?: string;
             /** @example 620 */
             total_score?: number;
+        };
+        "snapshot.Snapshot": {
+            region_code: string;
+            subject_category_code: string;
+            elective_subjects: string[];
+            total_score: number;
+            provincial_rank: number;
+            plan_size: number;
+            year_used: number;
+            /** "exact" | "floored" | "below_min" | "prev_year" */
+            rank_source: string;
         };
         "web.Response": {
             code?: number;

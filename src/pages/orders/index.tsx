@@ -301,14 +301,14 @@ export default function OrdersPage() {
         title={selectedOrder ? `订单详情 ${selectedOrder.order_no}` : '订单详情'}
         open={detailOpen}
         onClose={() => setDetailOpen(false)}
-        width={drawerWidth}
+        size={drawerWidth}
         styles={{ body: { padding: 0 } }}
         loading={detailLoading}
       >
         {selectedOrder && (
-          <Space direction="vertical" size={0} style={{ width: '100%' }}>
+          <Space orientation="vertical" size={0} style={{ width: '100%' }}>
             <div style={{ padding: '16px 24px', background: '#F8FAFC', borderBottom: '1px solid #E2E8F0' }}>
-              <Space direction="vertical" size={8} style={{ width: '100%' }}>
+              <Space orientation="vertical" size={8} style={{ width: '100%' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <Typography.Text strong style={{ fontSize: 16 }}>
                     {selectedOrder.subject}
@@ -324,7 +324,7 @@ export default function OrdersPage() {
             </div>
 
             <div style={{ padding: '16px 24px' }}>
-              <Space direction="vertical" size={12} style={{ width: '100%' }}>
+              <Space orientation="vertical" size={12} style={{ width: '100%' }}>
                 <DetailRow label="订单号" value={selectedOrder.order_no} />
                 <DetailRow label="套餐" value={selectedOrder.plan_code || '-'} />
                 <DetailRow

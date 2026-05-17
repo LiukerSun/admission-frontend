@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { Avatar, Button, Drawer, Empty, Layout, Popover, Spin, Table, Tag, Typography, message, theme } from 'antd'
+import { Avatar, Button, Drawer, Empty, Layout, Spin, Table, Tag, Typography, message, theme } from 'antd'
 import type { AxiosError } from 'axios'
 import {
   BulbOutlined,
@@ -15,18 +15,18 @@ import {
 import { Bubble, Sender, Welcome } from '@ant-design/x'
 import type { BubbleItemType } from '@ant-design/x/es/bubble'
 import { conversationApi, type Conversation, type Message, type ToolCallRecord, type ToolResultRecord } from '@/services/conversation'
-import { streamChatWithConversation, streamRegenerateWithConversation, type SSEEvent } from '@/services/ai'
+import { streamActiveTurn, streamChatWithConversation, streamRegenerateWithConversation, type SSEEvent } from '@/services/ai'
 import { useAuthStore } from '@/stores/authStore'
 import { useUserProfileStore } from '@/stores/userProfileStore'
 import { usePaywallStore } from '@/stores/paywallStore'
-import { formatRecommendationRequestBlock, prependRecommendationRequest } from '@/utils/recommendationRequest'
+import { prependRecommendationRequest } from '@/utils/recommendationRequest'
+import { userProfileApi } from '@/services/userProfile'
 import { planDraftsApi, type PlanDraft } from '@/services/planDrafts'
 import { volunteerPlansApi } from '@/services/volunteerPlans'
 import MessageEditor from '@/components/ai-chat/MessageEditor'
 import SegmentRenderer from '@/components/ai-chat/SegmentRenderer'
-import RecommendationPromptCard, { type RecommendationSnapshot } from '@/components/ai-chat/RecommendationPromptCard'
 import SuggestionPills from '@/components/ai-chat/SuggestionPills'
-import type { ChatStatus, Segment, ToolCallStatus } from '@/components/ai-chat/types'
+import type { ChatStatus, FormSubmissionPayload, FormSubmissionValue, Segment, ToolCallStatus } from '@/components/ai-chat/types'
 
 const { Sider, Content } = Layout
 const { Text } = Typography
@@ -39,66 +39,6 @@ interface ChatItem extends BubbleItemType {
   chatStatus: ChatStatus
   toolCallStatus?: ToolCallStatus
   serverId?: number
-}
-
-// Fallback: scans all code blocks but only accepts the explicit
-// `recommendation_snapshot` tag. We deliberately do NOT accept `json` or
-// empty-lang fences here — those are commonly used for general JSON
-// payloads in the chat (e.g. tool input previews) and would otherwise be
-// misinterpreted as user-input snapshots.
-function parseRecommendationSnapshotJSONFromCodeBlocks(content: string): Partial<RecommendationSnapshot> | null {
-  const codeBlockRe = /```\s*(\w+)\s*\n([\s\S]*?)\n?```/g
-  let last: Partial<RecommendationSnapshot> | null = null
-  for (const match of content.matchAll(codeBlockRe)) {
-    const lang = (match[1] || '').trim().toLowerCase()
-    const body = (match[2] || '').trim()
-
-    if (lang !== 'recommendation_snapshot') continue
-    if (!body.startsWith('{') || !body.endsWith('}')) continue
-
-    try {
-      const parsed = JSON.parse(body) as Partial<RecommendationSnapshot>
-      if (!parsed || typeof parsed !== 'object') continue
-      const keys: (keyof RecommendationSnapshot)[] = [
-        'region_code',
-        'subject_category_code',
-        'total_score',
-        'provincial_rank',
-        'priority_strategy',
-        'plan_size',
-        'enable_llm_tuning',
-      ]
-      if (!keys.some((k) => parsed[k] !== undefined)) continue
-      last = parsed
-    } catch {
-      continue
-    }
-  }
-
-  return last
-}
-
-function parseRecommendationSnapshot(content: string): Partial<RecommendationSnapshot> | null {
-  // Walk all code fences and pick the last `recommendation_snapshot`
-  // block. Streaming chunks can stitch together multiple blocks in one
-  // message; the latest one wins.
-  const codeBlockRe = /```\s*(\w+)\s*\n([\s\S]*?)\n?```/g
-  let last: Partial<RecommendationSnapshot> | null = null
-  for (const match of content.matchAll(codeBlockRe)) {
-    const lang = (match[1] || '').trim().toLowerCase()
-    if (lang !== 'recommendation_snapshot') continue
-    const body = (match[2] || '').trim()
-    try {
-      const parsed = JSON.parse(body) as Partial<RecommendationSnapshot>
-      if (parsed && typeof parsed === 'object') last = parsed
-    } catch {
-      // partial / malformed block — keep looking
-    }
-  }
-  if (last) return last
-  // Old code paths produced subtly different fences; fall back to the
-  // scanner before giving up.
-  return parseRecommendationSnapshotJSONFromCodeBlocks(content)
 }
 
 // ITERATION_BREAK mirrors the backend's agent.IterationBreak. The
@@ -134,7 +74,7 @@ function messageToSegments(m: Message): Segment[] {
   const textChunks = content.split(ITERATION_BREAK)
   const widgetSegments: Segment[] = []
   widgets.forEach((w) => {
-    if (w && typeof w.id === 'string' && (w.kind === 'chart' || w.kind === 'card') && w.payload) {
+    if (w && typeof w.id === 'string' && (w.kind === 'chart' || w.kind === 'card' || w.kind === 'form') && w.payload) {
       widgetSegments.push({ type: 'widget', id: w.id, kind: w.kind, payload: w.payload })
     }
   })
@@ -244,16 +184,24 @@ export default function AdmissionAIPage() {
   // re-trigger the effect on every render or stale-closure on
   // `conversationId`. The ref sidesteps both problems.
   const handleSubmitRef = useRef<(value: string) => Promise<void>>(async () => {})
+  // attemptResumeRef 用 ref 包是因为 attemptResume 闭包要看到最新的
+  // startRegenerateStream/onStreamEvent/loading 状态；切对话 effect
+  // 调用时不能让它捕获旧 closure。
+  const attemptResumeRef = useRef<(convId: number) => void>(() => {})
 
-  const [recommendationSnapshot, setRecommendationSnapshot] = useState<RecommendationSnapshot>({
-    region_code: '230000',
-    priority_strategy: 'auto',
-    enable_llm_tuning: false,
-    plan_size: 40,
-  })
-  const touchedRecommendationSnapshotRef = useRef<Set<keyof RecommendationSnapshot>>(new Set())
-  const [promptCardEditing, setPromptCardEditing] = useState(false)
-  const [promptCardOpen, setPromptCardOpen] = useState(false)
+  // welcomeChips 是欢迎页（无 conversation 时）的动态推荐胶囊。后端
+  // 基于 user profile + 最近对话标题让 LLM 生成。失败 / 仍在加载 时
+  // 用一组兜底文案，保证欢迎页不空。
+  const welcomeChipFallback = useMemo(
+    () => [
+      '帮我做一份志愿方案',
+      '我只想看上海、北京和广州的院校',
+      '我想学计算机或人工智能方向',
+    ],
+    [],
+  )
+  const [welcomeChips, setWelcomeChips] = useState<string[]>(welcomeChipFallback)
+
   const [draftPreview, setDraftPreview] = useState<PlanDraft | null>(null)
   const [draftPreviewLoading, setDraftPreviewLoading] = useState(false)
   const [planDrawerOpen, setPlanDrawerOpen] = useState(false)
@@ -313,6 +261,28 @@ export default function AdmissionAIPage() {
     void loadUserProfile()
   }, [loadUserProfile])
 
+  // 进入欢迎页时拉一次个性化 chips。仅在用户**没有**指定 conversationId
+  // 时调用——选中具体对话时根本不显示欢迎页，无需打 LLM。后端走 Redis
+  // 缓存，多次进出页面不重复付费。
+  useEffect(() => {
+    if (conversationId) return
+    let ignore = false
+    void Promise.resolve().then(async () => {
+      try {
+        const res = await conversationApi.welcomeSuggestions()
+        const list = res.data?.data?.suggestions
+        if (!ignore && Array.isArray(list) && list.length > 0) {
+          setWelcomeChips(list)
+        }
+      } catch {
+        // 失败保持 fallback——这是 nice-to-have，不阻塞用户进入对话。
+      }
+    })
+    return () => {
+      ignore = true
+    }
+  }, [conversationId])
+
   useEffect(() => {
     // Cancel any in-flight stream from the previously selected
     // conversation. Without this, switching conversations leaves the
@@ -356,15 +326,6 @@ export default function AdmissionAIPage() {
       setEditingKey(null)
       setDraftPreview(null)
       setPlanDrawerOpen(false)
-      touchedRecommendationSnapshotRef.current = new Set()
-      setPromptCardEditing(false)
-      setPromptCardOpen(false)
-      setRecommendationSnapshot({
-        region_code: '230000',
-        priority_strategy: 'auto',
-        enable_llm_tuning: false,
-        plan_size: 40,
-      })
 
       if (!conversationId) {
         // No id yet (e.g. user navigated to bare `/admission/ai`). Keep
@@ -374,10 +335,11 @@ export default function AdmissionAIPage() {
         return
       }
 
+      let loadedItems: ChatItem[] | null = null
       try {
-        const items = await loadMessages(conversationId)
+        loadedItems = await loadMessages(conversationId)
         if (!ignore) {
-          setMessages(items)
+          setMessages(loadedItems)
         }
       } catch (err) {
         if (ignore) return
@@ -393,6 +355,20 @@ export default function AdmissionAIPage() {
       }
 
       if (ignore) return
+
+      // 切回对话时尝试续看后台 turn。后端如果有 active turn，会推回
+      // 这一轮的完整事件流（backlog + 实时增量）；前端注入一个 AI
+      // placeholder 来承接事件，复用 onStreamEvent 处理。
+      // pendingDraft 路径不走 resume（要发新问题，不是续旧 turn）。
+      if (!pendingDraft && loadedItems && loadedItems.length > 0) {
+        const last = loadedItems[loadedItems.length - 1]
+        // 只在尾部是 user 时尝试续看——如果尾部已经是 ai，说明上轮
+        // 已经在 DB 里有完整记录，没必要再挂 SSE。
+        if (last.role === 'user') {
+          attemptResumeRef.current(conversationId)
+        }
+      }
+
       if (pendingDraft) {
         // Fire and forget. We go through the ref so we get the
         // *current* handleSubmit closure — which sees the up-to-date
@@ -464,75 +440,6 @@ export default function AdmissionAIPage() {
     }
   }, [draftToAdopt, isArchived])
 
-  const parsedRecommendationSnapshot = useMemo(() => {
-    // Only parse against a *completed* AI message — half-streamed JSON
-    // inside a code fence will throw inside parseRecommendationSnapshot
-    // and we don't want to repeatedly thrash the form fields as deltas
-    // arrive.
-    const lastAI = [...messages].reverse().find((m) => m.role === 'ai')
-    if (!lastAI || lastAI.chatStatus === 'streaming') return null
-    return parseRecommendationSnapshot(lastAI.content || '')
-  }, [messages])
-
-  useEffect(() => {
-    if (isArchived) return
-    if (!parsedRecommendationSnapshot) return
-
-    setRecommendationSnapshot((prev) => {
-      const touched = touchedRecommendationSnapshotRef.current
-      const next: RecommendationSnapshot = { ...prev, region_code: '230000' }
-      ;(Object.keys(parsedRecommendationSnapshot) as (keyof RecommendationSnapshot)[]).forEach((k) => {
-        const v = parsedRecommendationSnapshot[k]
-        if (v === undefined || v === null) return
-        if (touched.has(k)) return
-        next[k] = v as never
-      })
-      return next
-    })
-  }, [isArchived, parsedRecommendationSnapshot])
-
-  const hasRequiredRecommendationFields = useMemo(() => {
-    return (
-      recommendationSnapshot.region_code === '230000' &&
-      !!recommendationSnapshot.subject_category_code &&
-      typeof recommendationSnapshot.total_score === 'number' &&
-      recommendationSnapshot.total_score > 0 &&
-      typeof recommendationSnapshot.provincial_rank === 'number' &&
-      recommendationSnapshot.provincial_rank > 0
-    )
-  }, [recommendationSnapshot.provincial_rank, recommendationSnapshot.region_code, recommendationSnapshot.subject_category_code, recommendationSnapshot.total_score])
-
-  const showPromptFab = useMemo(() => {
-    if (isArchived) return false
-    return hasRequiredRecommendationFields
-  }, [hasRequiredRecommendationFields, isArchived])
-
-  const canGeneratePlan = useMemo(() => {
-    if (!showPromptFab) return false
-    if (loading) return false
-    return true
-  }, [loading, showPromptFab])
-
-  const handleRecommendationSnapshotChange = useCallback((next: Partial<RecommendationSnapshot>, touchedKeys: (keyof RecommendationSnapshot)[]) => {
-    touchedKeys.forEach((k) => touchedRecommendationSnapshotRef.current.add(k))
-    setRecommendationSnapshot((prev) => ({ ...prev, ...next, region_code: '230000' }))
-  }, [])
-
-  const handleGeneratePlan = () => {
-    if (!canGeneratePlan) return
-    const payload = {
-      region_code: '230000',
-      subject_category_code: recommendationSnapshot.subject_category_code,
-      total_score: recommendationSnapshot.total_score,
-      provincial_rank: recommendationSnapshot.provincial_rank,
-      priority_strategy: recommendationSnapshot.priority_strategy || 'auto',
-      enable_llm_tuning: !!recommendationSnapshot.enable_llm_tuning,
-      plan_size: recommendationSnapshot.plan_size || 40,
-    }
-    const msg = '请根据已收集信息生成志愿方案。\n\n' + formatRecommendationRequestBlock(payload) + '\n'
-    void handleSubmit(msg)
-  }
-
   const scrollToBottom = () => {
     if (listRef.current) {
       listRef.current.scrollTop = listRef.current.scrollHeight
@@ -551,6 +458,43 @@ export default function AdmissionAIPage() {
       if (messages[i].role === 'user') return messages[i].key
     }
     return null
+  }, [messages])
+
+  // lastMessageIsUser 表示最后一条消息是 user 角色 —— 通常意味着 AI
+  // 上一轮没产生回复（最典型场景：用户在生成过程中切换了对话，后端把
+  // 流断掉但保留了 user message）。前端据此显示"继续生成"按钮，让用户
+  // 一键触发 regenerate 重跑那一轮，不必重打一遍问题。
+  const lastMessageIsUser = useMemo(() => {
+    if (messages.length === 0) return false
+    return messages[messages.length - 1].role === 'user'
+  }, [messages])
+
+  // submittedForms maps a form widget id → the values the user submitted
+  // for that widget. Built by scanning *user* messages for
+  // ```form_submission``` code blocks; FormWidget reads this map to
+  // render past forms in read-only / 已提交 state instead of letting the
+  // user resubmit a form whose values are already in the conversation.
+  const submittedForms = useMemo(() => {
+    const acc: Record<string, Record<string, FormSubmissionValue>> = {}
+    const codeBlockRe = /```\s*form_submission\s*\n([\s\S]*?)\n?```/g
+    messages.forEach((m) => {
+      if (m.role !== 'user') return
+      const content = m.content || ''
+      for (const match of content.matchAll(codeBlockRe)) {
+        try {
+          const parsed = JSON.parse((match[1] || '').trim()) as {
+            form_id?: string
+            values?: Record<string, FormSubmissionValue>
+          }
+          if (parsed?.form_id) {
+            acc[parsed.form_id] = parsed.values || {}
+          }
+        } catch {
+          // ignore malformed blocks
+        }
+      }
+    })
+    return acc
   }, [messages])
 
   const flushPending = useCallback((force?: boolean) => {
@@ -920,7 +864,11 @@ export default function AdmissionAIPage() {
     }
 
     let convId = conversationId
-    const isNewConversation = !convId
+    // 是否为本对话的第一条 user 消息——决定要不要把 profile snapshot
+    // 注入成 recommendation_request 代码块。注意：不能用「URL 是否带 id」
+    // 来判断，否则"先点新建对话→再发消息"路径会漏注入（conversationId
+    // 在 navigate 后就有值了，但其实对话里一条 user 消息都没有）。
+    const isFirstUserMessage = !messages.some((m) => m.role === 'user')
     if (!convId) {
       try {
         const res = await conversationApi.create(value.slice(0, 20))
@@ -940,13 +888,25 @@ export default function AdmissionAIPage() {
 
     // For new conversations only, prepend the user's saved profile as a
     // `recommendation_request` Markdown block so the AI agent can extract
-    // basic info (region/subject/score/rank/preferences) without re-asking.
+    // basic info (region/subject/score/electives/rank/preferences) without re-asking.
     // The UI shows the user's original text (block stripped by SegmentRenderer);
     // only the backend SSE payload carries the block.
+    //
+    // PR1+：优先调后端 GET /me/profile/snapshot 拿到含已换算位次和已查表志愿数的
+    // 完整快照；失败时（profile 未填完 / 一分一段表缺失 / 网络）回退到 profile 字段。
+    // snapshot 失败不是阻塞条件 —— prepend 函数本身在两边都缺时返回原消息，
+    // 让 AI agent 走"主动询问"分支。
     let outboundValue = value
-    if (isNewConversation) {
+    if (isFirstUserMessage) {
       const profile = useUserProfileStore.getState().profile
-      outboundValue = prependRecommendationRequest(value, profile)
+      let snapshot = null
+      try {
+        const res = await userProfileApi.snapshot()
+        snapshot = res.data?.data ?? null
+      } catch {
+        // 422（profile 未完成 / rank 数据缺）或网络错误：静默回退，不阻塞用户提问
+      }
+      outboundValue = prependRecommendationRequest(value, profile, snapshot)
     }
 
     setSuggestionsByConversation((prev) => ({ ...prev, [convId]: [] }))
@@ -991,6 +951,67 @@ export default function AdmissionAIPage() {
     handleSubmitRef.current = handleSubmit
   })
 
+  // attemptResume 订阅 backend 的 active turn 流。后端 204 → 没有 turn，
+  // 静默退出；200 → 收 backlog + 实时增量。注入 AI placeholder 让
+  // onStreamEvent 的 deltas / widgets / done 落到对话流里。
+  const attemptResume = useCallback((convId: number) => {
+    // 已经在跑别的 stream（比如用户切回来又立即发了新消息）就别再开。
+    if (abortRef.current) return
+
+    const aiMessageKey = Date.now()
+    let placeholderInserted = false
+    const insertPlaceholder = () => {
+      if (placeholderInserted) return
+      placeholderInserted = true
+      const aiMessage: ChatItem = {
+        key: aiMessageKey,
+        role: 'ai',
+        content: '',
+        segments: [],
+        chatStatus: 'streaming',
+        status: 'loading',
+        placement: 'start',
+        loading: true,
+      }
+      setMessages((prev) => [...prev, aiMessage])
+      activeAIKeyRef.current = aiMessageKey
+      setLoading(true)
+    }
+
+    pendingBufferRef.current = ''
+    lastFlushRef.current = 0
+
+    const abort = streamActiveTurn(
+      convId,
+      (event) => {
+        insertPlaceholder()
+        onStreamEvent(convId, aiMessageKey, event)
+      },
+      () => {
+        // 204：没有 active turn，把刚才占位的 placeholder（如果有）
+        // 撤掉——不会发生，因为 onMissing 在第一个 event 之前触发，
+        // 但保险起见加上。
+        if (placeholderInserted) {
+          setMessages((prev) => prev.filter((m) => m.key !== aiMessageKey))
+          activeAIKeyRef.current = null
+          setLoading(false)
+        }
+        abortRef.current = null
+      },
+      (err) => {
+        // 网络错误或 4xx——静默忽略，因为 resume 是"锦上添花"，失败
+        // 时用户仍能看到最后落盘的对话状态。
+        console.warn('resume active turn failed', err)
+        abortRef.current = null
+      },
+    )
+    abortRef.current = abort
+  }, [onStreamEvent])
+
+  useEffect(() => {
+    attemptResumeRef.current = attemptResume
+  })
+
   const handleCancel = () => {
     abortRef.current?.()
     setLoading(false)
@@ -1017,6 +1038,40 @@ export default function AdmissionAIPage() {
     if (isArchived) return
     setInputValue(value)
   }
+
+  // handleFormSubmit fires when the user submits a render_form widget.
+  // We package the values into a ```form_submission``` code block and
+  // send it as a regular user message — the backend agent picks up that
+  // block as preference input and runs the next dry_run iteration. The
+  // SegmentRenderer hides the raw JSON block and shows a "✓ 已提交"
+  // chip instead, so the chat reads naturally.
+  //
+  // ownerConvId 是 FormWidget 挂载时固化的 conv id。如果与当前
+  // conversationId 不一致（用户切走了原对话又点了旧 widget 的按钮），
+  // 必须拒绝——否则会被 handleSubmit 当成"新对话的首条消息"创建一个
+  // 标题为 ```form_submission... 的脏对话（见 conv 18 bug）。
+  const handleFormSubmit = useCallback((submission: FormSubmissionPayload, ownerConvId: number | null) => {
+    if (isArchived) {
+      message.info('该对话已归档，仅可查看')
+      return
+    }
+    if (loading) {
+      message.info('正在等待 AI 回复，请稍候再提交')
+      return
+    }
+    if (ownerConvId != null && ownerConvId !== conversationId) {
+      message.warning('此表单属于另一个对话，已忽略提交。请切回原对话再操作。')
+      return
+    }
+    if (!conversationId) {
+      message.warning('当前不在任何对话中，无法提交表单。')
+      return
+    }
+    const block = '```form_submission\n' + JSON.stringify(submission) + '\n```'
+    // 走 ref 而不是直接 closure 调 handleSubmit，避免把它列入 deps
+    // 让 useCallback 每次 render 都 invalidate。
+    void handleSubmitRef.current(block)
+  }, [isArchived, loading, conversationId])
 
   const handlePickWelcomeQuestion = async (value: string) => {
     if (!value.trim()) return
@@ -1111,6 +1166,49 @@ export default function AdmissionAIPage() {
       setEditingSaving(false)
       message.error('编辑失败，请稍后重试')
     }
+  }
+
+  // handleContinueGenerate 用于"上轮 AI 没产生回复"的恢复路径——典型
+  // 触发场景：用户在 AI 生成时切到另一对话，后端把流断开但保留了 user
+  // message。此时对话末尾是一条孤立的 user 消息，没有 lastAIKey，不能
+  // 走 handleRegenerate 那条"替换已有 AI bubble"的分支。这里直接插一个
+  // 空 AI placeholder，再用 regenerate 端点重跑——backend Regenerate
+  // 当 last 是 user 时不 rollback，正好等价于"针对这条 user 再答一次"。
+  const handleContinueGenerate = () => {
+    if (isArchived) {
+      message.info('该对话已归档，仅可查看')
+      return
+    }
+    if (!conversationId || loading) return
+    if (!lastMessageIsUser) return
+
+    if (!useAuthStore.getState().hasActiveMembership) {
+      usePaywallStore.getState().openPaywall({
+        featureName: '智能填报',
+        trigger: 'pre_check',
+        recommendedPlan: 'quarterly',
+      })
+      return
+    }
+
+    setSuggestionsByConversation((prev) => ({ ...prev, [conversationId]: [] }))
+
+    const aiMessageKey = Date.now()
+    const aiMessage: ChatItem = {
+      key: aiMessageKey,
+      role: 'ai',
+      content: '',
+      segments: [],
+      chatStatus: 'streaming',
+      status: 'loading',
+      placement: 'start',
+      loading: true,
+    }
+    setMessages((prev) => [...prev, aiMessage])
+    setLoading(true)
+
+    setTimeout(scrollToBottom, 50)
+    startRegenerateStream(conversationId, aiMessageKey)
   }
 
   const handleRegenerate = () => {
@@ -1241,7 +1339,7 @@ export default function AdmissionAIPage() {
               <Welcome
                 icon={<RobotOutlined style={{ fontSize: 48, color: token.colorPrimary }} />}
                 title="智能填报助手"
-                description="我可以帮你筛选院校、分析录取数据、制定志愿填报策略。"
+                description="告诉我你的分数和偏好，我会逐轮收窄候选池，最终生成可一键保存的志愿表草稿。"
               />
               {!hasCompletedProfile && (
                 <button
@@ -1267,27 +1365,16 @@ export default function AdmissionAIPage() {
                 </button>
               )}
               <div style={{ marginTop: 24, display: 'flex', gap: 12, flexWrap: 'wrap', justifyContent: 'center' }}>
-                <Tag
-                  icon={<BulbOutlined />}
-                  style={{ cursor: 'pointer', padding: '6px 12px', fontSize: 14 }}
-                  onClick={() => void Promise.resolve().then(() => handlePickWelcomeQuestion('我想看985院校在黑龙江的录取数据'))}
-                >
-                  我想看985院校在黑龙江的录取数据
-                </Tag>
-                <Tag
-                  icon={<BulbOutlined />}
-                  style={{ cursor: 'pointer', padding: '6px 12px', fontSize: 14 }}
-                  onClick={() => void Promise.resolve().then(() => handlePickWelcomeQuestion('我不想去北京的学校'))}
-                >
-                  我不想去北京的学校
-                </Tag>
-                <Tag
-                  icon={<BulbOutlined />}
-                  style={{ cursor: 'pointer', padding: '6px 12px', fontSize: 14 }}
-                  onClick={() => void Promise.resolve().then(() => handlePickWelcomeQuestion('我的分数是650分，理科'))}
-                >
-                  我的分数是650分，理科
-                </Tag>
+                {welcomeChips.map((chip) => (
+                  <Tag
+                    key={chip}
+                    icon={<BulbOutlined />}
+                    style={{ cursor: 'pointer', padding: '6px 12px', fontSize: 14 }}
+                    onClick={() => void Promise.resolve().then(() => handlePickWelcomeQuestion(chip))}
+                  >
+                    {chip}
+                  </Tag>
+                ))}
               </div>
             </div>
           ) : (
@@ -1319,6 +1406,20 @@ export default function AdmissionAIPage() {
                               >
                                 编辑
                               </Button>
+                              {/* lastMessageIsUser=true 表示这条 user 是对话末尾且
+                                  AI 没有回复（典型：上次生成中切走）。给一个一键
+                                  续跑入口，避免用户复制问题重发。归档对话下隐藏。 */}
+                              {lastMessageIsUser && !isArchived && !loading ? (
+                                <Button
+                                  type="text"
+                                  size="small"
+                                  icon={<RedoOutlined />}
+                                  style={{ color: token.colorPrimary }}
+                                  onClick={handleContinueGenerate}
+                                >
+                                  继续生成
+                                </Button>
+                              ) : null}
                             </div>
                           )
                         : null,
@@ -1334,7 +1435,11 @@ export default function AdmissionAIPage() {
                               onSave={(v) => void handleSaveEdit(chatItem, v)}
                             />
                           ) : (
-                            <SegmentRenderer segments={chatItem.segments} />
+                            <SegmentRenderer
+                              segments={chatItem.segments}
+                              submittedForms={submittedForms}
+                              conversationId={conversationId}
+                            />
                           )}
                         </div>
                       </div>
@@ -1374,7 +1479,12 @@ export default function AdmissionAIPage() {
                       // double-up the loading indicator.
                       <div className="ai-chat-bubble ai-chat-bubble-ai">
                         <div className="ai-chat-bubble-body">
-                          <SegmentRenderer segments={chatItem.segments} />
+                          <SegmentRenderer
+                            segments={chatItem.segments}
+                            onFormSubmit={handleFormSubmit}
+                            submittedForms={submittedForms}
+                            conversationId={conversationId}
+                          />
                         </div>
                       </div>
                     ),
@@ -1396,53 +1506,14 @@ export default function AdmissionAIPage() {
             <div style={{ flex: 1, minWidth: 0 }}>
               <SuggestionPills suggestions={suggestions} disabled={!!inputValue.trim()} onPick={handlePickSuggestion} />
             </div>
-            {showPromptFab ? (
-              <Popover
-                trigger="click"
-                placement="topRight"
-                open={promptCardOpen}
-                onOpenChange={(open) => {
-                  setPromptCardOpen(open)
-                  if (!open) setPromptCardEditing(false)
-                }}
-                content={
-                  <RecommendationPromptCard
-                    snapshot={recommendationSnapshot}
-                    editing={promptCardEditing}
-                    onToggleEditing={() => setPromptCardEditing((prev) => !prev)}
-                    onChange={handleRecommendationSnapshotChange}
-                    onGenerate={handleGeneratePlan}
-                    canGenerate={canGeneratePlan}
-                    disabled={loading || isArchived}
-                    showPreview={!!draftToAdopt}
-                    previewLoading={draftPreviewLoading}
-                    onPreview={() => setPlanDrawerOpen(true)}
-                  />
-                }
-              >
-                <Button
-                  type="primary"
-                  shape="round"
-                  size="small"
-                  icon={<BulbOutlined />}
-                  style={{
-                    height: 32,
-                    paddingInline: 14,
-                    fontWeight: 600,
-                    background: `linear-gradient(135deg, ${token.colorPrimary} 0%, ${token.colorPrimaryHover} 100%)`,
-                    borderColor: 'transparent',
-                    boxShadow: '0 8px 20px rgba(22, 119, 255, 0.25)',
-                  }}
-                >
-                  生成方案
-                </Button>
-              </Popover>
-            ) : null}
           </div>
           {draftToAdopt && !isArchived ? (
-            <div style={{ marginBottom: 12 }}>
+            <div style={{ marginBottom: 12, display: 'flex', gap: 8 }}>
               <Button type="primary" onClick={() => void handleAdopt()}>
                 采纳方案
+              </Button>
+              <Button onClick={() => setPlanDrawerOpen(true)} loading={draftPreviewLoading}>
+                预览
               </Button>
             </div>
           ) : null}
@@ -1458,7 +1529,7 @@ export default function AdmissionAIPage() {
             onSubmit={handleSubmit}
             onCancel={handleCancel}
             loading={loading}
-            placeholder={isArchived ? '该对话已归档，仅可查看' : '输入你的问题，例如：我不想去北京的学校...'}
+            placeholder={isArchived ? '该对话已归档，仅可查看' : '告诉我分数、想去哪里、想学什么…例如：我想学计算机或人工智能方向'}
             allowSpeech={false}
           />
         </div>
@@ -1467,8 +1538,8 @@ export default function AdmissionAIPage() {
         title="志愿方案预览"
         open={planDrawerOpen}
         onClose={() => setPlanDrawerOpen(false)}
-        width={900}
-        destroyOnClose
+        size={900}
+        destroyOnHidden
       >
         {draftPreview?.status === 'failed' ? <Text type="danger">生成失败：{draftPreview.error || '未知错误'}</Text> : null}
         {draftPreview?.plan_json ? (

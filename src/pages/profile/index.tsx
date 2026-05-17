@@ -182,7 +182,7 @@ export default function ProfilePage() {
     <Card>
       <Space size={24} align="center" wrap>
         <Avatar size={64} icon={<UserOutlined />} style={{ backgroundColor: '#1E40AF' }} />
-        <Space direction="vertical" size={4}>
+        <Space orientation="vertical" size={4}>
           <Typography.Text strong style={{ fontSize: 18 }}>
             {primaryIdentity}
           </Typography.Text>
@@ -388,7 +388,7 @@ export default function ProfilePage() {
   ]
 
   const profileSecurityContent = (
-    <Space direction="vertical" size={24} style={{ width: '100%' }}>
+    <Space orientation="vertical" size={24} style={{ width: '100%' }}>
       {profileSummaryCard}
       <Card bodyStyle={{ paddingTop: 12 }}>
         <Tabs items={securityTabItems} />

@@ -12,7 +12,7 @@ export default function MessageEditor({ initialValue, saving, onCancel, onSave }
   const [value, setValue] = useState(() => initialValue)
 
   return (
-    <Space direction="vertical" size={8} style={{ width: 420, maxWidth: '100%' }}>
+    <Space orientation="vertical" size={8} style={{ width: 420, maxWidth: '100%' }}>
       <Input.TextArea
         value={value}
         onChange={(e) => setValue(e.target.value)}

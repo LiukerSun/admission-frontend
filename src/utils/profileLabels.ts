@@ -40,24 +40,21 @@ export const SUBJECT_CATEGORY_OPTIONS: CodedOption<SubjectCategoryCode>[] = [
   },
 ]
 
-export type PriorityStrategyCode = 'auto' | 'school' | 'major'
+export type ElectiveSubjectCode = 'biology' | 'chemistry' | 'geography' | 'politics'
 
-export const PRIORITY_STRATEGY_OPTIONS: CodedOption<PriorityStrategyCode>[] = [
-  { code: 'auto', label: '让 AI 自动决定', hint: '综合冲稳保平衡（推荐）' },
-  { code: 'school', label: '优先好院校', hint: '相同分段内，名校排前' },
-  { code: 'major', label: '优先好专业', hint: '相同分段内，强势专业排前' },
+// 4 选 2 再选科目字典。后端 user_profiles.elective_subjects CHECK 约束与此严格一致；
+// 顺序按"理科 → 文科"排，UI 上 Checkbox.Group 也按这个顺序展示。
+export const ELECTIVE_SUBJECT_OPTIONS: CodedOption<ElectiveSubjectCode>[] = [
+  { code: 'biology', label: '生物' },
+  { code: 'chemistry', label: '化学' },
+  { code: 'geography', label: '地理' },
+  { code: 'politics', label: '政治' },
 ]
 
-export type HollandLetter = 'R' | 'I' | 'A' | 'S' | 'E' | 'C'
-
-export const HOLLAND_OPTIONS: CodedOption<HollandLetter>[] = [
-  { code: 'R', label: '现实型 (R)', hint: '动手实操、机械、工程' },
-  { code: 'I', label: '研究型 (I)', hint: '钻研、分析、科学' },
-  { code: 'A', label: '艺术型 (A)', hint: '创意、设计、表达' },
-  { code: 'S', label: '社会型 (S)', hint: '助人、教育、服务' },
-  { code: 'E', label: '企业型 (E)', hint: '管理、销售、领导' },
-  { code: 'C', label: '常规型 (C)', hint: '组织、数据、流程' },
-]
+export function labelForElectiveSubject(code?: string | null): string {
+  if (!code) return ''
+  return ELECTIVE_SUBJECT_OPTIONS.find((o) => o.code === code)?.label ?? code
+}
 
 export function labelForRegion(code?: string | null): string {
   if (!code) return ''
@@ -67,30 +64,4 @@ export function labelForRegion(code?: string | null): string {
 export function labelForSubject(code?: string | null): string {
   if (!code) return ''
   return SUBJECT_CATEGORY_OPTIONS.find((o) => o.code === code)?.label ?? code
-}
-
-export function labelForStrategy(code?: string | null): string {
-  if (!code) return ''
-  return PRIORITY_STRATEGY_OPTIONS.find((o) => o.code === code)?.label ?? code
-}
-
-// Holland code is a concatenation of single letters, e.g. "RIA". This
-// utility splits and joins labels for display.
-export function decomposeHollandCode(code?: string | null): HollandLetter[] {
-  if (!code) return []
-  const seen = new Set<HollandLetter>()
-  const out: HollandLetter[] = []
-  for (const ch of code.toUpperCase()) {
-    if (ch === 'R' || ch === 'I' || ch === 'A' || ch === 'S' || ch === 'E' || ch === 'C') {
-      if (!seen.has(ch)) {
-        seen.add(ch)
-        out.push(ch)
-      }
-    }
-  }
-  return out
-}
-
-export function composeHollandCode(letters: HollandLetter[]): string {
-  return letters.join('')
 }

@@ -238,7 +238,7 @@ export default function UniversitySearchPage() {
         width: 220,
         fixed: 'left',
         render: (name: string, row) => (
-          <Space direction="vertical" size={0}>
+          <Space orientation="vertical" size={0}>
             <Typography.Text strong style={{ color: '#0F172A' }}>
               {name}
             </Typography.Text>
@@ -353,7 +353,7 @@ export default function UniversitySearchPage() {
             key: 'filters',
             label: '院校筛选',
             children: (
-              <Space direction="vertical" size={16} style={{ width: '100%' }}>
+              <Space orientation="vertical" size={16} style={{ width: '100%' }}>
                 <Row gutter={[24, 16]}>
                   <Col xs={24} md={12}>
                     <Typography.Text strong>院校层次</Typography.Text>

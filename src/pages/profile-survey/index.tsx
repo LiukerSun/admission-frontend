@@ -2,10 +2,9 @@ import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   Affix,
-  Anchor,
+  Alert,
   Button,
   Card,
-  Collapse,
   Form,
   Progress,
   Space,
@@ -14,10 +13,7 @@ import {
   message,
 } from 'antd'
 import {
-  AimOutlined,
   ArrowLeftOutlined,
-  CompassOutlined,
-  EnvironmentOutlined,
   SaveOutlined,
   TrophyOutlined,
 } from '@ant-design/icons'
@@ -25,31 +21,22 @@ import type { AxiosError } from 'axios'
 import { useUserProfileStore } from '@/stores/userProfileStore'
 import type { UpsertProfileRequest, UserProfile } from '@/services/userProfile'
 import RequiredSection from './sections/RequiredSection'
-import ScoresSection from './sections/ScoresSection'
-import MajorPreferencesSection from './sections/MajorPreferencesSection'
-import RegionBackgroundSection from './sections/RegionBackgroundSection'
 
 const { Title, Text, Paragraph } = Typography
 
 type FormValues = UpsertProfileRequest
 
-// Build the initial Form values from a saved profile. We deliberately spread
-// preferences as an object even when it's missing so nested `name={['preferences', 'xxx']}`
-// Form.Items have a stable container to read from.
+// Build the initial Form values from a saved profile. We only surface the 4
+// required fields here — `preferences` and the legacy optional scalars are
+// not editable in the survey anymore (the AI agent collects them in the
+// conversation flow on demand).
 function profileToFormValues(profile: UserProfile | null | undefined): Partial<FormValues> {
-  if (!profile) return { preferences: {} }
+  if (!profile) return {}
   return {
     region_code: profile.region_code,
     subject_category_code: profile.subject_category_code,
+    elective_subjects: profile.elective_subjects,
     total_score: profile.total_score,
-    provincial_rank: profile.provincial_rank,
-    plan_size: profile.plan_size,
-    priority_strategy: profile.priority_strategy,
-    math_score: profile.math_score,
-    physics_score: profile.physics_score,
-    chinese_score: profile.chinese_score,
-    english_score: profile.english_score,
-    preferences: profile.preferences ?? {},
   }
 }
 
@@ -82,11 +69,26 @@ export default function ProfileSurveyPage() {
     return Math.round((filledCount / totalCount) * 100)
   }, [filledCount, totalCount])
 
+  // 把 form values 合并到当前 profile 上再上传。
+  // migration 008 之后 user_profiles 只剩 4 项核心字段，merge 主要为了在用户
+  // 没动某个字段时保留原值（避免 PUT 把它写成 NULL）。
+  function mergeUpsertPayload(values: Partial<FormValues>): UpsertProfileRequest {
+    const base: UpsertProfileRequest = profile
+      ? {
+          region_code: profile.region_code,
+          subject_category_code: profile.subject_category_code,
+          elective_subjects: profile.elective_subjects,
+          total_score: profile.total_score,
+        }
+      : {}
+    return { ...base, ...values }
+  }
+
   const onSave = async () => {
     try {
       const values = await form.validateFields()
       setSaving(true)
-      await updateProfile(values)
+      await updateProfile(mergeUpsertPayload(values))
       message.success('问卷已保存')
     } catch (err) {
       // Form.validateFields() rejects with an errorFields shape (no `response`),
@@ -160,83 +162,31 @@ export default function ProfileSurveyPage() {
         </div>
       </Card>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 200px', gap: 24 }}>
-        <Form<FormValues>
-          form={form}
-          layout="vertical"
-          requiredMark={(label, info) => (
-            <span>
-              {label}
-              {info.required && <span style={{ color: '#EF4444', marginLeft: 4 }}>*</span>}
-            </span>
-          )}
+      <Form<FormValues>
+        form={form}
+        layout="vertical"
+        requiredMark={(label, info) => (
+          <span>
+            {label}
+            {info.required && <span style={{ color: '#EF4444', marginLeft: 4 }}>*</span>}
+          </span>
+        )}
+      >
+        <Card
+          id="section-required"
+          title={<><TrophyOutlined /> <span style={{ marginLeft: 8 }}>必填基本信息</span></>}
+          style={{ marginBottom: 16, borderRadius: 8 }}
         >
-          <Card id="section-required" title={<><TrophyOutlined /> <span style={{ marginLeft: 8 }}>必填基本信息</span></>} style={{ marginBottom: 16, borderRadius: 8 }}>
-            <RequiredSection />
-          </Card>
+          <RequiredSection />
+        </Card>
 
-          <Collapse
-            defaultActiveKey={['scores', 'majors']}
-            bordered={false}
-            style={{ background: 'transparent' }}
-            items={[
-              {
-                key: 'scores',
-                label: (
-                  <span><AimOutlined /> <span style={{ marginLeft: 8, fontWeight: 600 }}>单科成绩 & 填报策略</span>
-                    <Tag color="default" style={{ marginLeft: 8 }}>可选</Tag>
-                  </span>
-                ),
-                children: (
-                  <Card bordered={false} bodyStyle={{ padding: 0 }} id="section-scores">
-                    <ScoresSection />
-                  </Card>
-                ),
-              },
-              {
-                key: 'majors',
-                label: (
-                  <span><CompassOutlined /> <span style={{ marginLeft: 8, fontWeight: 600 }}>专业偏好</span>
-                    <Tag color="default" style={{ marginLeft: 8 }}>可选</Tag>
-                  </span>
-                ),
-                children: (
-                  <Card bordered={false} bodyStyle={{ padding: 0 }} id="section-majors">
-                    <MajorPreferencesSection />
-                  </Card>
-                ),
-              },
-              {
-                key: 'background',
-                label: (
-                  <span><EnvironmentOutlined /> <span style={{ marginLeft: 8, fontWeight: 600 }}>地域 & 家庭背景</span>
-                    <Tag color="default" style={{ marginLeft: 8 }}>可选</Tag>
-                  </span>
-                ),
-                children: (
-                  <Card bordered={false} bodyStyle={{ padding: 0 }} id="section-background">
-                    <RegionBackgroundSection />
-                  </Card>
-                ),
-              },
-            ]}
-          />
-        </Form>
-
-        <Affix offsetTop={88}>
-          <Card size="small" title="目录" style={{ borderRadius: 8 }}>
-            <Anchor
-              affix={false}
-              items={[
-                { key: 'required', href: '#section-required', title: '必填基本信息' },
-                { key: 'scores', href: '#section-scores', title: '单科 & 策略' },
-                { key: 'majors', href: '#section-majors', title: '专业偏好' },
-                { key: 'background', href: '#section-background', title: '地域 & 背景' },
-              ]}
-            />
-          </Card>
-        </Affix>
-      </div>
+        <Alert
+          type="info"
+          showIcon
+          message="单科成绩、专业偏好、地域 / 家庭背景等更细的信息，AI 会在「智能填报」对话过程中按需向你询问，不必在此一次填齐。"
+          style={{ marginTop: 8, marginBottom: 8 }}
+        />
+      </Form>
 
       <Affix offsetBottom={0}>
         <div

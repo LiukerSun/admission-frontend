@@ -187,7 +187,7 @@ export default function MembershipPage() {
                     : []),
                 ]}
               >
-                <Space direction="vertical" size={12} style={{ width: '100%' }}>
+                <Space orientation="vertical" size={12} style={{ width: '100%' }}>
                   <Statistic value={formatMoney(plan.price_amount, plan.currency)} title="套餐价格" />
                   {plan.description && (
                     <Paragraph type="secondary" style={{ marginBottom: 0 }}>

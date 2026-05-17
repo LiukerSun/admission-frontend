@@ -23,7 +23,7 @@ export default function OrderStatusBadge({
 }: OrderStatusBadgeProps) {
   if (compact) {
     return (
-      <Space direction="vertical" size={2}>
+      <Space orientation="vertical" size={2}>
         <Tag color={ORDER_STATUS_COLORS[orderStatus]} style={{ margin: 0, fontSize: 12 }}>
           {orderStatusLabel(orderStatus)}
         </Tag>

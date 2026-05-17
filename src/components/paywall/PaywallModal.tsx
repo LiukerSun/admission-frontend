@@ -93,11 +93,11 @@ export default function PaywallModal() {
       afterOpenChange={handleAfterOpenChange}
       footer={null}
       closable={false}
-      maskClosable
+      mask={{ closable: true }}
       keyboard={false}
       width={560}
       centered
-      destroyOnClose
+      destroyOnHidden
       styles={{
         body: { padding: 0 },
       }}

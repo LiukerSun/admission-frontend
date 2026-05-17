@@ -299,7 +299,7 @@ export default function AdmissionDetailTable({ lines, loading }: AdmissionDetail
         fixed: screens.lg ? 'left' : undefined,
         width: 190,
         render: (name: string, row) => row.isUniversityRow ? (
-          <Space direction="vertical" size={0}>
+          <Space orientation="vertical" size={0}>
             <Typography.Text strong style={{ color: '#0F172A' }}>
               {name || '-'}
             </Typography.Text>
@@ -308,7 +308,7 @@ export default function AdmissionDetailTable({ lines, loading }: AdmissionDetail
             </Typography.Text>
           </Space>
         ) : (
-          <Space direction="vertical" size={0}>
+          <Space orientation="vertical" size={0}>
             <Typography.Text strong={row.isGroupRow} style={{ color: '#0F172A' }}>
               {name || '-'}
             </Typography.Text>
@@ -328,7 +328,7 @@ export default function AdmissionDetailTable({ lines, loading }: AdmissionDetail
         dataIndex: 'local_major_name',
         width: 280,
         render: (name: string, row) => (
-          <Space direction="vertical" size={0}>
+          <Space orientation="vertical" size={0}>
             <Typography.Text strong={row.nodeType !== 'major'} style={{ color: '#0F172A' }}>
               {name || '-'}
             </Typography.Text>

@@ -65,4 +65,7 @@ export const conversationApi = {
 
   suggestions: (id: number) =>
     api.get<Envelope<{ suggestions: string[] }>>(`/api/v1/conversations/${id}/suggestions`),
+
+  welcomeSuggestions: () =>
+    api.get<Envelope<{ suggestions: string[] }>>('/api/v1/me/welcome-suggestions'),
 }

@@ -155,7 +155,7 @@ export default function AdminBackupPage() {
             message={`恢复完成：${lastResult.filename}（${formatBytes(lastResult.size_bytes)}）`}
             description={
               lastResult.stderr_tail ? (
-                <Space direction="vertical" size={4} style={{ width: '100%' }}>
+                <Space orientation="vertical" size={4} style={{ width: '100%' }}>
                   <Text type="secondary">pg_restore stderr（仅供核对，含警告时正常）：</Text>
                   <pre
                     style={{

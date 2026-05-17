@@ -78,7 +78,7 @@ export default function CardWidget({ payload }: Props) {
       cover={coverNode}
       style={{ width: '100%' }}
     >
-      <Space direction="vertical" size={8} style={{ width: '100%' }}>
+      <Space orientation="vertical" size={8} style={{ width: '100%' }}>
         {data.description ? (
           <Typography.Paragraph style={{ marginBottom: 0 }} ellipsis={{ rows: 3 }}>
             {data.description}

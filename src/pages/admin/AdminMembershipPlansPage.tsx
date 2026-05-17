@@ -215,7 +215,7 @@ export default function AdminMembershipPlansPage() {
       title: '名称',
       dataIndex: 'plan_name',
       render: (v: string, row) => (
-        <Space direction="vertical" size={2}>
+        <Space orientation="vertical" size={2}>
           <Text strong>{v}</Text>
           {row.description ? (
             <Text type="secondary" style={{ fontSize: 12 }}>{row.description}</Text>

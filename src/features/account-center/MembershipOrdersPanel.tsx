@@ -200,7 +200,7 @@ export default function MembershipOrdersPanel() {
   }
 
   return (
-    <Space direction="vertical" size={24} style={{ width: '100%' }}>
+    <Space orientation="vertical" size={24} style={{ width: '100%' }}>
       <Card>
         <Row gutter={[24, 24]} align="middle">
           <Col xs={24} md={8}>
@@ -262,7 +262,7 @@ export default function MembershipOrdersPanel() {
                       : []),
                   ]}
                 >
-                  <Space direction="vertical" size={12} style={{ width: '100%' }}>
+                  <Space orientation="vertical" size={12} style={{ width: '100%' }}>
                     <Statistic value={formatMoney(plan.price_amount, plan.currency)} title="价格" />
                     <div>
                       <CheckCircleOutlined style={{ color: '#16A34A', marginRight: 8 }} />
